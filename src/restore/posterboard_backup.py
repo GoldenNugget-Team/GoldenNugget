@@ -16,6 +16,7 @@ import os
 import sqlite3
 import tempfile
 
+from PySide6.QtCore import QCoreApplication
 from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service
 
 from src.devicemanagement.session import lockdown_session
@@ -113,12 +114,19 @@ async def targeted_posterboard_database_backup(udid: str, update_label=lambda x:
     written here. Returns ``(extracted_db_path, structure_version)`` — the
     structure version parsed from the database's manifest path so the restored
     copy lands in the same store directory it was fetched from.
+
+    iOS 26 uploads the database WITHOUT its ``-wal`` sibling, so what comes out
+    is a plain copy of a file PosterBoard is still writing. When that copy
+    races a checkpoint it comes out torn, which is a transient condition and not
+    a broken device — so an incomplete snapshot is retried exactly like a lost
+    connection instead of failing the wizard on the first try.
     """
     from src.exceptions.device_errors import is_connection_error as _is_connection_error
     from src.exceptions.device_errors import is_device_locked_error as _is_device_locked_error
     from src.restore.protective import (
         POSTERBOARD_DB_DOMAIN, _domain_match,
         _posterboard_db_match, extract_posterboard_db)
+    from src.tweaks.posterboard.db_validate import IncompletePosterBoardSnapshot
 
     pb_dir = str(_posterboard_dir())
     if not os.path.exists(pb_dir):
@@ -129,7 +137,14 @@ async def targeted_posterboard_database_backup(udid: str, update_label=lambda x:
 
     def _on_retry(attempt: int, total: int, e: Exception, delay: float) -> None:
         if attempt < total:
-            update_label(f"Connection lost, retrying in {delay}s... (attempt {attempt}/{max_retries})")
+            if isinstance(e, IncompletePosterBoardSnapshot):
+                update_label(QCoreApplication.tr(
+                    "PosterBoard database copy was incomplete, retrying in {0}s... "
+                    "(attempt {1}/{2})").format(delay, attempt, total))
+            else:
+                update_label(QCoreApplication.tr(
+                    "Connection lost, retrying in {0}s... (attempt {1}/{2})").format(
+                        delay, attempt, total))
 
     async def _attempt():
         with tempfile.TemporaryDirectory(prefix="nugget_pb_only_") as backup_dir:
@@ -162,7 +177,8 @@ async def targeted_posterboard_database_backup(udid: str, update_label=lambda x:
             return db_path_and_version
 
     return await async_retry(
-        _attempt, max_retries, retry_if=_is_connection_error,
+        _attempt, max_retries,
+        retry_if=lambda e: _is_connection_error(e) or isinstance(e, IncompletePosterBoardSnapshot),
         exp_cap=15, on_retry=_on_retry)
 
 
@@ -220,6 +236,7 @@ async def pull_posterboard_container(udid: str, out_dir: str,
     from src.restore.protective import (
         POSTERBOARD_DB_DOMAIN, _domain_match, _posterboard_db_match,
         extract_posterboard_db)
+    from src.tweaks.posterboard.db_validate import IncompletePosterBoardSnapshot
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir, exist_ok=True)
@@ -227,8 +244,14 @@ async def pull_posterboard_container(udid: str, out_dir: str,
     max_retries = 3
 
     def _on_retry(attempt: int, total: int, e: Exception, delay: float) -> None:
-        if attempt < total:
-            update_label(f"Connection lost, retrying in {delay}s... (attempt {attempt}/{total})")
+        if attempt < total and isinstance(e, IncompletePosterBoardSnapshot):
+            update_label(QCoreApplication.tr(
+                "PosterBoard database copy was incomplete, retrying in {0}s... "
+                "(attempt {1}/{2})").format(delay, attempt, total))
+        elif attempt < total:
+            update_label(QCoreApplication.tr(
+                "Connection lost, retrying in {0}s... (attempt {1}/{2})").format(
+                    delay, attempt, total))
 
     async def _attempt():
         with tempfile.TemporaryDirectory(prefix="nugget_pb_pull_") as backup_dir:
@@ -284,5 +307,6 @@ async def pull_posterboard_container(udid: str, out_dir: str,
             return out_dir, structure_version
 
     return await async_retry(
-        _attempt, max_retries, retry_if=_is_connection_error,
+        _attempt, max_retries,
+        retry_if=lambda e: _is_connection_error(e) or isinstance(e, IncompletePosterBoardSnapshot),
         exp_cap=15, on_retry=_on_retry)

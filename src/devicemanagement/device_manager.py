@@ -688,16 +688,19 @@ Returns (PreparedBackup, posterboard_db_ok). When the PosterBoard
             if not needs_posterboard or os.environ.get("GOLDENNUGGET_SKIP_PB_BACKUP"):
                 return True
             import tempfile as _tempfile
+            pb = tweaks[TweakID.PosterBoard]
             with _tempfile.TemporaryDirectory(prefix="nugget_pbdb_") as tmp_dir:
-                db_path_and_version = extract_posterboard_db(
-                    backup_root, udid, os.path.join(tmp_dir, "posterboard.sqlite3"))
-                if db_path_and_version is None:
-                    log_warn("PosterBoard DB missing from the protective backup — "
-                             "falling back to a separate backup")
-                    return False
-                db_path, structure_version = db_path_and_version
-                pb = tweaks[TweakID.PosterBoard]
+                # the extraction can also RAISE now (torn database copy), so it
+                # belongs in this try — a bad copy must fall back to the separate
+                # backup, never abort the apply
                 try:
+                    db_path_and_version = extract_posterboard_db(
+                        backup_root, udid, os.path.join(tmp_dir, "posterboard.sqlite3"))
+                    if db_path_and_version is None:
+                        log_warn("PosterBoard DB missing from the protective backup — "
+                                 "falling back to a separate backup")
+                        return False
+                    db_path, structure_version = db_path_and_version
                     if not pb.config_manager.update_database_file(
                             db_path, udid, structure_version=structure_version):
                         raise NuggetException("The PosterBoard database is not of the correct format!")

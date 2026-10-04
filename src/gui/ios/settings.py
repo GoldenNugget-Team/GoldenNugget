@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
 )
 from pathlib import Path
 
+from src.exceptions.nugget_exception import NuggetException
 from src.gui.ios.components import (
     IOSSectionHeader, IOSSwitch, IOSPrimaryButton
 )
@@ -725,11 +726,20 @@ class IOSSettingsPage(QWidget):
             tweaks[TweakID.PosterBoard].config_manager.database = None
             self.pb_db_lbl.setText("sqlite: None")
         else:
-            if not tweaks[TweakID.PosterBoard].config_manager.update_database_file(
-                    selected_file, self.window.device_manager.get_current_device_udid()):
+            # update_database_file RAISES on a rejected database; without this the
+            # exception escapes the slot and lands in the crash handler, which is
+            # what the user saw instead of an explanation.
+            try:
+                if not tweaks[TweakID.PosterBoard].config_manager.update_database_file(
+                        selected_file, self.window.device_manager.get_current_device_udid()):
+                    QMessageBox.critical(
+                        self, QCoreApplication.translate("QtCore.QCoreApplication", "Error!"),
+                        QCoreApplication.translate("Nugget", "The database is not of the correct format!"))
+                    return
+            except NuggetException as e:
                 QMessageBox.critical(
-                    self, QCoreApplication.translate("QtCore.QCoreApplication", "Error!"),
-                    QCoreApplication.translate("Nugget", "The database is not of the correct format!"))
+                    self, QCoreApplication.translate("Nugget", "Error!"),
+                    str(e), e.detailed_text or "")
                 return
             self.pb_db_lbl.setText("sqlite: Selected")
 

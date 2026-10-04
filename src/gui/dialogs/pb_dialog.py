@@ -15,6 +15,8 @@ class PosterBoardDBWizard(QWizard):
         self.pbDBLbl = pbDBLbl
         self.backup_in_progress = False
         self.backup_successful = False
+        # set by the worker thread, shown on the GUI thread once it finishes
+        self.backup_failure: str | None = None
         self.update_savedIds_list = update_savedIds_list
 
         # only show cancel and next/finish buttons
@@ -90,6 +92,10 @@ class PosterBoardDBWizard(QWizard):
         if self.backup_successful:
             self.update_savedIds_list()
             self.setButtonLayout([QWizard.WizardButton.Stretch, QWizard.WizardButton.NextButton])
+        elif self.backup_failure:
+            # "Backup Failed!" alone told the user nothing — say WHY (e.g. a torn
+            # database copy) and what actually fixes it.
+            QMessageBox.warning(self, self.windowTitle(), self.backup_failure)
         self.backup_in_progress = False
         # self.next()
 
@@ -117,6 +123,10 @@ class PosterBoardDBWizard(QWizard):
             update_label("Success!") # TODO: Place this somewhere else so that we can call self.next()
             # self.setButtonLayout([QWizard.WizardButton.Stretch, QWizard.WizardButton.NextButton])
         except Exception as e:
+            # The pull retries a torn database copy on its own, so reaching here
+            # means every attempt came back unusable — keep the reason for the
+            # dialog the finish handler shows.
+            self.backup_failure = getattr(e, "detailed_text", None) or str(e) or repr(e)
             update_label("Backup Failed!")
             print(repr(e))
     
@@ -127,6 +137,8 @@ class PosterBoardDBWizard(QWizard):
             # disable next button until backup is done
             self.setButtonLayout([QWizard.WizardButton.CancelButton, QWizard.WizardButton.Stretch])
             self.backup_in_progress = True
+            self.backup_successful = False
+            self.backup_failure = None
             self.worker_thread = PBDBThread(backup_function=self.start_device_backup)
             self.worker_thread.progress.connect(self.update_progress_bar)
             self.worker_thread.infoLbl.connect(self.update_progress_lbl)

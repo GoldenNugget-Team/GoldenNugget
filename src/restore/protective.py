@@ -1139,6 +1139,20 @@ def posterboard_structure_version(rel_path: str) -> int:
     return 61
 
 
+def _require_usable_pb_snapshot(db_path) -> None:
+    """Gate a pulled PosterBoard database on the strong snapshot check.
+
+    ``mobilebackup2`` streams the database while PosterBoard keeps writing and
+    iOS 26 leaves the ``-wal`` sibling out of the backup, so the payload is a
+    plain copy of a live file. When that copy races a checkpoint it is torn and
+    every later step (inject, rewrite, restore) would operate on a corrupt
+    database — or lose the user's wallpapers to it. Raise instead, so the
+    caller can pull the file again.
+    """
+    from src.tweaks.posterboard.db_validate import require_usable_snapshot
+    require_usable_snapshot(str(db_path))
+
+
 def extract_posterboard_db(backup_root: str, udid: str, dest_path: str) -> Optional[tuple[str, int]]:
     """Pull the PosterBoard sqlite database out of a (refreshed) protective backup.
 
@@ -1148,6 +1162,10 @@ def extract_posterboard_db(backup_root: str, udid: str, dest_path: str) -> Optio
     from the database's manifest path, so the restore can write it back to the
     same store directory it came from — or None when the backup does not carry
     the database (e.g. container inclusion was rejected by the device).
+
+    Raises ``IncompletePosterBoardSnapshot`` when the backup *does* carry the
+    file but the copy is torn (see ``_require_usable_pb_snapshot``); that one is
+    worth retrying, unlike a container that is simply absent.
     """
     device_dir = Path(backup_root) / udid
     if not device_dir.is_dir():
@@ -1220,8 +1238,12 @@ def extract_posterboard_db(backup_root: str, udid: str, dest_path: str) -> Optio
 
     wal_payload = _payload_for("-wal")
     if wal_payload is None:
-        # no WAL sibling — the main file already holds the whole state
+        # No WAL sibling — which is what iOS 26 actually uploads, so this is the
+        # normal path there: a plain copy of a database the device is still
+        # writing. A copy that races a checkpoint is torn, so validate before
+        # handing it out (see db_validate) and let the caller re-pull.
         shutil.copyfile(main_payload, dest)
+        _require_usable_pb_snapshot(dest)
         return str(dest), structure_version
 
     # The on-device database runs in WAL mode: recent wallpaper data may live
@@ -1255,6 +1277,7 @@ def extract_posterboard_db(backup_root: str, udid: str, dest_path: str) -> Optio
             shutil.copyfile(main_payload, dest)
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)
+    _require_usable_pb_snapshot(dest)
 
     return str(dest), structure_version
 

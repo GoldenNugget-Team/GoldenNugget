@@ -3,7 +3,7 @@ import shutil
 import sqlite3
 import json
 import time
-from PySide6.QtCore import QStandardPaths
+from PySide6.QtCore import QCoreApplication, QStandardPaths
 from typing import Optional
 
 from src.exceptions.nugget_exception import NuggetException
@@ -11,85 +11,16 @@ from src.controllers.files_handler import get_bundle_files
 from src.devicemanagement.preference_manager import PreferenceManager
 from src.utils.log_util import log_warn
 from .pb_config_item import PBConfigItem
+# The snapshot checks live in a Qt-free module so the restore path can gate a
+# pulled database on them too; the private aliases below keep the old local names
+# working, and POSTERBOARD_TABLES/DB_FILE_NAME stay re-exported from here.
+from .db_validate import (
+    DB_FILE_NAME, POSTERBOARD_TABLES, is_encrypted_database, list_tables,
+    posterboard_db_is_snapshot_ok, snapshot_problem)
 
-
-# The classic pre-db5 PosterBoard table set; strict validation requires all four.
-POSTERBOARD_TABLES = ("poster", "posterAttributes", "posterRoleMembership", "sqlite_sequence")
-
-
-def _list_tables(db_path: str) -> list[str]:
-    try:
-        conn = sqlite3.connect(db_path)
-        tables = [r[0] for r in conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
-        conn.close()
-        return tables
-    except sqlite3.DatabaseError:
-        return []
-
-
-def _validate_posterboard_db(db_path: str, strict: bool = True) -> bool:
-    """Check if a file is a valid PosterBoard SQLite database.
-
-    strict=True requires the classic table set (pre-db5 schema).
-    strict=False accepts any healthy database that carries poster-ish
-    tables — the schema may change between iOS releases (db5+).
-    """
-    if not path.exists(db_path) or path.getsize(db_path) < 100:
-        return False
-    try:
-        conn = sqlite3.connect(db_path)
-        # First check it's a valid SQLite database
-        conn.execute("SELECT 1 FROM sqlite_master LIMIT 1")
-        cursor = conn.cursor()
-        if strict:
-            for tab in POSTERBOARD_TABLES:
-                cursor.execute(f"PRAGMA table_info({tab})")
-                if cursor.fetchone() is None:
-                    log_warn(f"PosterBoard DB validation: missing table '{tab}' "
-                             f"(tables present: {_list_tables(db_path)})")
-                    conn.close()
-                    return False
-        else:
-            tables = [t.lower() for t in _list_tables(db_path)]
-            if not any("poster" in t for t in tables):
-                log_warn(f"PosterBoard DB validation: no poster-ish tables (present: {tables})")
-                conn.close()
-                return False
-        # Check database integrity
-        cursor.execute("PRAGMA integrity_check")
-        result = cursor.fetchone()
-        if result is None or result[0] != "ok":
-            conn.close()
-            return False
-        conn.close()
-        return True
-    except sqlite3.DatabaseError:
-        return False
-    except Exception:
-        return False
-
-
-def _is_encrypted_database(db_path: str) -> bool:
-    """Check if a database file appears to be encrypted (SQLCipher) or unreadable."""
-    if not path.exists(db_path) or path.getsize(db_path) < 100:
-        return False
-    try:
-        # Try to open as regular SQLite first
-        conn = sqlite3.connect(db_path)
-        conn.execute("SELECT 1 FROM sqlite_master LIMIT 1")
-        conn.close()
-        return False
-    except sqlite3.DatabaseError as e:
-        # Check if it's an encryption-related error
-        err_msg = str(e).lower()
-        if "encrypted" in err_msg or "not a database" in err_msg or "file is not a database" in err_msg:
-            return True
-        return False
-    except Exception:
-        return False
-
-DB_FILE_NAME = "PBFPosterExtensionDataStoreSQLiteDatabase.sqlite3"
+_list_tables = list_tables
+_validate_posterboard_db = posterboard_db_is_snapshot_ok
+_is_encrypted_database = is_encrypted_database
 
 
 def create_empty_posterboard_db(dest_path: str) -> str:
@@ -225,12 +156,24 @@ class PBConfigManager:
 
         if not (_validate_posterboard_db(new_db) or _validate_posterboard_db(new_db, strict=False)):
             tables = _list_tables(new_db)
-            log_warn(f"PosterBoard DB rejected; sqlite_master contains: {tables}")
+            problem = snapshot_problem(new_db) or snapshot_problem(new_db, strict=False)
+            log_warn(f"PosterBoard DB rejected; sqlite_master contains: {tables}; reason: {problem}")
             raise NuggetException(
-                "The PosterBoard database from the backup is corrupted or invalid. "
-                "This can happen if the backup was interrupted. "
-                "Please create a fresh backup of your device and try again."
-            )
+                QCoreApplication.translate(
+                    "Nugget",
+                    "This PosterBoard database is not a usable copy of the one on "
+                    "your device."),
+                detailed_text=(
+                    f"{QCoreApplication.translate('Nugget', 'Reason:')} {problem}\n\n"
+                    + QCoreApplication.translate(
+                        "Nugget",
+                        "PosterBoard keeps its database open while writing and iOS "
+                        "leaves its write-ahead log out of the backup, so a copy "
+                        "taken at the wrong moment comes out inconsistent. Use "
+                        "\"Get Database from Device\" again — it re-pulls the file "
+                        "until it lands between two writes. Picking the same file "
+                        "again cannot help, and the backup location has no "
+                        "bearing on it.")))
 
         shutil.copyfile(new_db, dbpath)
 
