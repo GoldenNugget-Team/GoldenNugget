@@ -319,13 +319,13 @@ class IOSHomePage(QWidget):
 
     @Slot()
     def open_settings(self):
-        self.window.ios_pages.setCurrentIndex(4)
+        self.window.show_ios_page(4)
 
     def open_presets_section(self):
         self.window.open_presets_section()
 
     def switch_to_ios_page(self, index: int):
-        self.window.ios_pages.setCurrentIndex(index)
+        self.window.show_ios_page(index)
 
     def open_apply_classic(self):
         self.window.apply_changes()

@@ -375,10 +375,11 @@ class SettingsMixin:
             self.shell_layout.setContentsMargins(0, 0, 0, 0)
             self.shell_layout.setSpacing(0)
             self.body_row.setSpacing(0)
-            # entering the new UI: land on its home unless already inside it
+            # entering the new UI: land on its home unless already inside it.
+            # A UI-mode switch re-lays out the whole shell, so no page slide.
             if self.content_stack.currentIndex() != 1:
                 self.content_stack.setCurrentIndex(1)
-                self.ios_pages.setCurrentIndex(0)
+                self.set_ios_page(0, animate=False)
             self._update_shared_nav(self.ios_pages.currentIndex())
         else:
             # Classic mode: add padding around the shell
@@ -482,7 +483,7 @@ class NavigationMixin:
         """Open the home page of the ACTIVE UI mode."""
         if self.theme_manager.current_theme == ThemeManager.IOS:
             self.content_stack.setCurrentIndex(1)
-            self.ios_pages.setCurrentIndex(0)
+            self.set_ios_page(0)
             self._update_shared_nav(0)
         else:
             self.content_stack.setCurrentIndex(0)
@@ -504,13 +505,75 @@ class NavigationMixin:
 
     def show_ios_page(self, index: int):
         self.content_stack.setCurrentIndex(1)
-        self.ios_pages.setCurrentIndex(index)
+        self.set_ios_page(index)
+
+
+    # iOS-style page transition: the incoming page slides in from the right, one
+    # full page width, so it enters from off-screen rather than merely nudging.
+    # Only the content area moves — the shared nav bar above the stack stays put,
+    # which is what the stock iOS push looks like.
+    #
+    # The curve is deliberately soft and the duration long: a short OutCubic
+    # reads as a snap on a page as tall as the window, so it drifts in instead.
+    # The home page never animates at all — it is the app's anchor, and a slide
+    # on the way back to it makes coming home flicker.
+    PAGE_SLIDE_MS = 240
+    HOME_PAGE = 0
+
+    def set_ios_page(self, index: int, animate: bool = True):
+        """The only place that switches the iOS page stack.
+
+        Guards the index, snaps any page still mid-slide to its final spot and
+        then slides the incoming page in from the right. The home page is
+        switched without a slide.
+        """
+        stack = self.ios_pages
+        if not isinstance(index, int) or index < 0 or index >= stack.count():
+            return
+        if stack.currentIndex() == index:
+            return
+        self._stop_page_slide()
+        stack.setCurrentIndex(index)
+        page = stack.widget(index)
+        if animate and index != self.HOME_PAGE and stack.isVisible():
+            self._slide_page_in(page)
+
+    def _slide_page_in(self, page):
+        y = page.y()
+        if page.width() <= 0 or page.height() <= 0:
+            page.move(QtCore.QPoint(0, y))
+            return
+        anim = QtCore.QPropertyAnimation(page, b"pos", self)
+        anim.setDuration(self.PAGE_SLIDE_MS)
+        anim.setStartValue(QtCore.QPoint(page.width(), y))
+        anim.setEndValue(QtCore.QPoint(0, y))
+        anim.setEasingCurve(QtCore.QEasingCurve.Type.InOutCubic)
+        self._page_slide_anim = anim
+        anim.finished.connect(self._stop_page_slide)
+        anim.start(QtCore.QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
+
+    def _stop_page_slide(self):
+        """End a running page slide at once, so no page is left half-slid."""
+        anim = getattr(self, "_page_slide_anim", None)
+        if anim is None:
+            return
+        self._page_slide_anim = None
+        try:
+            page = anim.targetObject()
+            anim.stop()
+        except RuntimeError:
+            return
+        if page is not None:
+            try:
+                page.move(QtCore.QPoint(0, page.y()))
+            except RuntimeError:
+                pass
 
 
     def open_presets_section(self):
         """Open the settings page and scroll straight to the presets section."""
         self.content_stack.setCurrentIndex(1)
-        self.ios_pages.setCurrentIndex(4)
+        self.set_ios_page(4)
         self._update_shared_nav(4)
         self._sync_sidebar_selection()
         self.ios_settings.scroll_to_presets()
@@ -541,7 +604,7 @@ class NavigationMixin:
         if self.content_stack.currentIndex() == 1:
             if self.theme_manager.current_theme == ThemeManager.IOS:
                 if self.ios_pages.currentIndex() != 0:
-                    self.ios_pages.setCurrentIndex(0)
+                    self.set_ios_page(0)
                     return True
                 return False
             # classic shell: action pages back out straight to classic home
