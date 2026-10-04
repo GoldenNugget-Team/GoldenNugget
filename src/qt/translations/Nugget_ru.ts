@@ -2883,6 +2883,1232 @@ GoldenNugget будет перезапущен, чтобы применить и
         <source>Shows a system notification whenever an app reads the pasteboard, acting as a privacy indicator for system-level pastes.</source>
         <translation>Показывает системное уведомление всякий раз, когда приложение читает буфер обмена, как индикатор приватности для системных вставок.</translation>
     </message>
+    <message>
+        <location filename="../src/gui/preset_widget.py" line="128"/>
+        <source>PRESETS</source>
+        <translation>ПРЕСЕТЫ</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/preset_widget.py" line="33"/>
+        <source>Active preset</source>
+        <translation>Активный пресет</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/preset_widget.py" line="41"/>
+        <source>Manage</source>
+        <translation>Управление</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/home.py" line="205"/>
+        <source>Icon Themes</source>
+        <translation>Темы иконок</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/home.py" line="205"/>
+        <source>Themed app icons &amp; labels</source>
+        <translation>Оформление иконок и подписей приложений</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/home.py" line="206"/>
+        <source>Passcode Theme</source>
+        <translation>Тема пароля</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/home.py" line="206"/>
+        <source>Custom keypad theme (.passthm)</source>
+        <translation>Своя тема клавиатуры (.passthm)</translation>
+    </message>
+    <message>
+        <location filename="../src/qt/mainwindow_ui.py" line="1150"/>
+        <source>    Icon Themes</source>
+        <translation>    Темы иконок</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/icon_pack_downloader.py" line="311"/>
+        <source>({0} bundles skipped — missing icon files).</source>
+        <translation>(наборов пропущено: {0} — отсутствуют файлы иконок).</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/main_window.py" line="200"/>
+        <source>+ Add Icon</source>
+        <translation>+ Добавить иконку</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/main_window.py" line="202"/>
+        <source>+ Theme</source>
+        <translation>+ Тема</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="192"/>
+        <source>?</source>
+        <translation>?</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/main_window.py" line="383"/>
+        <source>A device %1 is running. Closing now can interrupt it mid-write and leave the protective backup corrupted.
+
+Close anyway?</source>
+        <translation>Выполняется операция на устройстве %1. Закрытие сейчас может прервать её во время записи и повредить защитную резервную копию.
+
+Всё равно закрыть?</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/posterboard.py" line="799"/>
+        <source>A full PosterBoard reset has been scheduled. The entire container will be wiped and an empty database restored on the next apply. Apply your tweaks to execute the reset.</source>
+        <translation>Запланирован полный сброс PosterBoard. Контейнер будет полностью очищен, а при следующем применении восстановится пустая база данных. Примените твики, чтобы выполнить сброс.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/settings.py" line="57"/>
+        <source>Accent Color</source>
+        <translation>Акцентный цвет</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="288"/>
+        <source>Adaptive glass hysteresis dark range — list of floating-point thresholds. Type inferred as Array&lt;Number&gt;; written as text for this test UI, so may be ignored by the framework. Unverified on-device.</source>
+        <translation>Диапазон гистерезиса адаптивного стекла для тёмной темы — список порогов с плавающей точкой. Тип определён как Array&lt;Number&gt;; записывается как текст для этого тестового интерфейса, поэтому фреймворк может его проигнорировать. Не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="294"/>
+        <source>Adaptive glass hysteresis light range — list of floating-point thresholds. Type inferred as Array&lt;Number&gt;; written as text for this test UI, so may be ignored by the framework. Unverified on-device.</source>
+        <translation>Диапазон гистерезиса адаптивного стекла для светлой темы — список порогов с плавающей точкой. Тип определён как Array&lt;Number&gt;; записывается как текст для этого тестового интерфейса, поэтому фреймворк может его проигнорировать. Не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="274"/>
+        <source>Add Icon Theme</source>
+        <translation>Добавить тему иконки</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="453"/>
+        <source>Additional scale applied to the focused stacked image. Type inferred; unverified on-device.</source>
+        <translation>Дополнительный масштаб для сфокусированного составного изображения. Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="449"/>
+        <source>Additional translation applied to stacked images (points). Type inferred; unverified on-device.</source>
+        <translation>Дополнительное смещение для составных изображений (в пунктах). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/wallpaper_downloader.py" line="202"/>
+        <source>All</source>
+        <translation>Все</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="311"/>
+        <source>Allows luminance (luma) tracking to drive glass adaptation (Calistoga).</source>
+        <translation>Позволяет отслеживанию яркости (luma) управлять адаптацией стекла (Calistoga).</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="270"/>
+        <source>Alternative entry for the hierarchical glass style level (integer 0–10). Type inferred; unverified on-device.</source>
+        <translation>Альтернативная запись для иерархического уровня стиля стекла (целое 0–10). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="249"/>
+        <source>Analytics, Data Tracking &amp; Logging</source>
+        <translation>Аналитика, отслеживание данных и журналы</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="286"/>
+        <source>App Bundle ID</source>
+        <translation>Идентификатор приложения</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="330"/>
+        <source>Applies the glass material to the camera surface (Calistoga).</source>
+        <translation>Применяет материал стекла к поверхности камеры (Calistoga).</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="326"/>
+        <source>Applies the glass material to the keyboard (Calistoga).</source>
+        <translation>Применяет материал стекла к клавиатуре (Calistoga).</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="69"/>
+        <source>Apps on iPhone</source>
+        <translation>Приложения на iPhone</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="441"/>
+        <source>Asymmetric scale of the stacked image (controls non-uniform X/Y scaling). Type inferred; unverified on-device.</source>
+        <translation>Асимметричный масштаб составного изображения (управляет неравномерным масштабированием по X/Y). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/preset_widget.py" line="36"/>
+        <source>AutoSave</source>
+        <translation>AutoSave</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/main_window_mixins.py" line="1026"/>
+        <source>Back up your device</source>
+        <translation>Создайте резервную копию устройства</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/main_window_mixins.py" line="1033"/>
+        <source>Back up your iPhone before tweaking:
+• Windows: iTunes → your device → Back Up Now
+• Mac: Finder → your device → Back Up Now
+
+GoldenNugget's own protected backup also runs automatically when you apply tweaks, but a full iTunes/Finder backup is the only complete safety net.</source>
+        <translation>Сделайте резервную копию iPhone перед настройкой:
+• Windows: iTunes → ваше устройство → «Создать резервную копию сейчас»
+• Mac: Finder → ваше устройство → «Создать резервную копию сейчас»
+
+Собственная защитная копия GoldenNugget также выполняется автоматически при применении твиков, но полная копия iTunes/Finder — единственная полная гарантия безопасности.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="307"/>
+        <source>Backdrop margin calculation includes the blur extent (Calistoga).</source>
+        <translation>Расчёт отступов подложки учитывает extent размытия (Calistoga).</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/settings.py" line="138"/>
+        <source>Backup Photos Over AFC (Parallel)</source>
+        <translation>Резервное копирование фото через AFC (параллельно)</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/settings.py" line="465"/>
+        <source>Backup/Cache Location</source>
+        <translation>Папка резервных копий и кэша</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/settings.py" line="488"/>
+        <source>Browse</source>
+        <translation>Обзор</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/posterboard.py" line="290"/>
+        <source>Browse and import wallpapers from Cowabunga and CaPlayground</source>
+        <translation>Найти и импортировать обои из Cowabunga и CaPlayground</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/wallpaper_downloader.py" line="204"/>
+        <source>CaPlayground</source>
+        <translation>CaPlayground</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/settings.py" line="505"/>
+        <source>Choose Backup/Cache Location</source>
+        <translation>Выберите папку резервных копий и кэша</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="331"/>
+        <source>Choose Image (.png)</source>
+        <translation>Выберите изображение (.png)</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/interface_picker.py" line="32"/>
+        <source>Choose Interface</source>
+        <translation>Выберите интерфейс</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="391"/>
+        <source>Choose an icon image first.</source>
+        <translation>Сначала выберите изображение иконки.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/interface_picker.py" line="45"/>
+        <source>Choose your interface style</source>
+        <translation>Выберите стиль интерфейса</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/interface_picker.py" line="62"/>
+        <source>Classic</source>
+        <translation>Классический</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/icon_pack_downloader.py" line="154"/>
+        <source>Close</source>
+        <translation>Закрыть</translation>
+    </message>
+    <message>
+        <location filename="../src/restore/protective.py" line="814"/>
+        <source>Could not back up photos/videos over AFC: {0}</source>
+        <translation>Не удалось создать резервную копию фото и видео через AFC: {0}</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/icon_pack_downloader.py" line="303"/>
+        <source>Could not import "{0}": {1}</source>
+        <translation>Не удалось импортировать «{0}»: {1}</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/wallpaper_downloader.py" line="830"/>
+        <source>Could not import wallpaper: you have reached the maximum of 10 descriptors.</source>
+        <translation>Не удалось импортировать обои: достигнут максимум в 10 дескрипторов.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/icon_pack_downloader.py" line="206"/>
+        <source>Could not load icon packs.
+Check your internet connection and try again.</source>
+        <translation>Не удалось загрузить наборы иконок.
+Проверьте подключение к интернету и повторите попытку.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/icon_pack_downloader.py" line="213"/>
+        <source>Could not load icon packs: {0}</source>
+        <translation>Не удалось загрузить наборы иконок: {0}</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="254"/>
+        <source>Could not store the icon file in the persistent folder. The theme may not apply reliably.</source>
+        <translation>Не удалось сохранить файл иконки в постоянную папку. Тема может применяться некорректно.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/wallpaper_downloader.py" line="203"/>
+        <source>Cowabunga</source>
+        <translation>Cowabunga</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="306"/>
+        <source>Custom label (empty hides it)</source>
+        <translation>Своя подпись (пусто — скрыть)</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="366"/>
+        <source>Daemon Locked by Safety Rules</source>
+        <translation>Демон заблокирован правилами безопасности</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/tendie_preview_dialog.py" line="117"/>
+        <source>Dark variant</source>
+        <translation>Тёмный вариант</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/settings.py" line="456"/>
+        <source>Default (system drive)</source>
+        <translation>По умолчанию (системный диск)</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="462"/>
+        <source>Default X-axis rotation of the stacked image container (degrees). Type inferred; unverified on-device.</source>
+        <translation>Вращение контейнера составного изображения по оси X по умолчанию (градусы). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="470"/>
+        <source>Default X-axis translation of the stacked image container (points). Type inferred; unverified on-device.</source>
+        <translation>Смещение контейнера составного изображения по оси X по умолчанию (пункты). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="466"/>
+        <source>Default Y-axis rotation of the stacked image container (degrees). Type inferred; unverified on-device.</source>
+        <translation>Вращение контейнера составного изображения по оси Y по умолчанию (градусы). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="474"/>
+        <source>Default Y-axis translation of the stacked image container (points). Type inferred; unverified on-device.</source>
+        <translation>Смещение контейнера составного изображения по оси Y по умолчанию (пункты). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="458"/>
+        <source>Default maximum depth of the stacked image container (points). Type inferred; unverified on-device.</source>
+        <translation>Максимальная глубина контейнера составного изображения по умолчанию (пункты). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/statusbar.py" line="188"/>
+        <source>Disable AirPlay icon</source>
+        <translation>Отключить значок AirPlay</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/statusbar.py" line="180"/>
+        <source>Disable Airplane Mode icon</source>
+        <translation>Отключить значок авиарежима</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/statusbar.py" line="185"/>
+        <source>Disable Alarm icon</source>
+        <translation>Отключить значок будильника</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/statusbar.py" line="183"/>
+        <source>Disable Battery icon</source>
+        <translation>Отключить значок батареи</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/statusbar.py" line="184"/>
+        <source>Disable Bluetooth icon</source>
+        <translation>Отключить значок Bluetooth</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="254"/>
+        <source>Disable Call Analytics (RTC Reporting)</source>
+        <translation>Отключить аналитику звонков (RTC Reporting)</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/statusbar.py" line="189"/>
+        <source>Disable CarPlay icon</source>
+        <translation>Отключить значок CarPlay</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/statusbar.py" line="181"/>
+        <source>Disable Cellular Service icon</source>
+        <translation>Отключить значок сотовой связи</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="255"/>
+        <source>Disable CoreDuet (Battery/Usage Statistics)</source>
+        <translation>Отключить CoreDuet (статистика батареи и использования)</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="264"/>
+        <source>Disable Decisiond</source>
+        <translation>Отключить decisiond</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="263"/>
+        <source>Disable Duet Expert</source>
+        <translation>Отключить Duet Expert</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="262"/>
+        <source>Disable Duet Heuristic</source>
+        <translation>Отключить Duet Heuristic</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/statusbar.py" line="179"/>
+        <source>Disable Focus Mode icon</source>
+        <translation>Отключить значок фокусирования</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="256"/>
+        <source>Disable Insight</source>
+        <translation>Отключить insightd</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/statusbar.py" line="192"/>
+        <source>Disable Liquid Detection Warning icon</source>
+        <translation>Отключить значок предупреждения о попадании жидкости</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/statusbar.py" line="186"/>
+        <source>Disable Location icon</source>
+        <translation>Отключить значок геолокации</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="258"/>
+        <source>Disable Media Experience Analytics</source>
+        <translation>Отключить аналитику Media Experience</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="257"/>
+        <source>Disable Metrics</source>
+        <translation>Отключить metricsd</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/statusbar.py" line="187"/>
+        <source>Disable Rotation Lock icon</source>
+        <translation>Отключить значок блокировки ориентации</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="266"/>
+        <source>Disable Sociald</source>
+        <translation>Отключить sociald</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="260"/>
+        <source>Disable Statistical Diagnostics</source>
+        <translation>Отключить statisticald</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="259"/>
+        <source>Disable Symptom Diagnostics</source>
+        <translation>Отключить symptomd</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="253"/>
+        <source>Disable System Analytics</source>
+        <translation>Отключить аналитику системы</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="265"/>
+        <source>Disable Triald (A/B Experiment Telemetry)</source>
+        <translation>Отключить triald (телеметрия A/B-экспериментов)</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/statusbar.py" line="190"/>
+        <source>Disable VPN icon</source>
+        <translation>Отключить значок VPN</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="238"/>
+        <source>Disable Voice Control</source>
+        <translation>Отключить голосовое управление</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/statusbar.py" line="191"/>
+        <source>Disable Voice Control icon</source>
+        <translation>Отключить значок голосового управления</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="252"/>
+        <source>Disable Wi-Fi Analytics</source>
+        <translation>Отключить аналитику Wi-Fi</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/statusbar.py" line="182"/>
+        <source>Disable Wi-Fi icon</source>
+        <translation>Отключить значок Wi-Fi</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="261"/>
+        <source>Disable Wireless Diagnostics</source>
+        <translation>Отключить wirelessd</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="233"/>
+        <source>Disables compact chrome in the Solarium renderer (UIKit debug cluster, bare UserDefaults key).</source>
+        <translation>Отключает компактную обвязку в рендерере Solarium (отладочный кластер UIKit, простой ключ UserDefaults).</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/icon_pack_downloader.py" line="266"/>
+        <source>Download Icon Pack</source>
+        <translation>Загрузить набор иконок</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/icon_pack_downloader.py" line="129"/>
+        <source>Download Icon Packs</source>
+        <translation>Загрузить наборы иконок</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/wallpaper_downloader.py" line="188"/>
+        <source>Download Wallpapers</source>
+        <translation>Загрузить обои</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/wallpaper_downloader.py" line="813"/>
+        <source>Download failed</source>
+        <translation>Не удалось загрузить</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/icon_pack_downloader.py" line="297"/>
+        <source>Download failed for "{0}".</source>
+        <translation>Не удалось загрузить «{0}».</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/icon_pack_downloader.py" line="267"/>
+        <source>Download the "{0}" icon pack?
+
+{1}
+
+Author: {2}</source>
+        <translation>Загрузить набор иконок «{0}»?
+
+{1}
+
+Автор: {2}</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/icon_pack_downloader.py" line="279"/>
+        <source>Downloading "{0}"...</source>
+        <translation>Загрузка «{0}»...</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/wallpaper_downloader.py" line="784"/>
+        <source>Downloading {}...</source>
+        <translation>Загрузка {}...</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="181"/>
+        <source>Draws Home Screen icons in the flat style instead of the glass/3D look.</source>
+        <translation>Отрисовывает значки экрана «Домой» плоским стилем вместо стеклянного/3D-вида.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="169"/>
+        <source>Drops every shadow the Clear Glass material casts. Useful when the shadows make light wallpapers look muddy.</source>
+        <translation>Убирает все тени, отбрасываемые материалом Clear Glass. Полезно, когда тени делают светлые обои мутными.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="414"/>
+        <source>Enables 3D transforms in the stacked image rendering pipeline.</source>
+        <translation>Включает 3D-трансформации в конвейере рендеринга составных изображений.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="193"/>
+        <source>Enables FlexiGlass on the macOS-side rendering path (com.apple.SwiftUI UserDefaults key).</source>
+        <translation>Включает FlexiGlass на стороне рендеринга macOS (ключ UserDefaults com.apple.SwiftUI).</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="349"/>
+        <source>Enables background fills on floating content views.</source>
+        <translation>Включает фоновую заливку на плавающих представлениях контента.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="228"/>
+        <source>Enables compact chrome in the Solarium renderer (UIKit debug cluster, bare UserDefaults key).</source>
+        <translation>Включает компактную обвязку в рендерере Solarium (отладочный кластер UIKit, простой ключ UserDefaults).</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="352"/>
+        <source>Enables debug background fills on floating content views (debug variant of the above).</source>
+        <translation>Включает отладочную фоновую заливку на плавающих представлениях контента (отладочный вариант предыдущего).</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="213"/>
+        <source>Enables gaussian glass effect bridge layers (bare UserDefaults key, read via NSGlobalDomain fallback).</source>
+        <translation>Включает слои gaussian glass effect bridge (простой ключ UserDefaults, читается через запасной NSGlobalDomain).</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="188"/>
+        <source>Enables glass container debug logging (com.apple.SwiftUI UserDefaults key).</source>
+        <translation>Включает отладочное логирование контейнера стекла (ключ UserDefaults com.apple.SwiftUI).</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="208"/>
+        <source>Enables glass effect bridge layers (bare UserDefaults key, read via NSGlobalDomain fallback).</source>
+        <translation>Включает слои glass effect bridge (простой ключ UserDefaults, читается через запасной NSGlobalDomain).</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="411"/>
+        <source>Enables image filters in the stacked image rendering pipeline.</source>
+        <translation>Включает фильтры изображений в конвейере рендеринга составных изображений.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="355"/>
+        <source>Enables punchout shadow on floating content views.</source>
+        <translation>Включает тень punchout на плавающих представлениях контента.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="427"/>
+        <source>Enables radiosity (color bleed from nearby surfaces) in the stacked image pipeline.</source>
+        <translation>Включает radiosity (перетекание цвета с близких поверхностей) в конвейере составных изображений.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="420"/>
+        <source>Enables specular highlights on stacked images.</source>
+        <translation>Включает блики на составных изображениях.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="417"/>
+        <source>Enables the 3D-transformed glass layer in the stacked image rendering pipeline.</source>
+        <translation>Включает 3D-трансформированный слой стекла в конвейере рендеринга составных изображений.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="251"/>
+        <source>Enables the Solarium background filter.</source>
+        <translation>Включает фоновый фильтр Solarium.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="260"/>
+        <source>Enables the Solarium live tuning switch — allows real-time glass parameter changes.</source>
+        <translation>Включает переключатель живой настройки Solarium — позволяет менять параметры стекла в реальном времени.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="247"/>
+        <source>Enables the Solarium tint mask.</source>
+        <translation>Включает маску оттенка Solarium.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="282"/>
+        <source>Enables the blur fill experiment path (debug/tuning key, exact behavior unknown).</source>
+        <translation>Включает экспериментальный путь заливки размытием (отладочный/настроечный ключ, точное поведение неизвестно).</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="298"/>
+        <source>Enables the large refraction effect (Calistoga = internal code name for the glass material).</source>
+        <translation>Включает сильный эффект преломления (Calistoga — внутреннее кодовое название материала стекла).</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="408"/>
+        <source>Enables the new stacked image rendering pipeline for Home Screen icons (3D parallax layering).</source>
+        <translation>Включает новый конвейер рендеринга составных изображений для значков экрана «Домой» (3D-слои параллакса).</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="198"/>
+        <source>Enables the pointer variant of FlexiGlass on the macOS-side path (com.apple.SwiftUI UserDefaults key).</source>
+        <translation>Включает вариант FlexiGlass для указателя на стороне macOS (ключ UserDefaults com.apple.SwiftUI).</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="223"/>
+        <source>Enables the unary glass container (bare UserDefaults key, read via NSGlobalDomain fallback).</source>
+        <translation>Включает unary glass container (простой ключ UserDefaults, читается через запасной NSGlobalDomain).</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="218"/>
+        <source>Enables unified system background colors across the system (bare UserDefaults key, read via NSGlobalDomain fallback).</source>
+        <translation>Включает единые системные цвета фона по всей системе (простой ключ UserDefaults, читается через запасной NSGlobalDomain).</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="385"/>
+        <source>Enter the app bundle id.</source>
+        <translation>Введите идентификатор приложения (bundle id).</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/wallpaper_downloader.py" line="842"/>
+        <source>Failed to import wallpaper</source>
+        <translation>Не удалось импортировать обои</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/wallpaper_downloader.py" line="503"/>
+        <source>Failed to load wallpapers</source>
+        <translation>Не удалось загрузить список обоев</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/settings.py" line="371"/>
+        <source>Failed to reset device pairing: %1</source>
+        <translation>Не удалось сбросить сопряжение устройства: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="363"/>
+        <source>Forced X-axis rotation for floating content views (degrees). Type inferred; unverified on-device.</source>
+        <translation>Принудительное вращение плавающих представлений контента по оси X (градусы). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="371"/>
+        <source>Forced X-axis translation for floating content views (points). Type inferred; unverified on-device.</source>
+        <translation>Принудительное смещение плавающих представлений контента по оси X (пункты). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="367"/>
+        <source>Forced Y-axis rotation for floating content views (degrees). Type inferred; unverified on-device.</source>
+        <translation>Принудительное вращение плавающих представлений контента по оси Y (градусы). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="375"/>
+        <source>Forced Y-axis translation for floating content views (points). Type inferred; unverified on-device.</source>
+        <translation>Принудительное смещение плавающих представлений контента по оси Y (пункты). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="433"/>
+        <source>Forces the default scale size increase in the stacked image rendering.</source>
+        <translation>Принудительно увеличивает размер масштаба при рендеринге составных изображений.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="430"/>
+        <source>Forces the stacked image motion adjustment to adapt to icon size.</source>
+        <translation>Принудительно адаптирует настройку движения составных изображений к размеру значка.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/posterboard.py" line="770"/>
+        <source>Full Reset (empty database, wipe everything)</source>
+        <translation>Полный сброс (пустая база данных, удалить всё)</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/interface_picker.py" line="85"/>
+        <source>Full-screen mobile-inspired interface</source>
+        <translation>Полноэкранный интерфейс в мобильном стиле</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="367"/>
+        <source>GoldenNugget safety rules force-disable this daemon on your setup, so it cannot be re-enabled.
+
+{0}</source>
+        <translation>Правила безопасности GoldenNugget принудительно отключают этот демон в вашей конфигурации, поэтому включить его нельзя.
+
+{0}</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/main_window_mixins.py" line="1060"/>
+        <source>Got it, I'm backed up</source>
+        <translation>Готово, копия создана</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/main_window_mixins.py" line="1027"/>
+        <source>Have you made a backup of your iPhone? Tweaks and daemon changes are risky — a bad tweak can bootloop the device or force a full restore, which erases everything. Create a backup in iTunes or Finder before using GoldenNugget.</source>
+        <translation>Вы создали резервную копию iPhone? Изменения твиков и демонов рискованны: неудачный твик может привести к циклу загрузки или вынудить к полному восстановлению, которое сотрёт все данные. Создайте резервную копию в iTunes или Finder перед использованием GoldenNugget.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="204"/>
+        <source>Hide label</source>
+        <translation>Скрыть подпись</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/main_window_mixins.py" line="1063"/>
+        <source>I'll do it later</source>
+        <translation>Сделаю позже</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="328"/>
+        <source>Icon</source>
+        <translation>Иконка</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/wallpaper_downloader.py" line="829"/>
+        <source>Import Failed</source>
+        <translation>Импорт не удался</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/wallpaper_downloader.py" line="821"/>
+        <source>Import failed</source>
+        <translation>Импорт не удался</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/wallpaper_downloader.py" line="835"/>
+        <source>Import skipped (limit reached)</source>
+        <translation>Импорт пропущен (достигнут лимит)</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/icon_pack_downloader.py" line="308"/>
+        <source>Imported {0} icons from "{1}".</source>
+        <translation>Импортировано иконок: {0} из «{1}».</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/wallpaper_downloader.py" line="853"/>
+        <source>Imported {}!</source>
+        <translation>Импортировано: {}!</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="239"/>
+        <source>Increases the diffusion / legibility axis of the glass recipe, orthogonal to the tint amount.</source>
+        <translation>Увеличивает ось рассеивания и читаемости рецепта стекла, независимо от количества оттенка.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="437"/>
+        <source>Inner parallax scale of the stacked image (0–1). Type inferred; unverified on-device.</source>
+        <translation>Внутренний масштаб параллакса составного изображения (0–1). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="301"/>
+        <source>Label</source>
+        <translation>Подпись</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/tendie_preview_dialog.py" line="119"/>
+        <source>Light variant</source>
+        <translation>Светлый вариант</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/icon_pack_downloader.py" line="141"/>
+        <source>Loading icon packs...</source>
+        <translation>Загрузка наборов иконок...</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/tendie_preview_dialog.py" line="56"/>
+        <source>Loading preview...</source>
+        <translation>Загрузка предпросмотра...</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/wallpaper_downloader.py" line="400"/>
+        <source>Loading wallpapers...</source>
+        <translation>Загрузка обоев...</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/icon_pack_downloader.py" line="58"/>
+        <source>Loading...</source>
+        <translation>Загрузка...</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/tendie_preview_dialog.py" line="35"/>
+        <source>Lock Screen Preview</source>
+        <translation>Предпросмотр на экране блокировки</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/posterboard.py" line="632"/>
+        <source>Lock screen preview</source>
+        <translation>Предпросмотр на экране блокировки</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="302"/>
+        <source>Makes the regular tier glass render clearer (Calistoga).</source>
+        <translation>Делает стекло обычного уровня более чётким при рендеринге (Calistoga).</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="506"/>
+        <source>Maximum height threshold for stacked image container transforms. Type inferred; unverified on-device.</source>
+        <translation>Порог максимальной высоты для трансформаций контейнера составного изображения. Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="388"/>
+        <source>Maximum size of the focus specular highlight (0–1). Type inferred; unverified on-device.</source>
+        <translation>Максимальный размер блика фокуса (0–1). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="498"/>
+        <source>Maximum width threshold for stacked image container transforms. Type inferred; unverified on-device.</source>
+        <translation>Порог максимальной ширины для трансформаций контейнера составного изображения. Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="502"/>
+        <source>Minimum height threshold for triggering stacked image container transforms. Type inferred; unverified on-device.</source>
+        <translation>Порог минимальной высоты для запуска трансформаций контейнера составного изображения. Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="494"/>
+        <source>Minimum width threshold for triggering stacked image container transforms. Type inferred; unverified on-device.</source>
+        <translation>Порог минимальной ширины для запуска трансформаций контейнера составного изображения. Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="490"/>
+        <source>Multiplier for the inner parallax scale modification of the stacked image container. Type inferred; unverified on-device.</source>
+        <translation>Множитель модификации внутреннего масштаба параллакса контейнера составного изображения. Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="478"/>
+        <source>Multiplier for the maximum depth modification of the stacked image container. Type inferred; unverified on-device.</source>
+        <translation>Множитель модификации максимальной глубины контейнера составного изображения. Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="379"/>
+        <source>Multiplier for the rotation applied to floating content views. Type inferred; unverified on-device.</source>
+        <translation>Множитель вращения, применяемого к плавающим представлениям контента. Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="482"/>
+        <source>Multiplier for the rotation modification of the stacked image container. Type inferred; unverified on-device.</source>
+        <translation>Множитель модификации вращения контейнера составного изображения. Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="383"/>
+        <source>Multiplier for the translation applied to floating content views. Type inferred; unverified on-device.</source>
+        <translation>Множитель смещения, применяемого к плавающим представлениям контента. Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="486"/>
+        <source>Multiplier for the translation modification of the stacked image container. Type inferred; unverified on-device.</source>
+        <translation>Множитель модификации смещения контейнера составного изображения. Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/main_window_mixins.py" line="778"/>
+        <source>No device is selected. Connect your device first.</source>
+        <translation>Устройство не выбрано. Сначала подключите устройство.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/settings.py" line="330"/>
+        <source>No device selected.</source>
+        <translation>Устройство не выбрано.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="77"/>
+        <source>No icon themes yet. Tap + Add Icon or download a pack.</source>
+        <translation>Темы иконок пока нет. Нажмите «+ Добавить иконку» или загрузите набор.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/main_window_mixins.py" line="716"/>
+        <source>No tweaks, daemons, wallpapers or templates are enabled. Enable something first.</source>
+        <translation>Ни твики, ни демоны, ни обои, ни шаблоны не включены. Сначала включите что-нибудь.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/tendie_preview_dialog.py" line="277"/>
+        <source>No wallpaper image could be decoded from this file.</source>
+        <translation>Не удалось декодировать изображение обоев из этого файла.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/wallpaper_downloader.py" line="483"/>
+        <source>No wallpapers found</source>
+        <translation>Обои не найдены</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="400"/>
+        <source>Normalized X position of the focus specular highlight (0–1). Type inferred; unverified on-device.</source>
+        <translation>Нормированная позиция блика фокуса по X (0–1). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="404"/>
+        <source>Normalized Y position of the focus specular highlight (0–1). Type inferred; unverified on-device.</source>
+        <translation>Нормированная позиция блика фокуса по Y (0–1). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/preset_widget.py" line="91"/>
+        <source>Not Saved</source>
+        <translation>Не сохранено</translation>
+    </message>
+    <message>
+        <location filename="../src/restore/protective.py" line="129"/>
+        <source>Not enough free disk space: only {0} GB available, at least {1} GB is required for the backup. Free up space on your computer (backups are written to {2}) and try again.</source>
+        <translation>Недостаточно свободного места: доступно только {0} ГБ, для резервной копии требуется не менее {1} ГБ. Освободите место на компьютере (резервные копии сохраняются в {2}) и повторите попытку.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/main_window_mixins.py" line="715"/>
+        <source>Nothing to apply</source>
+        <translation>Нечего применять</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="424"/>
+        <source>Opacity of specular highlights on stacked images (0 = off). Type inferred; unverified on-device.</source>
+        <translation>Непрозрачность бликов на составных изображениях (0 = выкл.). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="316"/>
+        <source>Opacity of the sidebar accent under the glass material (0.0–1.0, Calistoga). Type inferred; unverified on-device.</source>
+        <translation>Непрозрачность акцента боковой панели под материалом стекла (0.0–1.0, Calistoga). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="338"/>
+        <source>Opacity of the specular highlight on floating content views (0 = off, 1 = full). Type inferred; unverified on-device.</source>
+        <translation>Непрозрачность блика на плавающих представлениях контента (0 = выкл., 1 = полный). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="342"/>
+        <source>Opacity of the unfocused border on floating content views. Type inferred; unverified on-device.</source>
+        <translation>Непрозрачность границы вне фокуса на плавающих представлениях контента. Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="274"/>
+        <source>Overlays glass visual debug information on screen (debug/tuning key).</source>
+        <translation>Накладывает отладочную визуальную информацию стекла на экран (отладочный/настроечный ключ).</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/settings.py" line="329"/>
+        <source>Pairing Reset</source>
+        <translation>Сброс сопряжения</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/main_window.py" line="196"/>
+        <source>Passcode Themes</source>
+        <translation>Темы пароля</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="322"/>
+        <source>Perceptual backdrop scale factor for the glass material (0.0–2.0, Calistoga). Type inferred; unverified on-device.</source>
+        <translation>Коэффициент масштаба подложки по восприятию для материала стекла (0.0–2.0, Calistoga). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="318"/>
+        <source>Picked from your iPhone: {0}. Type a custom label or leave it empty to hide it.</source>
+        <translation>Выбрано с вашего iPhone: {0}. Введите свою подпись или оставьте пустым, чтобы скрыть её.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/tendie_preview_dialog.py" line="168"/>
+        <source>Playing the tendie's Core Animation scene. Swipe up to unlock.</source>
+        <translation>Воспроизводится сцена Core Animation из tendie. Проведите вверх, чтобы разблокировать.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/tendie_preview_dialog.py" line="268"/>
+        <source>Pre-rendered from the tendie file on this device.</source>
+        <translation>Предварительно отрисовано из файла tendie на этом устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="445"/>
+        <source>Progressive scale of the stacked image across depth layers. Type inferred; unverified on-device.</source>
+        <translation>Прогрессивный масштаб составного изображения по слоям глубины. Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="195"/>
+        <source>Recommended (analytics, tracking &amp; logging)</source>
+        <translation>Рекомендуемые (аналитика, отслеживание и журналы)</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/tendie_preview_dialog.py" line="272"/>
+        <source>Reference preview from the wallpaper gallery.</source>
+        <translation>Эталонный предпросмотр из галереи обоев.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="95"/>
+        <source>Remove all icon themes from GoldenNugget? The themed home-screen icons already on the device are not touched.</source>
+        <translation>Удалить все темы иконок из GoldenNugget? Уже оформленные значки на устройстве не будут затронуты.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="173"/>
+        <source>Removes the drop shadow under the Home Screen dock.</source>
+        <translation>Убирает тень под доком экрана «Домой».</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="177"/>
+        <source>Removes the drop shadow under the Home Screen search field.</source>
+        <translation>Убирает тень под полем поиска экрана «Домой».</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="560"/>
+        <source>Removes the search button below the icons on the Home Screen (the faint search bar/icon above the Dock). Enabled when the switch is ON.</source>
+        <translation>Убирает кнопку поиска под значками на экране «Домой» (едва заметную строку поиска или значок над доком). Включается при положении переключателя «Вкл.».</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="157"/>
+        <source>Removes the specular (glossy highlight) pass from Home Screen widget icons, so they no longer catch a moving highlight.</source>
+        <translation>Убирает проход бликов (глянцевых отблесков) со значков виджетов экрана «Домой», поэтому они больше не ловят движущийся блик.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="165"/>
+        <source>Removes the specular highlight from Home Screen folder backgrounds.</source>
+        <translation>Убирает блик с фонов папок экрана «Домой».</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="161"/>
+        <source>Removes the specular highlight from the Home Screen dock, leaving the glass material without its glossy sheen.</source>
+        <translation>Убирает блик с дока экрана «Домой», оставляя материал стекла без глянцевого отблеска.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/tendie_preview_dialog.py" line="180"/>
+        <source>Rendered from the tendie's Core Animation scene.</source>
+        <translation>Отрисовано из сцены Core Animation в tendie.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="53"/>
+        <source>Reset Icon Themes</source>
+        <translation>Сбросить темы иконок</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/settings.py" line="493"/>
+        <source>Reset to Default</source>
+        <translation>Сбросить на умолчания</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/settings.py" line="146"/>
+        <source>Restore Data From Backup</source>
+        <translation>Восстановить данные из резервной копии</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/settings.py" line="147"/>
+        <source>Restore photos, messages, contacts and settings from the last protective backup. Applied tweaks and wallpapers are kept.</source>
+        <translation>Восстановить фото, сообщения, контакты и настройки из последней защитной копии. Применённые твики и обои сохранятся.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/wallpaper_downloader.py" line="872"/>
+        <source>Save Failed</source>
+        <translation>Не удалось сохранить</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/settings.py" line="766"/>
+        <source>Save Tweaks Automatically</source>
+        <translation>Автосохранение твиков</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/settings.py" line="770"/>
+        <source>Saves your tweak selection to a built-in "AutoSave" preset and restores it on the next launch. Turn off to keep changes for this session only — an existing AutoSave preset stays on disk and is not loaded at startup.</source>
+        <translation>Сохраняет выбранные твики во встроенный пресет «AutoSave» и восстанавливает их при следующем запуске. Отключите, чтобы изменения действовали только в текущем сеансе — существующий пресет AutoSave останется на диске и не загрузится при старте.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="392"/>
+        <source>Scale factor of the focus specular highlight. Type inferred; unverified on-device.</source>
+        <translation>Коэффициент масштаба блика фокуса. Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/wallpaper_downloader.py" line="213"/>
+        <source>Search wallpapers...</source>
+        <translation>Поиск обоев...</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="373"/>
+        <source>Select Icon Image</source>
+        <translation>Выберите изображение иконки</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="396"/>
+        <source>Sensitivity of the focus specular highlight to focus changes. Type inferred; unverified on-device.</source>
+        <translation>Чувствительность блика фокуса к изменениям фокуса. Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="265"/>
+        <source>Sets the Solarium hierarchical glass style level (integer 0–10). Type inferred; unverified on-device.</source>
+        <translation>Задаёт иерархический уровень стиля стекла Solarium (целое 0–10). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="278"/>
+        <source>Shows glass visual warnings overlay (debug/tuning key).</source>
+        <translation>Показывает оверлей визуальных предупреждений стекла (отладочный/настроечный ключ).</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/interface_picker.py" line="64"/>
+        <source>Sidebar navigation with familiar layout</source>
+        <translation>Навигация с боковой панелью в привычном виде</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="557"/>
+        <source>Stops Home Screen icons from shifting with the device tilt (the parallax effect). Pair with Disable Icon Page-Control Parallax for a fully static Home Screen.</source>
+        <translation>Не даёт значкам экрана «Домой» смещаться при наклоне устройства (эффект параллакса). Используйте вместе с параметром отключения параллакса управления страницами значков для полностью статичного экрана «Домой».</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/tendie_preview_dialog.py" line="176"/>
+        <source>Swipe up to unlock.</source>
+        <translation>Проведите вверх, чтобы разблокировать.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="313"/>
+        <source>The app bundle id is the same identifier the app icon uses under the hood (e.g. com.instagram.instagram).</source>
+        <translation>Идентификатор приложения (bundle id) — это тот же идентификатор, который используется внутри значка приложения (например, com.instagram.instagram).</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/settings.py" line="477"/>
+        <source>The protective backup cache, AFC media cache and temporary backup/restore files for iOS 27 are stored in this folder. Useful when the system drive is small (e.g. C: 28 GB).</source>
+        <translation>В этой папке хранятся кэш защитных резервных копий, кэш мультимедиа AFC и временные файлы резервного копирования и восстановления для iOS 27. Полезно, когда системный диск небольшой (например, C: 28 ГБ).</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="42"/>
+        <source>Theme a home screen icon with a custom image and label without jailbreaking. Tapping the icon still opens the real app. WebClips launch "Add to Home Screen" shortcuts, so existing icon shortcuts stay untouched — remove disabled apps before themes to avoid collisions.</source>
+        <translation>Оформите значок на экране «Домой» своим изображением и подписью без джейлбрейка. Нажатие на значок по-прежнему открывает настоящее приложение. WebClips запускают ярлыки «Добавить на экран “Домой”», поэтому существующие значки не затрагиваются — удалите отключённые приложения перед применением тем, чтобы избежать конфликтов.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/tendie_preview_dialog.py" line="280"/>
+        <source>This tendie bundles device layout data only, or its art uses a format unavailable on this system.</source>
+        <translation>Этот tendie содержит только данные о компоновке устройства либо его графика в формате, недоступном в этой системе.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="359"/>
+        <source>Transform mode for floating content view stacking (integer). Type inferred; unverified on-device.</source>
+        <translation>Режим трансформации при наложении плавающих представлений контента (целое). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/main_window_mixins.py" line="734"/>
+        <source>Update Cache</source>
+        <translation>Обновить кэш</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/main_window_mixins.py" line="784"/>
+        <source>Updating backup cache...</source>
+        <translation>Обновление кэша резервных копий...</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/settings.py" line="126"/>
+        <source>Use Fast Backup Cache (Experimental)</source>
+        <translation>Использовать быстрый кэш резервных копий (экспериментально)</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="243"/>
+        <source>Uses the display angle to drive glass highlights.</source>
+        <translation>Использует угол наклона дисплея для управления бликами стекла.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/tendie_preview_dialog.py" line="223"/>
+        <source>Wallpaper not found in the file on this device, fetching a reference preview...</source>
+        <translation>Обои не найдены в файле на этом устройстве, загружаем эталонный предпросмотр...</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/icon_themes.py" line="253"/>
+        <source>Warning</source>
+        <translation>Предупреждение</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/interface_picker.py" line="40"/>
+        <source>Welcome to GoldenNugget</source>
+        <translation>Добро пожаловать в GoldenNugget</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="203"/>
+        <source>When enabled, invisible views suppress the glass effect applied to them (com.apple.UIKit UserDefaults key).</source>
+        <translation>При включении невидимые представления подавляют применяемый к ним эффект стекла (ключ UserDefaults com.apple.UIKit).</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="256"/>
+        <source>White point of the glass highlight (0.0 to 1.0). Defaults to 1.0 (full white). Type inferred; unverified on-device.</source>
+        <translation>Белая точка блика стекла (от 0.0 до 1.0). По умолчанию 1.0 (полный белый). Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/tweaks/registry.py" line="346"/>
+        <source>Width of the unfocused border on floating content views. Type inferred; unverified on-device.</source>
+        <translation>Ширина границы вне фокуса на плавающих представлениях контента. Тип определён приблизительно; не проверено на устройстве.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/main_window_mixins.py" line="729"/>
+        <source>Your device reboots when it's done — remember to turn Find My back on afterwards. A protective backup runs first.</source>
+        <translation>После завершения устройство перезагрузится — не забудьте включить «Локатор» обратно. Сначала выполняется защитное резервное копирование.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/settings.py" line="363"/>
+        <source>Your device's pairing was successfully reset. Refresh the device list before applying.</source>
+        <translation>Сопряжение устройства успешно сброшено. Обновите список устройств перед применением.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/statusbar.py" line="211"/>
+        <source>iOS 27 replaced the status bar override file, so only the carrier entry can be changed here: its name, service badge and signal bars. The badge and bars apply to the carrier name, so set one first. The other options need iOS 26 or lower.</source>
+        <translation>В iOS 27 файл переопределения строки состояния заменён, поэтому здесь можно изменить только запись оператора: её название, значок службы и полоски сигнала. Значок и полоски применяются к названию оператора, поэтому сначала задайте название. Остальные параметры требуют iOS 26 или ниже.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/interface_picker.py" line="83"/>
+        <source>iOS-style</source>
+        <translation>В стиле iOS</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/daemons.py" line="318"/>
+        <source>safety rules</source>
+        <translation>правила безопасности</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/icon_pack_downloader.py" line="216"/>
+        <source>{0} icon packs available — tap one to download it.</source>
+        <translation>Доступно наборов иконок: {0} — нажмите, чтобы загрузить.</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/dialogs/wallpaper_downloader.py" line="482"/>
+        <source>{} wallpapers</source>
+        <translation>обоев: {}</translation>
+    </message>
 </context>
 <context>
     <name>PBHelpDialog</name>
@@ -3452,6 +4678,19 @@ No selected file for required option</source>
         <location filename="../src/gui/dialogs/dialogs.py" line="256"/>
         <source>Would you like to go to the download on GitHub?</source>
         <translation>Хотите перейти к загрузке на GitHub?</translation>
+    </message>
+</context>
+<context>
+    <name>IOSSummaryDialog</name>
+    <message>
+        <location filename="../src/gui/ios/components.py" line="191"/>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ios/components.py" line="197"/>
+        <source>Confirm</source>
+        <translation>Подтвердить</translation>
     </message>
 </context>
 </TS>
