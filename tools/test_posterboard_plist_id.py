@@ -95,10 +95,60 @@ def test_other_id_files_unchanged():
     out = tweak.update_plist_id(TMP, "com.apple.posterkit.provider.contents.userInfo", 31337)
     plist = plistlib.loads(out)
     check("userInfo representing identifier rewritten",
-          plist["wallpaperRepresentingIdentifier"] == 31337)
+          plist["wallpaperRepresentingIdentifier"] == "31337",
+          repr(plist["wallpaperRepresentingIdentifier"]))
     check("userInfo keeps its other keys", plist.get("keep") == "me")
     check("unrelated files return None (shipped as-is)",
           tweak.update_plist_id(TMP, "somethingelse.plist", 1) is None)
+
+
+def test_userinfo_identifier_added_when_missing():
+    print("\nuserInfo: a tendie that ships WITHOUT the key still gets it")
+    tweak = PosterboardTweak()
+    # A third-party tendie's userInfo looks exactly like this.
+    name = "com.apple.posterkit.provider.contents.userInfo"
+    path = write(name,
+                 plistlib.dumps({"posterEnvironmentOverrides": b"{}",
+                                 "wallpaperRepresentingFileName": "Windows_11.wallpaper"}))
+    out = tweak.update_plist_id(TMP, name, 99378)
+    plist = plistlib.loads(out)
+    check("missing wallpaperRepresentingIdentifier is added (as a string)",
+          plist.get("wallpaperRepresentingIdentifier") == "99378",
+          repr(plist.get("wallpaperRepresentingIdentifier")))
+    check("existing keys survive",
+          plist.get("wallpaperRepresentingFileName") == "Windows_11.wallpaper")
+
+
+def test_descriptor_identifier_sidecar_synthesized():
+    print("\nrecursive_add: a tendie without descriptor.identifier gets one")
+    import shutil
+    tweak = PosterboardTweak()
+    root = tempfile.mkdtemp(prefix="gn_pb_tree_")
+    desc = os.path.join(root, "descriptors", "E538499C-3F95-4FEA-AE58-191E5112E194")
+    contents = os.path.join(desc, "versions", "0", "contents")
+    wall = os.path.join(contents, "Windows_11.wallpaper")
+    os.makedirs(wall)
+    with open(os.path.join(wall, "Wallpaper.plist"), "wb") as fp:
+        fp.write(plistlib.dumps({"family": "Windows 11", "identifier": 7400,
+                                 "assets": {"lockAndHome": {"default": {"identifier": 7400}}}}))
+    with open(os.path.join(contents, "com.apple.posterkit.provider.contents.userInfo"), "wb") as fp:
+        fp.write(plistlib.dumps({"posterEnvironmentOverrides": b"{}",
+                                 "wallpaperRepresentingFileName": "Windows_11.wallpaper"}))
+    files = []
+    tweak.recursive_add(files, curr_path=root)
+    sidecars = [f for f in files
+                if f.restore_path.endswith("com.apple.posterkit.provider.descriptor.identifier")]
+    check("exactly one sidecar stamped", len(sidecars) == 1, f"got {len(sidecars)}")
+    sidecar_id = sidecars[0].contents.decode()
+    check("sidecar is a numeric id", sidecar_id.isdigit(), sidecar_id)
+    userinfos = [f for f in files if f.restore_path.endswith(
+        "com.apple.posterkit.provider.contents.userInfo")]
+    check("userInfo id matches the sidecar",
+          plistlib.loads(userinfos[0].contents)["wallpaperRepresentingIdentifier"] == sidecar_id)
+    wallpapers = [f for f in files if f.restore_path.endswith("Wallpaper.plist")]
+    check("Wallpaper.plist id matches the sidecar",
+          plistlib.loads(wallpapers[0].contents)["identifier"] == int(sidecar_id))
+    shutil.rmtree(root, ignore_errors=True)
 
 
 def test_helper_is_gone():
@@ -110,6 +160,8 @@ def test_helper_is_gone():
 test_wallpaper_plist_only_gets_the_new_id()
 test_wallpaper_plist_without_assets()
 test_other_id_files_unchanged()
+test_userinfo_identifier_added_when_missing()
+test_descriptor_identifier_sidecar_synthesized()
 test_helper_is_gone()
 
 print(f"\nALL {PASS} CHECKS PASSED")

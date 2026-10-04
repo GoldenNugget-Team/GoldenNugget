@@ -3,11 +3,12 @@ import uuid
 import traceback
 import plistlib
 from random import randint
-from shutil import copytree
+from shutil import copytree, rmtree
 from PySide6 import QtWidgets
 from PySide6.QtCore import QCoreApplication
 
 from ..tweak_classes import Tweak
+from . import posterboard_converter
 from .tendie_file import TendieFile
 from .template_file import TemplateFile
 from .pb_config_manager import (
@@ -21,6 +22,45 @@ from src.exceptions.nugget_exception import NuggetException
 from src.exceptions.posterboard_exceptions import PBTemplateException
 from src.devicemanagement.constants import Version
 
+# PosterKit depth effect: the animated video layer is rendered larger than the
+# 390x844 document and pushed off-centre so the tilt parallax has travel.
+# 1.0 / 0 produces a dead-centre layer that reads as a flat wallpaper.
+VIDEO_DEPTH_SCALE = 1.3
+VIDEO_DEPTH_OFFSET_Y = 40
+
+
+def prompt_legacy_convert(tendie_name: str, families: "list[str]") -> bool:
+    """Ask how a legacy (pre-iOS 27) wallpaper should be imported.
+
+    Returns True to convert, False to install the original files untouched.
+    Dismissing the dialog (Escape) resolves to "Install as is", so the import is
+    never silently converted and never dropped.
+    """
+    app = QtWidgets.QApplication.instance()
+    parent = app.activeWindow() if app is not None else None
+    box = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Icon.Question,
+                                QCoreApplication.translate("Nugget", "Legacy Wallpaper Format"),
+                                QCoreApplication.translate(
+                                    "Nugget",
+                                    "<b>{0}</b> uses the legacy {1} format.").format(
+                                        tendie_name, ", ".join(sorted(set(families)))),
+                                parent=parent)
+    box.setInformativeText(QCoreApplication.translate(
+        "Nugget",
+        "iOS 27 only applies the depth effect to wallpapers in the modern format, "
+        "so a legacy wallpaper is rewritten on import. Pick "
+        "“Install as is” to push the original files untouched instead."))
+    convert = box.addButton(
+        QCoreApplication.translate("Nugget", "Convert (may break the wallpaper)"),
+        QtWidgets.QMessageBox.ButtonRole.AcceptRole)
+    as_is = box.addButton(
+        QCoreApplication.translate("Nugget", "Install as is"),
+        QtWidgets.QMessageBox.ButtonRole.RejectRole)
+    box.setDefaultButton(convert)
+    box.exec()
+    return box.clickedButton() is convert
+
+
 class PosterboardTweak(Tweak):
     def __init__(self):
         super().__init__(key=None)
@@ -30,7 +70,16 @@ class PosterboardTweak(Tweak):
         self.loop_video = True
         self.reverse_video = False
         self.use_foreground = False
+        # Which declared plane the generated video CAML is written into:
+        # "background", "floating" or "foreground". The lock screen clock is
+        # composited by the system between the planes, so "floating" is what
+        # puts the video in front of it.
+        self.video_plane = "background"
         self.use_configs = True  # descriptors apply method is gone (broken on iOS 26+)
+        # Rewrite legacy (pre-iOS 27) wallpaper packages to the modern shape on
+        # import so PosterKit builds the Depth effect for them. Only descriptors
+        # without a published plane are touched; modern packages pass through.
+        self.auto_convert_legacy = True
         self.calculationMode = 'linear'
         self.bundle_id = "com.apple.PosterBoard"
         self.resetModes = []
@@ -61,9 +110,47 @@ class PosterboardTweak(Tweak):
             return True
         return False
 
-    def add_tendie(self, file: str):
+    def add_tendie(self, file: str, device_version: str = None):
         new_tendie = TendieFile(path=file)
+        self._ask_legacy_convert(new_tendie, device_version)
         return self.verify_tendie(new_tendie)
+
+    # iOS 27 only builds the Depth effect for the modern ("Clownfish") layout, so
+    # an imported pre-iOS 27 package has to be rewritten for it to gain depth —
+    # and the rewrite is best effort (it re-stamps the family, drops external
+    # scripts and republishes the planes), so it can change how a wallpaper
+    # looks. iOS 26 reads legacy packages as they are: nothing is converted
+    # there and the prompt never appears.
+    LEGACY_CONVERT_MIN_MAJOR = 27
+
+    def _legacy_convert_supported(self, device_version: str) -> bool:
+        if not device_version:
+            return False
+        try:
+            return Version(str(device_version)).major >= self.LEGACY_CONVERT_MIN_MAJOR
+        except Exception:
+            return False
+
+    def _ask_legacy_convert(self, new_tendie: TendieFile, device_version: str) -> None:
+        """Offer "Convert" / "Install as is" once, at import time.
+
+        The answer is stored on the tendie (``auto_convert``) and honoured by
+        :meth:`apply_tweak`, which converts each extracted tendie on its own.
+        """
+        new_tendie.auto_convert = None
+        if not self.auto_convert_legacy:
+            return
+        if not self._legacy_convert_supported(device_version):
+            return
+        try:
+            families = posterboard_converter.legacy_families(new_tendie.path)
+        except Exception:
+            traceback.print_exc()
+            return
+        if not families:
+            return
+        new_tendie.auto_convert = prompt_legacy_convert(new_tendie.name, families)
+
     def add_template(self, file: str, version: str = None):
         try:
             new_template = TemplateFile(path=file, device_version=version)
@@ -100,7 +187,15 @@ class PosterboardTweak(Tweak):
         if file_name == "com.apple.posterkit.provider.descriptor.identifier":
             return str(randomizedID).encode()
         elif file_name == "com.apple.posterkit.provider.contents.userInfo":
-            return set_plist_value(file=os.path.join(file_path, file_name), key="wallpaperRepresentingIdentifier", value=randomizedID)
+            # recursive=True only ever *replaces* an existing key, and a
+            # third-party tendie's userInfo ships WITHOUT
+            # `wallpaperRepresentingIdentifier` — so the key must be added, not
+            # just overwritten, or WallpaperKit force-unwraps nil and traps
+            # (EXC_BREAKPOINT) in makeViewProvider. Keep it a string to match
+            # the stock descriptors.
+            return set_plist_value(file=os.path.join(file_path, file_name),
+                                   key="wallpaperRepresentingIdentifier",
+                                   value=str(randomizedID), recursive=False)
         elif file_name.endswith("Wallpaper.plist"):
             return set_plist_value(file=os.path.join(file_path, file_name), key="identifier", value=randomizedID, recursive=False)
         return None
@@ -120,7 +215,11 @@ class PosterboardTweak(Tweak):
             r_id_list = sorted([r_id + i for i in range(len(os.listdir(curr_path)))], reverse=True)
         counter = 0
         for folder in sorted(os.listdir(curr_path)):
-            if folder.startswith('.') or folder == "__MACOSX":
+            # `.com.apple.posterkit.provider.contents.configurableOptions.plist`
+            # is a legitimate descriptor plist (Apple hides it with a leading
+            # dot) that carries `preferredRenderingConfiguration` — the poster
+            # editor reads it for depth. Only skip real Finder/archive junk.
+            if folder == "__MACOSX" or folder == ".DS_Store" or folder.startswith("._"):
                 continue
             if isAdding:
                 # randomize uuid
@@ -137,6 +236,23 @@ class PosterboardTweak(Tweak):
                     # add it to the configuration
                     ext = restore_path.split('/')[6]
                     self.config_manager.add_config(folder_name, ext)
+                    # Third-party .tendies usually ship without the
+                    # descriptor.identifier sidecar. PosterKit then invents one
+                    # that disagrees with userInfo / Wallpaper.plist, and
+                    # WallpaperKit traps building the view. Stamp the sidecar so
+                    # all three identity fields carry the same randomized id
+                    # (see update_plist_id).
+                    if (not self.is_mercury(restore_path)
+                            and os.path.isdir(os.path.join(curr_path, folder))
+                            and not os.path.exists(os.path.join(
+                                curr_path, folder,
+                                "com.apple.posterkit.provider.descriptor.identifier"))):
+                        files_to_restore.append(FileToRestore(
+                            contents=str(curr_randomized_id).encode(),
+                            restore_path=f"{restore_path}/{folder_name}/"
+                                         "com.apple.posterkit.provider.descriptor.identifier",
+                            domain=f"AppDomain-{self.bundle_id}"
+                        ))
                 # if file then add it, otherwise recursively call again
                 fullpath = os.path.join(curr_path, folder)
                 if os.path.isfile(fullpath):
@@ -245,19 +361,54 @@ class PosterboardTweak(Tweak):
             source_dir = get_bundle_files("files/posterboard/VideoCAML")
             video_output_dir = os.path.join(output_dir, "descriptor", "VideoCAML")
             copytree(source_dir, video_output_dir, dirs_exist_ok=True)
-            contents_path = os.path.join(video_output_dir, "versions", "1", "contents", "9183.Custom-810w-1080h@2x~ipad.wallpaper")
+            contents_path = os.path.join(video_output_dir, "versions", "1", "contents", "9183.Custom-390w-844h@3x~iphone.wallpaper")
             if self.use_foreground:
-                # rename the foreground layer to background
-                bg_path = os.path.join(contents_path, "9183.Custom_Background-810w-1080h@2x~ipad.ca")
-                contents_path = os.path.join(contents_path, "9183.Custom_Floating-810w-1080h@2x~ipad.ca")
+                # Legacy branch: swap the floating layer over the background
+                # one. Both names used to be left on the old iPad screen class
+                # ("810w-1080h@2x~ipad") while the template ships the iPhone one,
+                # so this died with FileNotFoundError on a layer that does not
+                # exist. Prefer video_plane instead.
+                bg_path = os.path.join(contents_path, "9183.Custom_Background-390w-844h@3x~iphone.ca")
+                contents_path = os.path.join(contents_path, "9183.Custom_Floating-390w-844h@3x~iphone.ca")
+                rmtree(bg_path, ignore_errors=True)
                 os.rename(contents_path, bg_path)
+                layer_name = "Floating"
             else:
-                contents_path = os.path.join(contents_path, "9183.Custom_Background-810w-1080h@2x~ipad.ca")
+                # Which of the three declared planes the video is written into.
+                # PosterKit composites the lock screen clock *between* the
+                # planes, so a video parked in the background plane leaves the
+                # clock painted on top of it. Putting it in the floating plane
+                # makes the video the near layer, which is what lets it occlude
+                # the clock (the depth/occlusion pass has no idea the system
+                # clock belongs behind the wallpaper).
+                plane = (self.video_plane or "background").lower()
+                suffix = {
+                    "background": "9183.Custom_Background-390w-844h@3x~iphone.ca",
+                    "floating": "9183.Custom_Floating-390w-844h@3x~iphone.ca",
+                    "foreground": "9183.Custom_Foreground-390w-844h@3x~iphone.ca",
+                }.get(plane)
+                if suffix is None:
+                    raise PBTemplateException(
+                        f"Unknown video_plane {self.video_plane!r}; expected "
+                        "background, floating or foreground")
+                contents_path = os.path.join(contents_path, suffix)
+                layer_name = {
+                    "background": "Background",
+                    "floating": "Floating",
+                    "foreground": "Foreground",
+                }[plane]
             print(f"path at {contents_path}, creating caml")
+            # Depth: PosterKit parallaxes planes whose bounds/origin differ from
+            # the 390x844 document (The Odyssey's spartanbg is 1852x4104 at
+            # y=545.9). A layer at scale 1.0 dead-centre has nothing to move
+            # against, so the video is rendered oversized and pushed off-centre
+            # to give the tilt/parallax effect some travel.
             video_handler.create_caml(
                 video_path=self.videoFile, output_file=contents_path,
                 auto_reverses=self.reverse_video, calculationMode=self.calculationMode,
-                update_label=update_label
+                update_label=update_label,
+                bounds_scale=VIDEO_DEPTH_SCALE, offset_y=VIDEO_DEPTH_OFFSET_Y,
+                layer_name=layer_name,
             )
             
             
@@ -363,16 +514,41 @@ class PosterboardTweak(Tweak):
         self.create_live_photo_files(output_dir)
         self.create_video_loop_files(output_dir, update_label=update_label)
         # extract tendies
+        # Each tendie is extracted into its own folder so the legacy conversion
+        # (and the skeleton rename) can honour the per-tendie "convert / install
+        # as is" answer captured at import time.
+        extracted: list[tuple[str, bool]] = []
         for tendie in self.tendies:
             update_label(QCoreApplication.tr("Extracting tendie {0}...").format(tendie.name))
-            tendie.extract(output_dir=output_dir)
+            extracted.append((tendie.extract(output_dir=output_dir),
+                              getattr(tendie, "auto_convert", True) is not False))
         # extract templates
         for template in templates:
             if template.domain == 'com.apple.PosterBoard' or template.domain == 'AppDomain-com.apple.PosterBoard':
                 update_label(QCoreApplication.tr("Configuring template {0}...").format(template.name))
-                template.extract(output_dir=output_dir)
+                extracted.append((template.extract(output_dir=output_dir), True))
         # add the files
         update_label(QCoreApplication.tr("Adding tendies..."))
+        if self.auto_convert_legacy:
+            try:
+                for root, convert in extracted:
+                    if not convert:
+                        print(f"Left {os.path.basename(root)} in its original "
+                              f"legacy format (installed as is)")
+                        continue
+                    for item in posterboard_converter.convert_tree(root):
+                        print(f"Converted legacy wallpaper {item.get('wallpaper')} to "
+                              f"{item.get('screen')} (planes={item.get('planes')})")
+                    # Rename the converted bundles to the stock Clownfish file layout
+                    # (<assetId>.<Family>-<class>.wallpaper). WallpaperKit builds the
+                    # lock-screen view from the on-disk name and traps in
+                    # WKPlatformPackageView when a converted tendie keeps its
+                    # original name (e.g. Windows_11.wallpaper / background.ca).
+                    for item in posterboard_converter.rename_descriptors_to_skeleton(root):
+                        print(f"Renamed wallpaper to {item.get('wallpaper')} "
+                              f"(planes={item.get('planes')})")
+            except Exception:
+                print(traceback.format_exc())
         self.config_manager.start_staging()
         self.recursive_add(files_to_restore, curr_path=output_dir)
         staged_db_path = self.config_manager.update_sqlite()

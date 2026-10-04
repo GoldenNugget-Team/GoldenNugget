@@ -323,8 +323,16 @@ class PBConfigManager:
             except Exception:
                 curr_role_sort_key = seq
             # remove the currently selected wallpaper
-            cursor.execute("DELETE FROM posterAttributes WHERE roleId = ? AND attributeIdentifier = ? AND attributePayload = ?",
-                           ("PRPosterRoleLockScreen", "SELECTED", 1))
+            # The payload is deliberately NOT part of the predicate: sqlite
+            # never coerces across storage classes, so `attributePayload = 1`
+            # only ever matched rows WE wrote as INTEGER and silently kept
+            # every BLOB/TEXT "1" row PosterBoard owns. Two consequences, both
+            # seen on-device: a stale SELECTED pointing at a poster whose
+            # configuration folder does not exist survived forever (blank lock
+            # screen), and the selection of the wallpaper we just registered was
+            # wiped by the NEXT apply. Delete the whole role selection instead.
+            cursor.execute("DELETE FROM posterAttributes WHERE roleId = ? AND attributeIdentifier = ?",
+                           ("PRPosterRoleLockScreen", "SELECTED"))
             # combine the saved items
             self.staged_items = self.saved_items + self.staged_items
             for wallpaper in self.staged_items:

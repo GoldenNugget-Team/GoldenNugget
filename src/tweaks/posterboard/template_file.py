@@ -156,6 +156,8 @@ class TemplateFile(TendieFile):
         for option in self.options:
             option.apply(container_path=parent_path)
 
+        return zip_output
+
     def get_chevron_icon(self, is_up: bool):
         if is_up:
             return QtGui.QIcon(":/icon/chevron.up.svg")

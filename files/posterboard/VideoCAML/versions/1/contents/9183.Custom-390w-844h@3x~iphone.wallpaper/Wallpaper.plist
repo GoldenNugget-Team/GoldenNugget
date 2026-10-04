@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>appearanceAware</key>
-	<true/>
+	<false/>
 	<key>assets</key>
 	<dict>
 		<key>lockAndHome</key>
@@ -11,35 +11,28 @@
 			<key>default</key>
 			<dict>
 				<key>backgroundAnimationFileName</key>
-				<string>9183.Custom_Background-810w-1080h@2x~ipad.ca</string>
+				<string>9183.Custom_Background-390w-844h@3x~iphone.ca</string>
 				<key>floatingAnimationFileNameKey</key>
-				<string>9183.Custom_Floating-810w-1080h@2x~ipad.ca</string>
+				<string>9183.Custom_Floating-390w-844h@3x~iphone.ca</string>
+				<key>foregroundAnimationFileName</key>
+				<string>9183.Custom_Foreground-390w-844h@3x~iphone.ca</string>
 				<key>identifier</key>
 				<integer>9183</integer>
 				<key>name</key>
-				<string>Chip</string>
+				<string>Custom</string>
 				<key>type</key>
 				<string>LayeredAnimation</string>
 			</dict>
 		</dict>
 	</dict>
-	<key>contentVersion</key>
-	<real>2.01</real>
 	<key>family</key>
-	<string>Chip</string>
+	<string>Custom</string>
 	<key>identifier</key>
 	<integer>9183</integer>
 	<key>logicalScreenClass</key>
-	<string>810w-1080h@2x~ipad</string>
+	<string>390w-844h@3x~iphone</string>
 	<key>name</key>
-	<string>Chip</string>
-	<key>preferredProminentColor</key>
-	<dict>
-		<key>dark</key>
-		<string>#00000</string>
-		<key>default</key>
-		<string>#FFFFFF</string>
-	</dict>
+	<string>Custom</string>
 	<key>version</key>
 	<integer>1</integer>
 </dict>

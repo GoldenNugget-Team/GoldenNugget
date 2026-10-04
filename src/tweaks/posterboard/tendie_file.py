@@ -9,6 +9,7 @@ class TendieFile:
     is_container: bool
     unsafe_container: bool
     loaded: bool
+    auto_convert: bool
 
     def __init__(self, path: str):
         self.path = path
@@ -17,6 +18,10 @@ class TendieFile:
         self.is_container = False
         self.unsafe_container = False
         self.loaded = False
+        # Set on import: the user answered the "convert or install as is" prompt
+        # for a legacy (pre-iOS 27) package. None means the prompt never ran
+        # (iOS 26, or nothing legacy inside) and the apply path decides.
+        self.auto_convert: "bool | None" = None
 
         # read the contents
         with zipfile.ZipFile(path, mode="r") as archive:
@@ -53,3 +58,4 @@ class TendieFile:
         os.makedirs(zip_output)
         with zipfile.ZipFile(self.path, 'r') as zip_ref:
             zip_ref.extractall(zip_output)
+        return zip_output

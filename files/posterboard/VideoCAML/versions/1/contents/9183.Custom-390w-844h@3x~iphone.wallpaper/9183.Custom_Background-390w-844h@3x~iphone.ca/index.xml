@@ -5,11 +5,11 @@
 	<key>assetManifest</key>
 	<string>assetManifest.caml</string>
 	<key>documentHeight</key>
-	<real>3176</real>
+	<real>844</real>
 	<key>documentResizesToView</key>
 	<false/>
 	<key>documentWidth</key>
-	<real>3176</real>
+	<real>390</real>
 	<key>dynamicGuidesEnabled</key>
 	<true/>
 	<key>geometryFlipped</key>
@@ -23,15 +23,17 @@
 	<key>interactiveTouchEventsEnabled</key>
 	<false/>
 	<key>loopEnd</key>
-	<real>0.0</real>
+	<real>+infinity</real>
 	<key>loopStart</key>
 	<real>0.0</real>
 	<key>loopingEnabled</key>
-	<false/>
+	<true/>
 	<key>multitouchDisablesMouse</key>
 	<false/>
 	<key>multitouchEnabled</key>
 	<false/>
+	<key>plugins</key>
+	<array/>
 	<key>presentationMouseEventsEnabled</key>
 	<true/>
 	<key>presentationShowsCursor</key>
@@ -43,7 +45,7 @@
 	<key>savesWindowFrame</key>
 	<false/>
 	<key>scalesToFitInPlayer</key>
-	<false/>
+	<true/>
 	<key>showsTouches</key>
 	<true/>
 	<key>snappingEnabled</key>
@@ -53,6 +55,6 @@
 	<key>touchesColor</key>
 	<string>1 1 0 0.8</string>
 	<key>unitsInPixelsInPlayer</key>
-	<true/>
+	<false/>
 </dict>
 </plist>

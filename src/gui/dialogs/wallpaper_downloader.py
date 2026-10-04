@@ -823,7 +823,7 @@ class WallpaperDownloaderDialog(QDialog):
 
         pb = tweaks[TweakID.PosterBoard]
         try:
-            if not pb.add_tendie(path):
+            if not pb.add_tendie(path, self._device_version()):
                 QMessageBox.warning(
                     self,
                     QCoreApplication.translate("Nugget", "Import Failed"),
@@ -852,6 +852,13 @@ class WallpaperDownloaderDialog(QDialog):
 
         self.status_lbl.setText(QCoreApplication.translate(
             "Nugget", "Imported {}!").format(self._download_wallpaper.name))
+
+    def _device_version(self):
+        """Connected device's iOS version, or None when there is no device."""
+        try:
+            return self.window.device_manager.get_current_device_version()
+        except Exception:
+            return None
 
     def _save_tendie(self, data: bytes, name: str):
         dest_dir = os.path.join(

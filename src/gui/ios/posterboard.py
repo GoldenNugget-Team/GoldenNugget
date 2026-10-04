@@ -555,8 +555,12 @@ class IOSPosterboardPage(QWidget):
             self.window, QCoreApplication.translate("Nugget", "Select PosterBoard Files"), "", "Zip Files (*.tendies)"
         )
         if selected_files:
+            try:
+                device_version = self.window.device_manager.get_current_device_version()
+            except Exception:
+                device_version = None
             for file in selected_files:
-                if not tweaks[TweakID.PosterBoard].add_tendie(file):
+                if not tweaks[TweakID.PosterBoard].add_tendie(file, device_version):
                     break
             self.refresh_tendies()
 

@@ -362,6 +362,10 @@ async def backup_media_via_afc(lockdown_client, media_root: str,
     if os.path.isdir(root) and os.listdir(root):
         log_info(f"AFC media pull: {root} already populated — "
                  f"{'diff refresh (pull only new/changed)' if diff else 'full refresh'}")
+    # Remember the previous claim so an unreadable enumeration can be told apart
+    # from an emptied library (see the restore below).
+    prev_state = media_store_state(root) or {}
+    prev_files = int(prev_state.get("files") or 0)
     # Drop the old claim BEFORE touching anything: this pull is about to rewrite
     # files in the store, so the previous run's "verified" is already stale. It
     # also covers the case the except-branch cannot — a hard process kill in the
@@ -369,9 +373,25 @@ async def backup_media_via_afc(lockdown_client, media_root: str,
     # complete copy of a half-rewritten store.
     _invalidate_media_state(root, "a new pull is starting")
     try:
-        return await _backup_media_tree(afc_lockdown_client=lockdown_client, root=root,
-                                        diff=diff, on_error=on_error,
-                                        progress_callback=_log)
+        result = await _backup_media_tree(afc_lockdown_client=lockdown_client, root=root,
+                                          diff=diff, on_error=on_error,
+                                          progress_callback=_log)
+        # A pull that enumerated nothing while the store previously held files
+        # did not empty the library — the trees were simply unreadable (a locked
+        # device lists only ``.MISC/Incoming`` under DCIM). Nothing was rewritten,
+        # so the store still is the copy the last good pull verified and that
+        # claim must survive: clobbering it with files=0 would discard a complete
+        # media store and abort the apply in ``_require_media_copy`` for nothing.
+        if (result.get("files", 0) == 0 and prev_files > 0
+                and not result.get("failed")):
+            _write_media_state(root, prev_files,
+                               int(prev_state.get("bytes") or 0),
+                               int(prev_state.get("skipped") or 0))
+            log_warn(f"AFC media: {root} enumerated 0 files while the store holds "
+                     f"{prev_files} — the media trees were unreadable (locked "
+                     f"device?), previous verification kept: "
+                     f"{describe_media_store(root)}")
+        return result
     except BaseException as e:
         # Covers per-file failures AND cancellation (the parallel task is
         # cancelled when the mobilebackup2 backup fails). Either way the store is

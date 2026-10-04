@@ -2,7 +2,7 @@ from PySide6.QtCore import Qt, QCoreApplication, QTimer
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea,
     QComboBox, QLineEdit, QListWidget, QListWidgetItem, QMessageBox, QInputDialog,
-    QFileDialog, QDialog
+    QFileDialog, QDialog, QProgressDialog
 )
 from pathlib import Path
 
@@ -636,6 +636,10 @@ class IOSSettingsPage(QWidget):
             QCoreApplication.translate("Nugget", "Select Database File"),
             self._on_pb_select_db,
         )
+        self._make_button_row(
+            QCoreApplication.translate("Nugget", "Rebuild Database (Clownfish)"),
+            self._on_pb_rebuild,
+        )
 
         ids_card = QWidget()
         ids_layout = QVBoxLayout(ids_card)
@@ -728,6 +732,53 @@ class IOSSettingsPage(QWidget):
                     QCoreApplication.translate("Nugget", "The database is not of the correct format!"))
                 return
             self.pb_db_lbl.setText("sqlite: Selected")
+
+    def _on_pb_rebuild(self):
+        from src.gui.thread_workers.pb_worker import PBRebuildThread
+        current = self.window.device_manager.data_singleton.current_device
+        if current is None:
+            QMessageBox.warning(
+                self, QCoreApplication.translate("Nugget", "Rebuild Database"),
+                QCoreApplication.translate("QCoreApplication", "Please connect a device."))
+            return
+        confirm = QMessageBox.question(
+            self, QCoreApplication.translate("Nugget", "Rebuild Database"),
+            QCoreApplication.translate(
+                "Nugget",
+                "Repack all Marble/Lavender wallpapers already on this device "
+                "into the Clownfish format (enables the Depth effect) in place?\n\n"
+                "Mercury spatial posters and every other family are left "
+                "untouched.\n\nThe device must be unlocked and have Find My "
+                "turned off, and it will restart when the rebuild finishes."))
+        if confirm != QMessageBox.StandardButton.Yes:
+            return
+        worker = PBRebuildThread(manager=self.window.device_manager, udid=current.udid)
+        self._pb_rebuild_thread = worker  # keep a strong ref while running
+        prog = QProgressDialog(
+            QCoreApplication.translate("Nugget", "Rebuilding wallpapers..."),
+            "", 0, 0, self)
+        prog.setWindowTitle(QCoreApplication.translate("Nugget", "Rebuild Database"))
+        prog.setWindowModality(Qt.WindowModal)
+        prog.setCancelButton(None)
+        prog.setMinimumDuration(0)
+
+        def _on_finish(ok: bool, msg: str):
+            prog.close()
+            if ok:
+                # Defer past the progress dialog's nested event loop so the
+                # modal result box is not opened from inside it.
+                QTimer.singleShot(0, lambda: QMessageBox.information(
+                    self, QCoreApplication.translate("Nugget", "Rebuild Database"),
+                    msg or QCoreApplication.translate("Nugget", "Done.")))
+
+        worker.progress.connect(prog.setLabelText)
+        worker.request_text.connect(self.window.on_password_request)
+        worker.choice_prompt.connect(self.window.on_choice_prompt)
+        worker.alert.connect(self.window.alert_message)
+        worker.finished_with_result.connect(_on_finish)
+        worker.finished.connect(worker.deleteLater)
+        worker.start()
+        prog.exec()
 
     def _refresh_saved_ids(self):
         self.saved_ids_list.clear()

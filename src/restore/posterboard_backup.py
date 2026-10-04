@@ -164,3 +164,125 @@ async def targeted_posterboard_database_backup(udid: str, update_label=lambda x:
     return await async_retry(
         _attempt, max_retries, retry_if=_is_connection_error,
         exp_cap=15, on_retry=_on_retry)
+
+
+def _find_manifest(backup_dir: str) -> "str | None":
+    for dirpath, _dirs, files in os.walk(backup_dir):
+        if "Manifest.db" in files:
+            return os.path.join(dirpath, "Manifest.db")
+    return None
+
+
+def _materialise_backup(device_dir: str, manifest: str, out_dir: str) -> int:
+    """Copy every regular payload to ``out_dir`` mirroring its relativePath.
+
+    Only ``flags == 1`` manifest rows have a payload (``flags == 2`` are
+    directories); missing payloads are simply skipped, exactly like the
+    reference pull tool. Returns the number of files materialised.
+    """
+    conn = sqlite3.connect(f"file:{manifest}?mode=ro", uri=True)
+    try:
+        rows = conn.execute(
+            "SELECT relativePath, fileID, flags FROM Files").fetchall()
+    finally:
+        conn.close()
+    count = 0
+    for rel_path, file_id, flags in rows:
+        if flags != 1 or not file_id:
+            continue
+        src = os.path.join(device_dir, file_id[:2], file_id)
+        if not os.path.isfile(src):
+            continue
+        dst = os.path.join(out_dir, rel_path.lstrip("/"))
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        with open(src, "rb") as source, open(dst, "wb") as target:
+            target.write(source.read())
+        count += 1
+    return count
+
+
+async def pull_posterboard_container(udid: str, out_dir: str,
+                                     update_label=lambda x: None,
+                                     update_progress=lambda x: None
+                                     ) -> tuple[str, int]:
+    """Pull the whole PosterBoard container and materialise it under ``out_dir``.
+
+    Same targeted mobilebackup2 channel as
+    ``targeted_posterboard_database_backup`` (only the PosterBoard domain is
+    uploaded, everything else is drained mid-stream), but instead of keeping
+    just the sqlite every payload is written next to its device relativePath
+    (``out_dir/Library/Application Support/PRBPosterExtensionDataStore/...``).
+    Used by the "Rebuild Database" flow so the on-device wallpaper packages can
+    be repacked and pushed back. Returns ``(out_dir, structure_version)``.
+    """
+    from src.exceptions.device_errors import is_connection_error as _is_connection_error
+    from src.exceptions.device_errors import is_device_locked_error as _is_device_locked_error
+    from src.restore.protective import (
+        POSTERBOARD_DB_DOMAIN, _domain_match, _posterboard_db_match,
+        extract_posterboard_db)
+
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir, exist_ok=True)
+
+    max_retries = 3
+
+    def _on_retry(attempt: int, total: int, e: Exception, delay: float) -> None:
+        if attempt < total:
+            update_label(f"Connection lost, retrying in {delay}s... (attempt {attempt}/{total})")
+
+    async def _attempt():
+        with tempfile.TemporaryDirectory(prefix="nugget_pb_pull_") as backup_dir:
+            async with lockdown_session(udid) as service_provider:
+                if not is_supported_by_fork(service_provider.all_values.get("ProductVersion", "0.0")):
+                    raise NuggetException(
+                        "This version of iOS is not supported by this fork.\n\n"
+                        "GoldenNugget only supports iOS 26.2 and newer. "
+                        "Please use the original Nugget for iOS 26.1 and earlier.")
+                async with Mobilebackup2Service(service_provider) as backup_client:
+                    def _pb_only(backup_file):
+                        device_name = backup_file.device_name or ""
+                        # iOS 26 uploads the container as AppDomain-*; iOS 27
+                        # uploads the raw physical tree (/.b/<n>/Containers/...)
+                        # so the domain match misses it and the store-path
+                        # substring is what selects the wallpaper packages.
+                        return (_domain_match(device_name, POSTERBOARD_DB_DOMAIN)
+                                or _posterboard_db_match(device_name)
+                                or "PRBPosterExtensionDataStore" in device_name
+                                or "PosterBoard" in device_name)
+                    try:
+                        await backup_client.backup(
+                            full=True, backup_directory=backup_dir,
+                            progress_callback=update_progress, filter_callback=_pb_only)
+                    except Exception as e:
+                        if _is_device_locked_error(e):
+                            raise NuggetException(
+                                "Device locked during backup. Please unlock your device, "
+                                "keep it awake (tap screen periodically), and try again.")
+                        raise
+
+            manifest = _find_manifest(backup_dir)
+            if manifest is None:
+                raise NuggetException(
+                    "Could not find the backup manifest — the backup may have failed "
+                    "or the device backup is encrypted.")
+            device_dir = os.path.dirname(manifest)
+
+            update_label("Reading PosterBoard database...")
+            with tempfile.TemporaryDirectory(prefix="nugget_pb_db_") as db_dir:
+                extracted = extract_posterboard_db(
+                    device_dir, udid, os.path.join(db_dir, "posterboard.sqlite3"))
+            if extracted is None:
+                raise NuggetException(
+                    "Could not find the PosterBoard database in the backup!")
+            _db_path, structure_version = extracted
+
+            update_label("Copying wallpaper files...")
+            count = _materialise_backup(device_dir, manifest, out_dir)
+            if count == 0:
+                raise NuggetException(
+                    "No PosterBoard files were found in the backup.")
+            return out_dir, structure_version
+
+    return await async_retry(
+        _attempt, max_retries, retry_if=_is_connection_error,
+        exp_cap=15, on_retry=_on_retry)
