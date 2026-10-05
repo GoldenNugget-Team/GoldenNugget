@@ -177,6 +177,15 @@ class IOSHomePage(QWidget):
         self._refresh_btn.clicked.connect(self.refresh_devices)
         header.addWidget(self._refresh_btn)
 
+        self._logs_btn = QPushButton(self)
+        self._logs_btn.setFixedSize(36, 36)
+        self._logs_btn.setIconSize(QSize(18, 18))
+        self._logs_btn.setStyleSheet(t("home_icon_button"))
+        self._logs_btn.setToolTip(QCoreApplication.translate("Nugget", "Application Log"))
+        self._apply_icon(self._logs_btn, ":/icon/file-earmark-text.svg")
+        self._logs_btn.clicked.connect(self.open_logs)
+        header.addWidget(self._logs_btn)
+
         self._settings_btn = QPushButton(self)
         self._settings_btn.setFixedSize(36, 36)
         self._settings_btn.setIconSize(QSize(18, 18))
@@ -281,6 +290,8 @@ class IOSHomePage(QWidget):
         self._style_device_combo()
         self._refresh_btn.setStyleSheet(t("home_icon_button"))
         self._apply_icon(self._refresh_btn, ":/icon/arrow-clockwise.svg")
+        self._logs_btn.setStyleSheet(t("home_icon_button"))
+        self._apply_icon(self._logs_btn, ":/icon/file-earmark-text.svg")
         self._settings_btn.setStyleSheet(t("home_icon_button"))
         self._apply_icon(self._settings_btn, ":/icon/gear.svg")
         self.process_status_lbl.setStyleSheet(t("process_status_green"))
@@ -320,6 +331,13 @@ class IOSHomePage(QWidget):
     @Slot()
     def open_settings(self):
         self.window.show_ios_page(4)
+
+    @Slot()
+    def open_logs(self):
+        """Open the session-log viewer over the main window."""
+        from src.gui.dialogs.log_viewer import LogViewerDialog
+        dialog = LogViewerDialog(self.window)
+        dialog.exec()
 
     def open_presets_section(self):
         self.window.open_presets_section()

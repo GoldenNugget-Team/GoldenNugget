@@ -428,6 +428,76 @@ STYLES = {
         "background-color: transparent;"
     ),
 
+    # ---- Session log viewer ----------------------------------------------
+    # No font-family here on purpose: the app has ONE font (Inter, pinned by
+    # the global template) and styles.py stays the only place that names a
+    # family. The log view needs a fixed pitch to keep its pipe-separated
+    # columns aligned, so the widget sets the platform fixed font in code
+    # (see LogViewerDialog) instead.
+    "log_viewer": """
+        QDialog {{ background-color: {bg_elevated}; }}
+        QLabel {{ color: {text_primary}; font-size: 14px; }}
+        QLabel#logViewerTitle {{ font-size: 17px; font-weight: 700; color: {text_primary}; }}
+        QLabel#logViewerPath {{
+            color: {text_secondary}; font-size: 11px;
+            background-color: transparent;
+        }}
+        QLabel#logViewerStatus {{
+            color: {text_secondary}; font-size: 12px;
+            background-color: transparent;
+        }}
+        QPlainTextEdit {{
+            background-color: {bg_input};
+            border: none;
+            border-radius: 10px;
+            color: {text_primary};
+            font-size: 12px;
+            padding: 10px 12px;
+            selection-background-color: {accent};
+            selection-color: {text_inverse};
+        }}
+        QLineEdit {{
+            background-color: {bg_input};
+            border: none;
+            border-radius: 10px;
+            color: {text_primary};
+            font-size: 14px;
+            padding: 8px 12px;
+        }}
+        QComboBox {{
+            background-color: {bg_input};
+            border: none;
+            border-radius: 10px;
+            color: {text_primary};
+            padding: 8px 12px;
+            font-size: 13px;
+        }}
+        QComboBox::drop-down {{ border: none; width: 20px; }}
+        QComboBox QAbstractItemView {{
+            background-color: {bg_secondary};
+            border: 1px solid {divider};
+            selection-background-color: {accent};
+            selection-color: {text_inverse};
+            border-radius: 8px;
+            padding: 4px;
+        }}
+        QPushButton {{
+            background-color: {bg_tertiary};
+            border-radius: 10px;
+            color: {text_primary};
+            border: none;
+            font-size: 14px;
+            padding: 8px 16px;
+        }}
+        QPushButton:hover {{ background-color: {surface_hover}; }}
+        QPushButton#logViewerPrimary {{
+            background-color: {accent};
+            color: {text_inverse};
+            font-weight: 600;
+        }}
+        QPushButton#logViewerPrimary:hover {{ background-color: {accent_hover}; }}
+    """,
+
     "process_status_green": "color: {success}; font-size: 14px; font-weight: 500;",
     "process_status_red": "color: {error}; font-size: 14px; font-weight: 500;",
     "process_status_blue": "color: {accent}; font-size: 14px; font-weight: 500;",

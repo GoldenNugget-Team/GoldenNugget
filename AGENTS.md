@@ -700,3 +700,35 @@ _apply_changes()
 - Legacy `/tmp/goldennugget_log.txt` files created by `protective.py` are gone.
 - Verbose logging: pass `--debug` to `main_app.py`; the stdlib logger path can be
   overridden with the `GOLDENNUGGET_LOG_FILE` env var
+
+### Session Log Viewer (src/gui/dialogs/log_viewer.py)
+
+`LogViewerDialog` shows the same session file a bug report gets, reachable
+from the home header button (`IOSHomePage._logs_btn` → `open_logs`).
+
+- **Read the file, never the handlers.** It tails the path from
+  `get_log_path()` with a 1 s `QTimer`, holding the newest `TAIL_BYTES`
+  (1 MiB) — the rotating handler writes up to 16 MiB per file, and the
+  useful part of a session is always at the end.
+- **The offset is a BYTE offset, always measured on the raw data.** Decode
+  with `errors="replace"` (a bad byte must not kill the dialog) but never
+  measure consumed length on the decoded text: one bad byte becomes a
+  3-byte U+FFFD, the offset runs ahead, and real records get sliced in
+  half for good. Only whole lines are consumed (`rfind(b"\n")`), so a
+  half-written record is re-read next tick instead of being lost.
+- **A shrinking file means rotation, not an error.** The rotating handler
+  renames the file aside and starts a new one at the SAME path, so
+  `size < offset` resets the buffer instead of rendering nothing.
+- **Scrolling is terminal-like**: the view sticks to the bottom only if the
+  user is already there, so following a live apply never yanks someone who
+  scrolled up to read an error. The `Live` switch owns the poll.
+- The level floor and search are applied by `filter_lines` to the raw
+  lines. A record with an embedded newline (progress payloads do) is
+  recognised by `record_rank` and inherits its record's verdict, so the
+  traceback under an `ERROR` the user asked for is never filtered away.
+- The fixed-pitch font comes from `_monospace_font()`, **not** from
+  `styles.py` (which names no font family — one font everywhere). It asks
+  `QFontDatabase.families()` directly because
+  `QFontDatabase.systemFont(FixedFont)` reports a family whose
+  `fixedPitch()` reads False on Windows; do not "simplify" it back.
+- Offline regression suite: `tools/test_log_viewer.py`.
