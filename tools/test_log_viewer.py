@@ -18,6 +18,11 @@ Plus the filtering behaviour: a level floor and a search needle, and the
 rule that a multi-line payload (progress records embed newlines) stays
 attached to the record it belongs to.
 
+Finally a static guard: every user-visible string must be passed to
+``QCoreApplication.translate`` DIRECTLY. lupdate cannot see through a
+helper indirection, so a ``_tr("...")`` wrapper silently drops the string
+out of the translation catalog and it can never be translated.
+
 Run: python tools/test_log_viewer.py
 """
 import logging
@@ -237,7 +242,54 @@ def main():
         check("a font was still chosen for the log view", bool(family),
               f"{family!r} (no fixed-pitch family on this platform)")
 
+    # --- translations must stay extractable ---------------------------------
+    check_translatable_strings()
+
     print(f"\nALL {PASS} CHECKS PASSED")
+
+
+def check_translatable_strings():
+    """No helper indirection around translate(): lupdate would miss it.
+
+    ``app_list_dialog.py`` and ``passcode_theme.py`` still do this (a
+    pre-existing bug, their strings are absent from the catalogs), so this
+    is a guard on the module being added here, not a repo-wide lint.
+    """
+    import ast
+
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "..", "src", "gui", "dialogs", "log_viewer.py")
+    with open(path, encoding="utf-8") as f:
+        source = f.read()
+    tree = ast.parse(source)
+
+    # A wrapper is a function whose WHOLE body is a single passthrough to
+    # translate(); a normal method that merely calls translate() inline is
+    # fine and must not be flagged.
+    wrappers = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef):
+            continue
+        body = [n for n in node.body if not isinstance(
+            n, ast.Expr) or not isinstance(n.value, ast.Constant)]
+        if len(body) != 1 or not isinstance(body[0], ast.Return):
+            continue
+        segment = ast.get_source_segment(source, body[0]) or ""
+        if "translate(" in segment and "QCoreApplication" in segment:
+            wrappers.append(node.name)
+    check("no translate() wrapper helper hides strings from lupdate",
+          not wrappers, f"found: {wrappers}")
+
+    direct = source.count("QCoreApplication.translate(")
+    check("strings are translated through direct calls", direct >= 15,
+          f"{direct} call sites")
+
+    # the level labels come from a tuple, so they need the explicit no-op
+    # marker to reach the catalog at all
+    check("tuple-sourced level labels are declared for lupdate",
+          "QT_TRANSLATE_NOOP" in source)
+
+    check("no leftover _tr( indirection", "_tr(" not in source)
 
 
 if __name__ == "__main__":
