@@ -104,6 +104,56 @@ Example:
 </context>
 ```
 
+## Two Traps When Regenerating a Catalog
+
+Both have already cost real translations here, so read this before running
+`pyside6-lupdate` over the source.
+
+### 1. lupdate cannot see through a helper function
+
+Strings must reach `QCoreApplication.translate` **directly**. Wrapping them in
+a local shortcut silently deletes them from the catalog:
+
+```python
+# WRONG - lupdate finds nothing, the strings can never be translated
+def _tr(text): return QCoreApplication.translate("Nugget", text)
+_tr("Open File")
+
+# RIGHT
+QCoreApplication.translate("Nugget", "Open File")
+```
+
+For a label that lives in a tuple, declare it with `QT_TRANSLATE_NOOP` and
+translate it at the call site. Verify after any change:
+
+```bash
+pyside6-lupdate <sources> -ts /tmp/probe.ts   # compare the source set against the catalog
+```
+
+### 2. lupdate skips `u"..."` literals
+
+`pyside6-uic` emits `u"..."` strings, and **lupdate ignores them entirely**:
+
+```
+mainwindow_ui.py as generated      -> Found 0 source texts
+same file with the u-prefix stripped -> Found 35 source texts
+```
+
+So `src/qt/mainwindow_ui.py` is useless as an lupdate source, and since
+`src/qt/mainwindow.ui` has been deleted, the Classic-UI strings already in
+the catalogs can no longer be re-extracted by anyone. A blind regeneration
+wants to drop them (measured: 92 messages), and because `sync-translations.yml`
+mirrors the base into every language, that becomes 92 deletions across 30
+catalogs. The scheduled job now refuses to commit a regeneration that drops
+more than 20 messages; if you regenerate by hand, check the count first.
+
+### Never edit `src/qt/translations/` directly
+
+That folder is a **mirror**. The sync deletes it and copies the i18n repo's
+`.ts` over it wholesale — no per-string merging. Any translation added there
+is gone at the next sync. Make every change in
+[GoldenNugget-Team/gNugget-i18n](https://github.com/GoldenNugget-Team/gNugget-i18n).
+
 ## CI/CD Pipeline
 
 The sync runs in this order:
