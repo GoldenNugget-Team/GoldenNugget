@@ -2838,6 +2838,404 @@ GoldenNugget will now restart to apply the changes.</source>
         <source>Shows a system notification whenever an app reads the pasteboard, acting as a privacy indicator for system-level pastes.</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="69"/>
+        <source>All</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="70"/>
+        <source>Info</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="71"/>
+        <source>Warning</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="72"/>
+        <source>Error</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="140"/>
+        <source>Application Log</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="168"/>
+        <source>Search log...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="183"/>
+        <source>Keep scrolling to the newest lines as they are written</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="188"/>
+        <source>Live</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="198"/>
+        <source>No log output yet.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="211"/>
+        <source>Reload</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="212"/>
+        <source>Re-read the log from the beginning</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="216"/>
+        <source>Open File</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="217"/>
+        <source>Open the log in your default text editor</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="221"/>
+        <source>Open Folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="222"/>
+        <source>Open the folder holding the log</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="226"/>
+        <source>Copy Visible</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="227"/>
+        <source>Copy the lines currently shown to the clipboard</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="233"/>
+        <source>Close</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="339"/>
+        <source>{0} of {1} lines  -  {2} KB on disk</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="343"/>
+        <source>Empty log  -  {0} KB on disk</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="367"/>
+        <source>Copied {0} lines to the clipboard</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/log_viewer.py" line="374"/>
+        <source>Log file not found yet.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/app_list_dialog.py" line="88"/>
+        <source>Apps on iPhone</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/app_list_dialog.py" line="99"/>
+        <source>Loading installed apps...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/app_list_dialog.py" line="104"/>
+        <source>Filter by name or bundle id...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/app_list_dialog.py" line="117"/>
+        <source>Export JSON...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/app_list_dialog.py" line="122"/>
+        <source>Add Icon for Selected</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/app_list_dialog.py" line="142"/>
+        <source>No iPhone connected. Connect and unlock the device, then try again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/app_list_dialog.py" line="153"/>
+        <source>{0} apps installed on the iPhone.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/app_list_dialog.py" line="162"/>
+        <source>Could not read the app list.
+
+{0}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/app_list_dialog.py" line="202"/>
+        <source>Export App List</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/app_list_dialog.py" line="220"/>
+        <source>Could not write the file:
+{0}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/app_list_dialog.py" line="222"/>
+        <source>Exported {0} apps to:
+{1}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="95"/>
+        <source>Parsing theme…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="102"/>
+        <source>Staged {0} key files, {1} targets</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="108"/>
+        <source>Step 1/3 — Trust check: opening a device session. If this computer isn't trusted yet, unlock your iPhone and tap “Trust This Computer” now.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="117"/>
+        <source>the iPhone did not confirm this computer as trusted — tap “Trust This Computer” on the device and try again</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="121"/>
+        <source>Step 2/3 — Device trust confirmed; staging the theme…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="126"/>
+        <source>Writing {0} files to {1}…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="131"/>
+        <source>Step 3/3 — Done.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="135"/>
+        <source>The device is locked. Unlock your iPhone, then tap “Trust This Computer” when the dialog appears and try again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="140"/>
+        <source>You declined the trust request on the device. Connect your iPhone, tap “Trust This Computer” and try again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="145"/>
+        <source>The device did not confirm this computer as trusted — the Apple® sync service (ATC) refuses an untrusted host and the write would fail. Unlock your iPhone and tap “Trust This Computer”, then try again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="154"/>
+        <source>Wrote {0} file(s) to the device.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="158"/>
+        <source>{0} file(s) skipped — they already exist (AirLift only writes new names). Remove the old keypad cache first to replace an existing theme.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="199"/>
+        <source>Customize the Passcode keypad with a theme package (.passthm) — images, sub-labels and bold keys. Themes are written straight to the device over USB/Wi-Fi (no reboot).
+
+AirLift only creates NEW files on the device: re-applying the same theme is a no-op, and replacing an existing theme with different art requires removing the old keypad cache first.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="210"/>
+        <source>Theme</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="212"/>
+        <source>No theme selected yet.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="221"/>
+        <source>Choose .passthm…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="235"/>
+        <source>Keypad Language</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="239"/>
+        <source>Bold Keys</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="244"/>
+        <source>Target TelephonyUI</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="250"/>
+        <source>Write to device</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="256"/>
+        <source>Write Theme to Device</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="283"/>
+        <source>Device Language</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="284"/>
+        <source>All Languages</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="302"/>
+        <source>Both (Regular + Bold)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="303"/>
+        <source>Regular only</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="304"/>
+        <source>Bold only</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="313"/>
+        <source>All (8, 9, 10)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="352"/>
+        <source>Choose a Passcode Theme</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="352"/>
+        <source>passthemes (*.passthm)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="358"/>
+        <source>Invalid Theme</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="402"/>
+        <source>, small keys</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="404"/>
+        <source>, big keys</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="405"/>
+        <source>{0} key images{1}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="410"/>
+        <source>Remove</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="438"/>
+        <source>No trusted iPhone connected. Plug it in, unlock it, tap “Trust This Computer” when iOS asks, and wait for it to appear here.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="447"/>
+        <source>Device: {0} — iOS {1} ({2}). This computer is trusted by it, so the write runs immediately — no “Trust This Computer” pop-up will appear.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="451"/>
+        <source>iPhone</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="454"/>
+        <source>Device present, but it is not supported for AirLift (needs an iPhone on iOS 26.2+).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="463"/>
+        <source>Choose a theme first.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="468"/>
+        <source>No trusted iPhone is listed. Plug it in, unlock it, tap “Trust This Computer” when iOS asks, then wait for it to appear.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="475"/>
+        <source>This device is not supported for AirLift (needs an iPhone on iOS 26.2+).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="481"/>
+        <source>A write is already running.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="486"/>
+        <source>Starting…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="518"/>
+        <source>Passcode Theme</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/gui/passcode_theme.py" line="519"/>
+        <source>Apply failed:
+
+{0}</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>PBHelpDialog</name>
