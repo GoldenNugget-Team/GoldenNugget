@@ -6,19 +6,30 @@ This document describes the background threads, async backup/restore operations,
 
 ## Color Theme System (src/gui/theme/)
 
-Dark/light mode + accent color customization for the whole GUI.
+**Accent-only. There is no light mode — do not go looking for one.**
 
-- `colors.py` — frozen dataclass `ThemeColors` with `DARK` and `LIGHT` palettes
-  (named slots: `bg_primary`, `bg_secondary`, `bg_input`, `text_primary`,
-  `text_secondary`, `accent`, `divider`, `error`, `success`, ...). `ACCENT_PRESETS`
-  holds 8 accent hex colors (blue/purple/pink/red/orange/yellow/green/teal).
-- `theme_manager.py` — `ColorThemeManager` singleton (`instance()`): `mode`
-  (`"dark"`/`"light"`), `accent_hex()`, `is_dark`, `set_mode()`, `set_accent()`,
-  `set_system_theme(mode)`, `apply_system_theme(dark)` (follows the OS but never
-  overrides a user choice — `_has_explicit_mode` becomes set the moment the
-  Settings switch saves a mode), `c(slot)` (color accessor), `build_palette()`
-  (QPalette for native widgets). Persisted via QSettings (`color_mode`,
-  `accent_color`). Emits `theme_changed` (no payload) on any color change.
+- `colors.py` — frozen dataclass `ThemeColors` and a single palette,
+  **`DARK`** (named slots: `bg_primary`, `bg_secondary`, `bg_tertiary`,
+  `bg_input`, `bg_elevated`, `text_primary`, `text_secondary`, `accent`,
+  `divider`, `error`, `success`, `warning`, `border`, `scrollbar`,
+  `surface_hover`, `danger_text`, ...). There is **no `LIGHT` constant**;
+  adding a light mode means adding the palette here, a `set_mode()` that
+  swaps it in `_build_colors()`, a Settings switch, and QPalette work in
+  `build_palette()`. `ACCENT_PRESETS` holds 8 accent hex colors
+  (blue/purple/pink/red/orange/yellow/green/teal).
+- `theme_manager.py` — `ColorThemeManager` singleton (`instance()`):
+  `colors` (the active `ThemeColors`), `set_accent(name)`, `c(slot)` (color
+  accessor), `build_palette()` (QPalette for native widgets), `accent_hex()`,
+  `accent_rgb()`. Persisted via QSettings (`accent_color`). Emits
+  `theme_changed` (no payload) on any color change.
+- **Two properties are stubs, not real state: `mode` hardcodes `"dark"` and
+  `is_dark` hardcodes `True`.** They are the seam a light mode would grow
+  into, so read them if you must, but never branch on them expecting a
+  persisted user choice — there is none, and no `color_mode` QSettings key.
+- `set_mode()`, `set_system_theme()`, `apply_system_theme()` and
+  `QStyleHints.colorSchemeChanged` handling **do not exist**; the app does
+  not follow the OS theme. Do not call them and do not "restore" the wiring
+  without adding the code as well.
 - `styles.py` — `STYLES` dict of Qt stylesheet templates using `{slot}` named
   placeholders (literal braces are doubled `{{`/`}}`).
 - `accent_picker.py` — `AccentPicker` widget: row of circular preset buttons,
@@ -115,14 +126,13 @@ Dark/light mode + accent color customization for the whole GUI.
   `main_window.run_first_launch_prompts`.
 - Old `src/gui/ios/theme_manager.py` (`CLASSIC`/`IOS`) is layout-only
   (Classic vs iOS-style chrome) and stays untouched side-by-side.
-- Theme UI lives in Settings → **Appearance** (`src/gui/ios/settings.py`):
-  "Dark Mode" `IOSSwitch` (`set_mode`) and "Accent Color" `AccentPicker`
-  (`set_accent`). The switch's initial `setChecked` uses `is_dark`.
-- System-theme detection is wired in `main_app.py` right after the QApplication
-  is created: `QStyleHints.colorSchemeChanged` drives
-  `apply_system_theme(...)`. The app follows the OS until the user toggles the
-  Dark Mode switch, then the persisted `color_mode` wins and OS changes are
-  ignored.
+- The only theme UI is Settings → **Appearance** (`src/gui/ios/settings.py`):
+  an "Accent Color" `AccentPicker` driving `set_accent(...)`. There is **no
+  Dark Mode switch** — the section is accent-only.
+- The app does **not** follow the OS colour scheme: nothing is connected to
+  `QStyleHints.colorSchemeChanged` in `main_app.py`, and the palette is built
+  once from `DARK` in `MainWindow._on_color_theme_changed` /
+  `main_app` via `build_palette()`.
 
 ## HotLoad Safety Rules (src/controllers/hotload.py)
 
