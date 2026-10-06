@@ -48,10 +48,6 @@ logger = logging.getLogger("GoldenNugget.passthme")
 _NUGGET = "Nugget"
 
 
-def _tr(text: str) -> str:
-    return QCoreApplication.translate(_NUGGET, text)
-
-
 class PasscodeThemeWriteThread(QThread):
     """Background writer: AirLift the staged theme onto the device."""
 
@@ -96,20 +92,20 @@ class PasscodeThemeWriteThread(QThread):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            self.progress.emit(_tr("Parsing theme…"))
+            self.progress.emit(QCoreApplication.translate("Nugget", "Parsing theme…"))
             keys = parse_passthm(self.theme_path)
             staged = stage_files(
                 keys, locale=self.locale, langs=self._languages(), bold=self.bold)
             targets = self._targets()
 
             self.progress.emit(
-                _tr("Staged {0} key files, {1} targets").format(len(staged), len(targets)))
+                QCoreApplication.translate("Nugget", "Staged {0} key files, {1} targets").format(len(staged), len(targets)))
 
             written: list[str] = []
             failures: list[str] = []
             try:
                 async def apply_all():
-                    self.progress.emit(_tr(
+                    self.progress.emit(QCoreApplication.translate("Nugget", 
                         "Step 1/3 — Trust check: opening a device session. If "
                         "this computer isn't trusted yet, unlock your iPhone "
                         "and tap \u201cTrust This Computer\u201d now."))
@@ -118,35 +114,35 @@ class PasscodeThemeWriteThread(QThread):
                             # lockdown_session already refuses unpaired clients,
                             # but keep the belt-and-suspenders check so we
                             # never sync against a half-trusted device.
-                            raise AirliftError(_tr(
+                            raise AirliftError(QCoreApplication.translate("Nugget", 
                                 "the iPhone did not confirm this computer as "
                                 "trusted — tap \u201cTrust This Computer\u201d "
                                 "on the device and try again"))
-                        self.progress.emit(_tr(
+                        self.progress.emit(QCoreApplication.translate("Nugget", 
                             "Step 2/3 — Device trust confirmed; staging the "
                             "theme…"))
                         for target in targets:
                             self.progress.emit(
-                                _tr("Writing {0} files to {1}…").format(len(staged), target))
+                                QCoreApplication.translate("Nugget", "Writing {0} files to {1}…").format(len(staged), target))
                             result = await write_files(
                                 lockdown, target, staged, log_cb=self._emit)
                             written.extend(result["written"])
                             failures.extend(result["failures"])
-                        self.progress.emit(_tr("Step 3/3 — Done."))
+                        self.progress.emit(QCoreApplication.translate("Nugget", "Step 3/3 — Done."))
                 try:
                     loop.run_until_complete(apply_all())
                 except PasswordRequiredError:
-                    raise RuntimeError(_tr(
+                    raise RuntimeError(QCoreApplication.translate("Nugget", 
                         "The device is locked. Unlock your iPhone, then tap "
                         "\u201cTrust This Computer\u201d when the dialog appears "
                         "and try again."))
                 except UserDeniedPairingError:
-                    raise RuntimeError(_tr(
+                    raise RuntimeError(QCoreApplication.translate("Nugget", 
                         "You declined the trust request on the device. Connect "
                         "your iPhone, tap \u201cTrust This Computer\u201d and "
                         "try again."))
                 except (PairingDialogResponsePendingError, NotPairedError, FatalPairingError):
-                    raise RuntimeError(_tr(
+                    raise RuntimeError(QCoreApplication.translate("Nugget", 
                         "The device did not confirm this computer as trusted — "
                         "the Apple\u00ae sync service (ATC) refuses an untrusted "
                         "host and the write would fail. Unlock your iPhone and "
@@ -155,11 +151,11 @@ class PasscodeThemeWriteThread(QThread):
                 raise RuntimeError(f"{type(error).__name__}: {error}") from error
 
             lines = [
-                _tr("Wrote {0} file(s) to the device.").format(len(written)),
+                QCoreApplication.translate("Nugget", "Wrote {0} file(s) to the device.").format(len(written)),
             ]
             if failures:
                 lines.append(
-                    _tr("{0} file(s) skipped — they already exist (AirLift only "
+                    QCoreApplication.translate("Nugget", "{0} file(s) skipped — they already exist (AirLift only "
                         "writes new names). Remove the old keypad cache first to "
                         "replace an existing theme.").format(len(failures)))
             self.done.emit(True, "\n".join(lines))
@@ -200,7 +196,7 @@ class IOSPasscodeThemePage(QWidget):
         self.content_layout.setContentsMargins(16, 16, 16, 32)
         self.content_layout.setSpacing(8)
 
-        self._hint = QLabel(_tr(
+        self._hint = QLabel(QCoreApplication.translate("Nugget", 
             "Customize the Passcode keypad with a theme package (.passthm) — "
             "images, sub-labels and bold keys. Themes are written straight to "
             "the device over USB/Wi-Fi (no reboot).\n\n"
@@ -211,9 +207,9 @@ class IOSPasscodeThemePage(QWidget):
         self.content_layout.addWidget(self._hint)
 
         # ---- Theme --------------------------------------------------------
-        self.content_layout.addWidget(IOSSectionHeader(_tr("Theme")))
+        self.content_layout.addWidget(IOSSectionHeader(QCoreApplication.translate("Nugget", "Theme")))
 
-        self.theme_placeholder = QLabel(_tr("No theme selected yet."))
+        self.theme_placeholder = QLabel(QCoreApplication.translate("Nugget", "No theme selected yet."))
         self.theme_placeholder.setAlignment(Qt.AlignCenter)
         self.theme_placeholder.setStyleSheet("padding: 24px 0;")
         self.content_layout.addWidget(self.theme_placeholder)
@@ -222,12 +218,12 @@ class IOSPasscodeThemePage(QWidget):
         self._theme_card_box.setSpacing(8)
         self.content_layout.addLayout(self._theme_card_box)
 
-        self._choose_btn = IOSPrimaryButton(_tr("Choose .passthm…"))
+        self._choose_btn = IOSPrimaryButton(QCoreApplication.translate("Nugget", "Choose .passthm…"))
         self._choose_btn.clicked.connect(self.choose_theme_dialog)
         self.content_layout.addWidget(self._choose_btn)
 
         # ---- Options ------------------------------------------------------
-        self.content_layout.addWidget(IOSSectionHeader(_tr("Options")))
+        self.content_layout.addWidget(IOSSectionHeader(QCoreApplication.translate("Nugget", "Options")))
 
         options_card = IOSCard()
         options_layout = QVBoxLayout(options_card)
@@ -236,28 +232,28 @@ class IOSPasscodeThemePage(QWidget):
 
         self._lang_combo = QComboBox()
         options_layout.addLayout(self._row(
-            _tr("Keypad Language"), self._lang_combo))
+            QCoreApplication.translate("Nugget", "Keypad Language"), self._lang_combo))
         self._populate_lang_combo()
 
         self._bold_combo = QComboBox()
-        options_layout.addLayout(self._row(_tr("Bold Keys"), self._bold_combo))
+        options_layout.addLayout(self._row(QCoreApplication.translate("Nugget", "Bold Keys"), self._bold_combo))
         self._populate_bold_combo()
 
         self._target_combo = QComboBox()
         options_layout.addLayout(self._row(
-            _tr("Target TelephonyUI"), self._target_combo))
+            QCoreApplication.translate("Nugget", "Target TelephonyUI"), self._target_combo))
         self._populate_target_combo()
 
         self.content_layout.addWidget(options_card)
 
         # ---- Write to device ----------------------------------------------
-        self.content_layout.addWidget(IOSSectionHeader(_tr("Write to device")))
+        self.content_layout.addWidget(IOSSectionHeader(QCoreApplication.translate("Nugget", "Write to device")))
 
         self._device_lbl = QLabel("")
         self._device_lbl.setWordWrap(True)
         self.content_layout.addWidget(self._device_lbl)
 
-        self._write_btn = IOSPrimaryButton(_tr("Write Theme to Device"))
+        self._write_btn = IOSPrimaryButton(QCoreApplication.translate("Nugget", "Write Theme to Device"))
         self._write_btn.clicked.connect(self.start_write)
         self.content_layout.addWidget(self._write_btn)
 
@@ -284,8 +280,8 @@ class IOSPasscodeThemePage(QWidget):
     def _populate_lang_combo(self):
         self._lang_combo.blockSignals(True)
         self._lang_combo.clear()
-        self._lang_combo.addItem(_tr("Device Language"), self.LANG_DEVICE)
-        self._lang_combo.addItem(_tr("All Languages"), self.LANG_ALL)
+        self._lang_combo.addItem(QCoreApplication.translate("Nugget", "Device Language"), self.LANG_DEVICE)
+        self._lang_combo.addItem(QCoreApplication.translate("Nugget", "All Languages"), self.LANG_ALL)
         for code in KEYPAD_LOCALES_ALL:
             self._lang_combo.addItem(self._lang_label(code), code)
         self._lang_combo.blockSignals(False)
@@ -303,9 +299,9 @@ class IOSPasscodeThemePage(QWidget):
     def _populate_bold_combo(self):
         self._bold_combo.blockSignals(True)
         self._bold_combo.clear()
-        self._bold_combo.addItem(_tr("Both (Regular + Bold)"), "both")
-        self._bold_combo.addItem(_tr("Regular only"), "regular")
-        self._bold_combo.addItem(_tr("Bold only"), "bold")
+        self._bold_combo.addItem(QCoreApplication.translate("Nugget", "Both (Regular + Bold)"), "both")
+        self._bold_combo.addItem(QCoreApplication.translate("Nugget", "Regular only"), "regular")
+        self._bold_combo.addItem(QCoreApplication.translate("Nugget", "Bold only"), "bold")
         self._bold_combo.blockSignals(False)
 
     def _populate_target_combo(self):
@@ -314,7 +310,7 @@ class IOSPasscodeThemePage(QWidget):
         self._target_combo.addItem("TelephonyUI-10 (iOS 27)", "10")
         self._target_combo.addItem("TelephonyUI-9 (iOS 26.x)", "9")
         self._target_combo.addItem("TelephonyUI-8 (older)", "8")
-        self._target_combo.addItem(_tr("All (8, 9, 10)"), "all")
+        self._target_combo.addItem(QCoreApplication.translate("Nugget", "All (8, 9, 10)"), "all")
         self._target_combo.blockSignals(False)
 
     # ---- theme lifecycle -------------------------------------------------
@@ -353,13 +349,13 @@ class IOSPasscodeThemePage(QWidget):
 
     def choose_theme_dialog(self):
         path, _ = QFileDialog.getOpenFileName(
-            self, _tr("Choose a Passcode Theme"), "", _tr("passthemes (*.passthm)"))
+            self, QCoreApplication.translate("Nugget", "Choose a Passcode Theme"), "", QCoreApplication.translate("Nugget", "passthemes (*.passthm)"))
         if not path:
             return
         try:
             keys = parse_passthm(path)
         except PasscodeThemeError as error:
-            QMessageBox.warning(self.window, _tr("Invalid Theme"),
+            QMessageBox.warning(self.window, QCoreApplication.translate("Nugget", "Invalid Theme"),
                                 f"{type(error).__name__}: {error}")
             return
         self._apply_theme(path, keys)
@@ -403,15 +399,15 @@ class IOSPasscodeThemePage(QWidget):
         size = theme_size(self._theme_path)
         size_hint = ""
         if size == 1:
-            size_hint = _tr(", small keys")
+            size_hint = QCoreApplication.translate("Nugget", ", small keys")
         elif size == 2:
-            size_hint = _tr(", big keys")
-        detail = QLabel(_tr("{0} key images{1}").format(self._key_digits, size_hint))
+            size_hint = QCoreApplication.translate("Nugget", ", big keys")
+        detail = QLabel(QCoreApplication.translate("Nugget", "{0} key images{1}").format(self._key_digits, size_hint))
         detail.setStyleSheet(f"font-size: 12px; color: {c.text_secondary};")
         text_col.addWidget(detail)
         row.addLayout(text_col, 1)
 
-        remove_btn = QPushButton(_tr("Remove"))
+        remove_btn = QPushButton(QCoreApplication.translate("Nugget", "Remove"))
         remove_btn.setCursor(Qt.PointingHandCursor)
         remove_btn.setStyleSheet(
             f"QPushButton {{ background-color: {c.surface_hover}; color: {c.error}; "
@@ -439,7 +435,7 @@ class IOSPasscodeThemePage(QWidget):
         except Exception:
             pass
         if device is None:
-            self._device_lbl.setText(_tr(
+            self._device_lbl.setText(QCoreApplication.translate("Nugget", 
                 "No trusted iPhone connected. Plug it in, unlock it, tap "
                 "\u201cTrust This Computer\u201d when iOS asks, and wait for it "
                 "to appear here."))
@@ -448,14 +444,14 @@ class IOSPasscodeThemePage(QWidget):
         version = getattr(device, "version", "")
         build = getattr(device, "build", "")
         model = getattr(device, "model", "")
-        self._device_lbl.setText(_tr(
+        self._device_lbl.setText(QCoreApplication.translate("Nugget", 
             "Device: {0} — iOS {1} ({2}). This computer is trusted by it, so "
             "the write runs immediately — no \u201cTrust This Computer\u201d "
             "pop-up will appear.").format(
-                model or _tr("iPhone"), version or "?", build or "?"))
+                model or QCoreApplication.translate("Nugget", "iPhone"), version or "?", build or "?"))
         self._device_lbl.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px;")
         if not dm.data_singleton.device_available:
-            self._device_lbl.setText(_tr(
+            self._device_lbl.setText(QCoreApplication.translate("Nugget", 
                 "Device present, but it is not supported for AirLift (needs an "
                 "iPhone on iOS 26.2+)."))
             self._device_lbl.setStyleSheet(f"color: {c.error}; font-size: 13px;")
@@ -464,30 +460,30 @@ class IOSPasscodeThemePage(QWidget):
         self._save_options()
         self._refresh_device_line()
         if not self._theme_path:
-            self._show_status(_tr("Choose a theme first."), "error")
+            self._show_status(QCoreApplication.translate("Nugget", "Choose a theme first."), "error")
             return
         udid = self.window.device_manager.get_current_device_udid()
         if not udid:
             self._show_status(
-                _tr("No trusted iPhone is listed. Plug it in, unlock it, tap "
+                QCoreApplication.translate("Nugget", "No trusted iPhone is listed. Plug it in, unlock it, tap "
                     "\u201cTrust This Computer\u201d when iOS asks, then wait "
                     "for it to appear."),
                 "error")
             return
         if not self.window.device_manager.data_singleton.device_available:
             self._show_status(
-                _tr("This device is not supported for AirLift (needs an "
+                QCoreApplication.translate("Nugget", "This device is not supported for AirLift (needs an "
                     "iPhone on iOS 26.2+)."),
                 "error")
             return
 
         if self._worker is not None and self._worker.isRunning():
-            self._show_status(_tr("A write is already running."), "info")
+            self._show_status(QCoreApplication.translate("Nugget", "A write is already running."), "info")
             return
 
         locale = self._device_locale()
         self._write_btn.setEnabled(False)
-        self._show_status(_tr("Starting…"), "info")
+        self._show_status(QCoreApplication.translate("Nugget", "Starting…"), "info")
 
         self._worker = PasscodeThemeWriteThread(
             udid=udid,
@@ -519,8 +515,8 @@ class IOSPasscodeThemePage(QWidget):
             if self.window.isVisible():
                 QMessageBox.information(
                     self.window,
-                    _tr("Passcode Theme"),
-                    message if success else _tr("Apply failed:\n\n{0}").format(message),
+                    QCoreApplication.translate("Nugget", "Passcode Theme"),
+                    message if success else QCoreApplication.translate("Nugget", "Apply failed:\n\n{0}").format(message),
                 )
         except RuntimeError:
             pass
