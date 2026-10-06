@@ -185,9 +185,19 @@ pyside6-rcc src/qt/resources.qrc -o src/qt/resources_rc.py
 
 To create and compile languages, you can use the following commands:
 ```py
-pyside6-lupdate main_app.py src/gui/main_window.py src/gui/pages/page.py src/gui/pages/pages_list.py src/gui/pages/main/*.py src/gui/pages/tools/*.py src/gui/dialogs/*.py src/gui/ios/*.py src/qt/mainwindow.ui src/devicemanagement/device_manager.py src/exceptions/*.py src/tweaks/*.py src/tweaks/posterboard/*.py src/tweaks/posterboard/template_options/*.py src/tweaks/status_bar/*.py src/controllers/*.py -ts src/qt/translations/Nugget_{language code}.ts # generate/update the language file
+pyside6-lupdate main_app.py src/gui/main_window.py src/gui/pages/page.py src/gui/pages/pages_list.py src/gui/pages/main/*.py src/gui/pages/tools/*.py src/gui/dialogs/*.py src/gui/ios/*.py src/devicemanagement/device_manager.py src/exceptions/*.py src/tweaks/*.py src/tweaks/posterboard/*.py src/tweaks/posterboard/template_options/*.py src/tweaks/status_bar/*.py src/controllers/*.py -ts src/qt/translations/Nugget_{language code}.ts # generate/update the language file
 pyside6-lrelease src/qt/translations/Nugget_{language code}.ts -qm src/qt/translations/Nugget_{language code}.qm # compile to binary
 ```
+
+> **Note:** `src/qt/mainwindow.ui` is no longer in the list. The Classic UI
+> source was deleted (see the "TEMP: Classic UI removed" note in
+> [AGENTS.md](AGENTS.md)), so the pattern matched nothing. Its generated
+> counterpart `src/qt/mainwindow_ui.py` cannot stand in either: `pyside6-uic`
+> emits `u"..."` string literals and **lupdate silently skips `u`-prefixed
+> literals** (verified: stripping the prefix recovers the sidebar strings,
+> leaving it yields zero). The Classic-UI strings already in the catalogs are
+> therefore unreachable by the pipeline and can only come back together with
+> `mainwindow.ui`. Re-add the pattern when Classic returns.
 
 The application itself can be compiled by running `compile.py`.
 
