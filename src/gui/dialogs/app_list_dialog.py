@@ -30,10 +30,6 @@ from src.gui.theme import ColorThemeManager
 _NUGGET = "Nugget"
 
 
-def _tr(text: str) -> str:
-    return QCoreApplication.translate(_NUGGET, text)
-
-
 class FetchAppsThread(QThread):
     """Pull the installed-app list from the device on a background thread."""
 
@@ -89,7 +85,7 @@ class AppListExportDialog(QDialog):
     def __init__(self, window, parent=None):
         super().__init__(parent)
         self.window = window
-        self.setWindowTitle(_tr("Apps on iPhone"))
+        self.setWindowTitle(QCoreApplication.translate("Nugget", "Apps on iPhone"))
         self.setModal(True)
         self.resize(520, 560)
         self._apps: list[dict] = []
@@ -100,12 +96,12 @@ class AppListExportDialog(QDialog):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(10)
 
-        self.status_lbl = QLabel(_tr("Loading installed apps..."), self)
+        self.status_lbl = QLabel(QCoreApplication.translate("Nugget", "Loading installed apps..."), self)
         self.status_lbl.setWordWrap(True)
         layout.addWidget(self.status_lbl)
 
         self.filter_input = QLineEdit(self)
-        self.filter_input.setPlaceholderText(_tr("Filter by name or bundle id..."))
+        self.filter_input.setPlaceholderText(QCoreApplication.translate("Nugget", "Filter by name or bundle id..."))
         self.filter_input.textChanged.connect(self._apply_filter)
         self.filter_input.setVisible(False)
         layout.addWidget(self.filter_input)
@@ -118,16 +114,16 @@ class AppListExportDialog(QDialog):
 
         btns = QHBoxLayout()
         btns.setSpacing(8)
-        self.export_btn = QPushButton(_tr("Export JSON..."), self)
+        self.export_btn = QPushButton(QCoreApplication.translate("Nugget", "Export JSON..."), self)
         self.export_btn.setEnabled(False)
         self.export_btn.clicked.connect(self._export_json)
         btns.addWidget(self.export_btn)
         btns.addStretch()
-        self.add_btn = QPushButton(_tr("Add Icon for Selected"), self)
+        self.add_btn = QPushButton(QCoreApplication.translate("Nugget", "Add Icon for Selected"), self)
         self.add_btn.setEnabled(False)
         self.add_btn.clicked.connect(self._add_selected)
         btns.addWidget(self.add_btn)
-        close_btn = QPushButton(_tr("Close"), self)
+        close_btn = QPushButton(QCoreApplication.translate("Nugget", "Close"), self)
         close_btn.clicked.connect(self.reject)
         btns.addWidget(close_btn)
         self._btn_box = btns
@@ -143,7 +139,7 @@ class AppListExportDialog(QDialog):
         except Exception:
             udid = None
         if not udid:
-            self.status_lbl.setText(_tr(
+            self.status_lbl.setText(QCoreApplication.translate("Nugget", 
                 "No iPhone connected. Connect and unlock the device, then try again."))
             return
         self._thread = FetchAppsThread(udid, parent=self)
@@ -154,7 +150,7 @@ class AppListExportDialog(QDialog):
     def _on_done(self, apps: list[dict]):
         self._apps = apps
         self._thread = None
-        self.status_lbl.setText(_tr(
+        self.status_lbl.setText(QCoreApplication.translate("Nugget", 
             "{0} apps installed on the iPhone.").format(len(apps)))
         self.filter_input.setVisible(True)
         self.list_widget.setVisible(True)
@@ -163,7 +159,7 @@ class AppListExportDialog(QDialog):
 
     def _on_failed(self, error: str):
         self._thread = None
-        self.status_lbl.setText(_tr(
+        self.status_lbl.setText(QCoreApplication.translate("Nugget", 
             "Could not read the app list.\n\n{0}").format(error))
 
     def _apply_filter(self):
@@ -203,7 +199,7 @@ class AppListExportDialog(QDialog):
         default_name = "installed_apps.json"
         path, _ = QFileDialog.getSaveFileName(
             self,
-            _tr("Export App List"),
+            QCoreApplication.translate("Nugget", "Export App List"),
             os.path.join(os.path.expanduser("~"), default_name),
             "JSON files (*.json)")
         if not path:
@@ -221,9 +217,9 @@ class AppListExportDialog(QDialog):
                 json.dump(payload, f, ensure_ascii=False, indent=2)
         except OSError as e:
             QMessageBox.warning(
-                self, _tr("Warning"), _tr("Could not write the file:\n{0}").format(e))
+                self, QCoreApplication.translate("Nugget", "Warning"), QCoreApplication.translate("Nugget", "Could not write the file:\n{0}").format(e))
             return
-        self.status_lbl.setText(_tr(
+        self.status_lbl.setText(QCoreApplication.translate("Nugget", 
             "Exported {0} apps to:\n{1}").format(len(payload), path))
 
     def reject(self):
@@ -269,6 +265,6 @@ class AppListExportDialog(QDialog):
         """)
         for i in range(self._btn_box.count()):
             w = self._btn_box.itemAt(i).widget()
-            if isinstance(w, QPushButton) and w.text() == _tr("Close"):
+            if isinstance(w, QPushButton) and w.text() == QCoreApplication.translate("Nugget", "Close"):
                 w.setStyleSheet(
                     f"background-color: {c.surface_hover}; color: {c.text_primary};")
