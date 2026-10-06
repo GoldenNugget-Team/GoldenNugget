@@ -116,7 +116,7 @@ class ColorThemeManager(QObject):
         return DARK.with_accent(accent, hover, pressed)
 
     def accent_hex(self) -> str:
-        """Return the ``(r, g, b)`` tuple for the current accent."""
+        """Return the current accent as a ``"#rrggbb"`` string."""
         accent, _, _ = ACCENT_PRESETS[self._accent_name]
         return accent
 
