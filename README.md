@@ -15,6 +15,9 @@ Make sure you have installed the [requirements](#requirements) if you are on Win
 ## Discord server
 Wanted support? Join our [Discord Server][server].
 
+## On-device mobile version
+We already developed a on-device GoldenNugget Mobile that do not need computer. [Here][mobile] it is.
+
 ## Features
 <details>
 <summary>iOS 26.2 - 27.0+</summary>
@@ -259,3 +262,4 @@ See [CONTRIBUTING.md](https://github.com/awesomenull-dev/GoldenNugget/blob/main/
 [0xjonhnnydev]: https://github.com/0xjohnnydev
 [awesomenull]: https://github.com/awesomenull-dev
 [AirLift]: https://github.com/0xjohnnydev/airlift
+[mobile]: https://github.com/GoldenNugget-Team/GoldenNugget-mobile
