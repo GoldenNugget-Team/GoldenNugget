@@ -553,6 +553,10 @@ class DeviceManager:
 
             self._apply_hotload_daemon_forcing()
 
+            from src.controllers.apply_preview import safe_capture_preview, write_preview
+            preview = safe_capture_preview(self)
+            preview_udid = self.get_current_device_udid()
+            preview_version = self.get_current_device_version()
             final_alert, files_to_restore = await self._apply_tweak_pass(
                 update_label,
                 templates=tweaks[TweakID.Templates].templates,
@@ -567,6 +571,7 @@ class DeviceManager:
             udid = self.get_current_device_udid()
             if udid:
                 write_lastapply(udid, sparse_signature(files_to_restore))
+            write_preview(preview_udid, preview_version, preview)
             update_label(QCoreApplication.tr("Success!"))
         except Exception as e:
             final_alert = show_apply_error(e, update_label, files_list=files_to_restore)
@@ -943,7 +948,7 @@ Returns (PreparedBackup, posterboard_db_ok). When the PosterBoard
                 # HotLoad: never apply tweaks flagged as dangerous/broken for
                 # this device / iOS version (kill switch off -> no rules match),
                 # and never apply tweaks of a hidden feature.
-                if (tweak_name in hotload_hidden_names
+                if (tweak_name.name in hotload_hidden_names
                         or hotload.rule_for(tweak_name,
                                             device_version=hotload_version,
                                             device_model=hotload_model) is not None):
@@ -1251,6 +1256,9 @@ Returns (PreparedBackup, posterboard_db_ok). When the PosterBoard
             udid = self.get_current_device_udid()
             if udid:
                 clear_lastapply(udid)
+                # A partial reset cannot be reconstructed from selection history.
+                from src.controllers.apply_preview import clear_preview
+                clear_preview(udid)
             update_label(QCoreApplication.tr("Success!"))
         except Exception as e:
             final_alert = show_apply_error(e, update_label, files_list=files_to_restore)

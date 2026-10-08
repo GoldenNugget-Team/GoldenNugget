@@ -167,9 +167,18 @@ STYLES = {
         QPushButton:disabled {{ background-color: {border}; color: {text_disabled}; }}
     """,
 
+    "apply_preview_text": """
+        QPlainTextEdit {{
+            background-color: {bg_secondary}; color: {text_primary};
+            border: 1px solid {border}; border-radius: 10px;
+            padding: 12px; font-size: 14px;
+            selection-background-color: {accent};
+        }}
+    """,
+
     "confirm_dialog": """
         QDialog {{ background-color: {bg_elevated}; }}
-        QLabel {{ color: {text_primary}; font-size: 15px; }}
+        QLabel {{ color: {text_primary}; font-size: 15px; background-color: transparent; }}
         QLabel#confirmTitle {{ font-size: 17px; font-weight: 700; color: {text_primary}; }}
         QLabel#confirmMuted {{ color: {text_secondary}; font-size: 13px; }}
         QLabel#confirmRow {{ font-size: 14px; color: {text_primary}; }}

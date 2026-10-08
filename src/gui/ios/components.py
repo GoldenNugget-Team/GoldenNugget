@@ -148,13 +148,14 @@ class IOSSummaryDialog(QDialog):
     """
     def __init__(self, title: str, lines: list[str], muted: str = "",
                  confirm_text: str = "", extra_button: str = "",
-                 extra_result: int = 2, parent=None):
+                 extra_result: int = 2, parent=None, details_callback=None):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setModal(True)
         self.setMinimumWidth(380)
         self.setMinimumHeight(140)
         self._retheme()
+        _auto_retheme(self)
 
         layout = QVBoxLayout(self)
         layout.setSpacing(12)
@@ -178,6 +179,13 @@ class IOSSummaryDialog(QDialog):
             layout.addWidget(muted_lbl)
 
         layout.addStretch()
+
+        if details_callback is not None:
+            details_btn = QPushButton(QCoreApplication.translate("ApplyPreview", "View changes"), self)
+            details_btn.setObjectName("cancelBtn")
+            details_btn.setCursor(Qt.PointingHandCursor)
+            details_btn.clicked.connect(lambda: details_callback(self))
+            layout.addWidget(details_btn)
 
         buttons = QHBoxLayout()
         buttons.setSpacing(12)

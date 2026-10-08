@@ -4490,6 +4490,30 @@ Author: {2}</source>
         <source>{} wallpapers</source>
         <translation>обоев: {}</translation>
     </message>
+    <message>
+        <source>Primary carrier</source>
+        <translation>Основной оператор</translation>
+    </message>
+    <message>
+        <source>Secondary carrier</source>
+        <translation>Второй оператор</translation>
+    </message>
+    <message>
+        <source>Primary service badge</source>
+        <translation>Значок основной сети</translation>
+    </message>
+    <message>
+        <source>Secondary service badge</source>
+        <translation>Значок второй сети</translation>
+    </message>
+    <message>
+        <source>Primary signal bars</source>
+        <translation>Уровень сигнала основной сети</translation>
+    </message>
+    <message>
+        <source>Secondary signal bars</source>
+        <translation>Уровень сигнала второй сети</translation>
+    </message>
 </context>
 <context>
     <name>PBHelpDialog</name>
@@ -5072,6 +5096,97 @@ No selected file for required option</source>
         <location filename="../src/gui/ios/components.py" line="197"/>
         <source>Confirm</source>
         <translation>Подтвердить</translation>
+    </message>
+</context>
+<context>
+    <name>ApplyPreview</name>
+    <message>
+        <source>Default</source>
+        <translation>По умолчанию</translation>
+    </message>
+    <message>
+        <source>No comparable successful apply has been recorded for this device and iOS version. Current selections:</source>
+        <translation>Для этого устройства и версии iOS ещё нет истории успешного применения для сравнения. Сейчас выбрано:</translation>
+    </message>
+    <message>
+        <source>No selection changes since the last successful apply.</source>
+        <translation>Выбор не изменился с последнего успешного применения.</translation>
+    </message>
+    <message>
+        <source>Current queue (processed again on each apply):</source>
+        <translation>Текущая очередь (обрабатывается заново при каждом применении):</translation>
+    </message>
+    <message>
+        <source>Disable service</source>
+        <translation>Отключить службу</translation>
+    </message>
+    <message>
+        <source>Enable service</source>
+        <translation>Включить службу</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>Вкл.</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Выкл.</translation>
+    </message>
+    <message>
+        <source>No plist tweaks or status bar overrides selected.</source>
+        <translation>Твики plist и изменения строки состояния не выбраны.</translation>
+    </message>
+    <message>
+        <source>{0}: skipped by HotLoad</source>
+        <translation>{0}: будет пропущено по правилам HotLoad</translation>
+    </message>
+    <message>
+        <source>{0}: forced off by HotLoad</source>
+        <translation>{0}: принудительное отключение по правилам HotLoad</translation>
+    </message>
+    <message>
+        <source>Video wallpaper</source>
+        <translation>Видеообои</translation>
+    </message>
+    <message>
+        <source>{0}: selected — {1}</source>
+        <translation>{0}: выбрано — {1}</translation>
+    </message>
+    <message>
+        <source>{0}: no longer selected for this apply (not a reset)</source>
+        <translation>{0}: больше не выбрано для применения (это не сброс)</translation>
+    </message>
+    <message>
+        <source>Only the first {0} wallpaper packages will be applied.</source>
+        <translation>Будут применены только первые {0} пакетов обоев.</translation>
+    </message>
+    <message>
+        <source>Icon Themes</source>
+        <translation>Темы иконок</translation>
+    </message>
+    <message>
+        <source>{0}: configuration changed ({1})</source>
+        <translation>{0}: настройки изменены ({1})</translation>
+    </message>
+    <message>
+        <source>{0} overrides</source>
+        <translation>Переопределений: {0}</translation>
+    </message>
+    <message>
+        <source>View changes</source>
+        <translation>Посмотреть изменения</translation>
+    </message>
+    <message>
+        <source>Compared with the last successful apply through GoldenNugget. Current device settings are not read. Deselecting a tweak does not reset it; use Reset Tweaks to restore defaults.</source>
+        <translation>Сравнение с последним успешным применением через GoldenNugget. Текущие настройки устройства не считываются. Снятие галочки не сбрасывает твик; для возврата к исходным значениям используйте сброс твиков.</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Назад</translation>
+    </message>
+    <message>
+        <source>The preview could not be built. See the session log for details.</source>
+        <translation>Не удалось подготовить предпросмотр. Подробности — в журнале сеанса.</translation>
     </message>
 </context>
 </TS>

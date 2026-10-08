@@ -796,7 +796,7 @@ class ApplyMixin:
                 confirm_text=QCoreApplication.translate("Nugget", "Apply"),
                 extra_button=(QCoreApplication.translate("Nugget", "Update Cache")
                               if cache_enabled else ""),
-                parent=self)
+                parent=self, details_callback=self._show_apply_preview)
             res = dlg.exec()
             if res == self._SUMMARY_UPDATE_CACHE:
                 self._run_cache_update()
@@ -804,6 +804,22 @@ class ApplyMixin:
                 # user can review and then confirm or cancel.
                 continue
             return res == QtWidgets.QDialog.Accepted
+
+    def _show_apply_preview(self, parent):
+        from src.controllers.apply_preview import load_preview, preview_lines, safe_capture_preview
+        from src.gui.dialogs.apply_preview import ApplyPreviewDialog
+        manager = self.device_manager
+        preview = safe_capture_preview(manager)
+        if preview is None:
+            lines = [QCoreApplication.translate(
+                "ApplyPreview", "The preview could not be built. See the session log for details.")]
+        else:
+            previous = load_preview(manager.get_current_device_udid(),
+                                    manager.get_current_device_version())
+            lines = preview_lines(preview, previous)
+        dialog = ApplyPreviewDialog(lines, parent)
+        dialog.exec()
+        dialog.deleteLater()
 
     def _backup_cache_enabled(self) -> bool:
         return (self.device_manager.pref_manager.use_backup_cache

@@ -385,6 +385,19 @@ the `ProtectiveBackupCache` to `protective_cache.py` (both re-exported from
 
 ## src/gui/ — two UIs, one state
 
+The pre-apply summary includes **View changes**, a read-only, scrollable
+selection comparison (`controllers/apply_preview.py`,
+`gui/dialogs/apply_preview.py`). It compares against the last successful apply
+for the same UDID and iOS version, accounts for HotLoad exclusions and forced
+daemon values, and lists the current wallpaper/template/icon queue separately.
+Deselecting a tweak is explicitly not a reset. Before the first recorded apply,
+or after a reset/version change, it shows current selections without inventing
+device values. Preview history is an atomic `.json.preview` sidecar next to the
+existing last-apply signature; it never changes sparse-restore routing. Capture
+runs before tweak generation and is saved only after apply succeeds; successful
+reset invalidates it. Opening the preview generates no payloads and opens no
+device session.
+
 The `Page` enum (`pages_list.py`) and the designer `pages` QStackedWidget
 share 15 indices, but the designer stack is **parked** (`main_window.py:150-152`)
 and is not the live navigator. Real navigation uses:
