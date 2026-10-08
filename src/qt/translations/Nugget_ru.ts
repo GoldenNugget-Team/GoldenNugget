@@ -5189,4 +5189,19 @@ No selected file for required option</source>
         <translation>Не удалось подготовить предпросмотр. Подробности — в журнале сеанса.</translation>
     </message>
 </context>
+<context>
+    <name>ListSearch</name>
+    <message>
+        <source>Search this list…</source>
+        <translation>Поиск по списку…</translation>
+    </message>
+    <message>
+        <source>No matches found.</source>
+        <translation>Ничего не найдено.</translation>
+    </message>
+    <message>
+        <source>Enable daemon modifications to see matching services.</source>
+        <translation>Включите изменение демонов, чтобы увидеть найденные службы.</translation>
+    </message>
+</context>
 </TS>

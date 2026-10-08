@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
     QGraphicsOpacityEffect, QSizePolicy,
 )
 
-from src.gui.ios.components import IOSSectionHeader, IOSSwitch
+from src.gui.ios.components import IOSSectionHeader, IOSSwitch, IOSSearchField, IOSSearchEmpty
 from src.gui.theme import ColorThemeManager
 from src.tweaks.tweaks import tweaks, TweakID
 from src.tweaks.tweak_loader import load_daemons
@@ -156,6 +156,9 @@ class IOSDaemonsContent(QWidget):
         layout.setContentsMargins(16, 16, 16, 32)
         layout.setSpacing(8)
 
+        self.search = IOSSearchField(self)
+        layout.addWidget(self.search)
+
         # Master enable switch
         layout.addWidget(IOSSectionHeader(
             QCoreApplication.translate("Nugget", "Daemons to Disable")
@@ -245,9 +248,10 @@ class IOSDaemonsContent(QWidget):
 
         # Analytics, data tracking & logging toggles (from MiniVoidyy/GoldenNugget-)
         # Safe telemetry/analytics daemons — nothing boot-critical.
-        self._rows.append(IOSSectionHeader(
+        self._analytics_header = self._rows.append(IOSSectionHeader(
             QCoreApplication.translate("Nugget", "Analytics, Data Tracking & Logging")
         ))
+        analytics_start = len(self.daemon_cards)
         for title, daemon in [
             (QCoreApplication.translate("Nugget", "Disable Wi-Fi Analytics"), Daemon.WifiAnalytics),
             (QCoreApplication.translate("Nugget", "Disable System Analytics"), Daemon.AnalyticsHelper),
@@ -269,12 +273,16 @@ class IOSDaemonsContent(QWidget):
             self.daemon_cards.append(card)
             self.daemon_switches.append((daemon, switch))
 
+        self._analytics_cards = self.daemon_cards[analytics_start:]
         # Screen Time
-        layout.addWidget(IOSSectionHeader(
+        self._screen_time_header = IOSSectionHeader(
             QCoreApplication.translate("Nugget", "Disable Screen Time Agent")
-        ))
+        )
+        layout.addWidget(self._screen_time_header)
+        self._screen_time_card = None
         if self.screen_time_tweak is not None:
             card = QWidget()
+            self._screen_time_card = card
             row_layout = QHBoxLayout(card)
             row_layout.setContentsMargins(16, 10, 16, 10)
             row_layout.setSpacing(12)
@@ -287,11 +295,35 @@ class IOSDaemonsContent(QWidget):
             row_layout.addWidget(self.screen_time_switch)
             layout.addWidget(card)
 
+        self.search_empty = IOSSearchEmpty(self)
+        layout.addWidget(self.search_empty)
+        self.search.textChanged.connect(self._apply_search)
         self._update_daemons_enabled()
         layout.addStretch()
 
+    def _apply_search(self):
+        searching = bool(self.search.text().strip())
+        matches = 0
+        for card in self.daemon_cards:
+            visible = self.search.matches(card.property("searchText"))
+            card.setVisible(visible)
+            matches += visible
+        self.recommended_card.setVisible(not searching)
+        self._analytics_header.setVisible(any(not card.isHidden() for card in self._analytics_cards))
+        screen_match = self._screen_time_card is not None and self.search.matches(
+            self._screen_time_label.text(), self._screen_time_header.text(), "ScreenTimeAgent")
+        self._screen_time_header.setVisible(screen_match)
+        if self._screen_time_card is not None:
+            self._screen_time_card.setVisible(screen_match)
+        disabled_matches = matches and not self.daemons_tweak.enabled
+        self.search_empty.setText(QCoreApplication.translate(
+            "ListSearch", "Enable daemon modifications to see matching services.")
+            if disabled_matches else QCoreApplication.translate("ListSearch", "No matches found."))
+        self.search_empty.setVisible(searching and not screen_match and (not matches or disabled_matches))
+
     def _make_daemon_switch(self, title: str, daemon: Daemon):
         card = QWidget()
+        card.setProperty("searchText", " ".join([title, daemon.name, *daemon.value]))
         row_layout = QHBoxLayout(card)
         row_layout.setContentsMargins(16, 10, 16, 10)
         row_layout.setSpacing(12)
@@ -472,6 +504,7 @@ class IOSDaemonsContent(QWidget):
         # the only caller that animates is the master switch itself; a build, a
         # device change or a theme change must never re-run the cascade
         self._rows.set_shown(enabled, animate=animate)
+        self._apply_search()
 
     def refresh_from_tweaks(self):
         """Resync every switch with the current tweak state."""

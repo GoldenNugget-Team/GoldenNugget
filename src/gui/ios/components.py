@@ -214,6 +214,36 @@ class IOSSummaryDialog(QDialog):
         self.setStyleSheet(t("confirm_dialog"))
 
 
+class IOSSearchField(QLineEdit):
+    """Local, case-insensitive list filter with a clear button."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setPlaceholderText(QCoreApplication.translate("ListSearch", "Search this list…"))
+        self.setAccessibleName(self.placeholderText())
+        self.setClearButtonEnabled(True)
+        self._retheme()
+        _auto_retheme(self)
+
+    def matches(self, *texts):
+        haystack = " ".join(texts).casefold()
+        return all(word in haystack for word in self.text().casefold().split())
+
+    def _retheme(self):
+        self.setStyleSheet(t("list_search"))
+
+
+class IOSSearchEmpty(QLabel):
+    def __init__(self, parent=None):
+        super().__init__(QCoreApplication.translate("ListSearch", "No matches found."), parent)
+        self.setWordWrap(True)
+        self.hide()
+        self._retheme()
+        _auto_retheme(self)
+
+    def _retheme(self):
+        self.setStyleSheet(t("list_search_empty"))
+
+
 class IOSSectionHeader(QLabel):
     def __init__(self, text: str, parent=None):
         super().__init__(text, parent)

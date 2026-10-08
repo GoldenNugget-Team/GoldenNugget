@@ -5,7 +5,8 @@ from PySide6.QtWidgets import (
 
 from src.gui.ios.components import (
     IOSCollapsibleSection, IOSCard, IOSSettingsRow,
-    IOSSwitch, TextInputDialog, NumberInputDialog, decimals_for_step
+    IOSSwitch, TextInputDialog, NumberInputDialog, decimals_for_step,
+    IOSSearchField, IOSSearchEmpty,
 )
 from src.gui.ios.compat import is_tweak_compatible
 from src.gui.theme import ColorThemeManager
@@ -88,9 +89,15 @@ class IOSSectionContent(QWidget):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
+        self.search = IOSSearchField(self)
+        search_row = QHBoxLayout()
+        search_row.setContentsMargins(16, 16, 16, 0)
+        search_row.addWidget(self.search)
+        root.addLayout(search_row)
         self._inner = None
 
         self.rebuild()
+        self.search.textChanged.connect(self._apply_search)
 
     def rebuild(self):
         """(Re)build the section controls for the currently selected device.
@@ -117,6 +124,9 @@ class IOSSectionContent(QWidget):
         self.layout().addWidget(inner)
 
         self._switch_labels = []
+        self._search_rows = []
+        self._search_sections = []
+        self._search_expanded = {}
         self.force_solarium_fallback_card = None
 
         try:
@@ -163,6 +173,7 @@ class IOSSectionContent(QWidget):
                 card.setToolTip(description)
 
             (target or layout).addWidget(card)
+            self._search_rows.append((card, tweak_id, title, description, is_compatible(tweak_id)))
 
         # Helper for text input tweaks
         def make_text_input(tweak_id: TweakID, title: str, description: str = "",
@@ -185,6 +196,7 @@ class IOSSectionContent(QWidget):
             row.clicked.connect(lambda: self._show_text_input_dialog(tweak_id, title, current, row))
             card_layout.addWidget(row)
             (target or layout).addWidget(card)
+            self._search_rows.append((card, tweak_id, title, description, True))
 
         # Helper for number input tweaks
         def make_number_input(tweak_id: TweakID, title: str, min_val: int = 0, max_val: int = 999,
@@ -212,6 +224,7 @@ class IOSSectionContent(QWidget):
                 tweak_id, title, current, row, min_val, max_val, step))
             card_layout.addWidget(row)
             (target or layout).addWidget(card)
+            self._search_rows.append((card, tweak_id, title, description, True))
 
         # Render sections straight from the registry. Titles (and descriptions)
         # are stored as QT_TRANSLATE_NOOP markers and translated here, at
@@ -247,21 +260,48 @@ class IOSSectionContent(QWidget):
                 lambda expanded, name=section.value: _save_collapsed_section(
                     name, not expanded))
             layout.addWidget(collapsible)
+            start = len(self._search_rows)
             for spec in SPECS_BY_SECTION[section]:
                 renderers[spec.kind](spec, collapsible.body_layout)
+            self._search_sections.append((collapsible, self._search_rows[start:]))
 
+        self.search_empty = IOSSearchEmpty(self)
+        layout.addWidget(self.search_empty)
         layout.addStretch()
 
         # re-apply any remembered solarium-card visibility to the fresh card
         if self._solarium_visible is not None and self.force_solarium_fallback_card is not None:
             self.force_solarium_fallback_card.setVisible(self._solarium_visible)
+        self._apply_search()
+
+    def _apply_search(self):
+        searching = bool(self.search.text().strip())
+        matches = 0
+        for card, tid, title, description, compatible in self._search_rows:
+            available = compatible and not (
+                tid == TweakID.ForceSolariumFallback and self._solarium_visible is False)
+            visible = available and self.search.matches(title, description, tid.name)
+            card.setVisible(visible)
+            matches += visible
+        for section, rows in self._search_sections:
+            section.setVisible(any(not row[0].isHidden() for row in rows))
+            if searching and section not in self._search_expanded:
+                self._search_expanded[section] = section.expanded
+            # Temporary expansion must not overwrite the user's saved collapse state.
+            section.blockSignals(True)
+            if searching:
+                section.set_expanded(True)
+            elif section in self._search_expanded:
+                section.set_expanded(self._search_expanded.pop(section))
+            section.blockSignals(False)
+            section.header.setEnabled(not searching)
+        self.search_empty.setVisible(searching and matches == 0)
 
     def set_force_solarium_fallback_visible(self, visible: bool):
         # remember the intended state so a rebuild re-applies it (the card
         # pointer is recreated by rebuild())
         self._solarium_visible = visible
-        if self.force_solarium_fallback_card is not None:
-            self.force_solarium_fallback_card.setVisible(visible)
+        self._apply_search()
 
     def _retheme(self):
         c = ColorThemeManager.instance().colors

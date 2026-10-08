@@ -176,6 +176,20 @@ STYLES = {
         }}
     """,
 
+    "list_search": """
+        QLineEdit {{
+            background-color: {bg_input}; color: {text_primary};
+            border: 1px solid {border}; border-radius: 10px;
+            padding: 10px 12px; font-size: 14px;
+            selection-background-color: {accent};
+        }}
+        QLineEdit:focus {{ border-color: {accent}; }}
+    """,
+    "list_search_empty": """
+        color: {text_secondary}; background-color: transparent;
+        font-size: 14px; padding: 12px;
+    """,
+
     "confirm_dialog": """
         QDialog {{ background-color: {bg_elevated}; }}
         QLabel {{ color: {text_primary}; font-size: 15px; background-color: transparent; }}
