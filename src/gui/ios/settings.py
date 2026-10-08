@@ -871,14 +871,21 @@ class IOSSettingsPage(QWidget):
             (QCoreApplication.translate("Nugget", "Load"), self._on_preset_load),
             (QCoreApplication.translate("Nugget", "Delete"), self._on_preset_delete),
             (QCoreApplication.translate("Nugget", "Refresh"), self.refresh_presets),
+        ]:
+            btn = self._make_mini_button(title)
+            btn.clicked.connect(handler)
+            btns_row.addWidget(btn)
+        presets_layout.addLayout(btns_row)
+        transfer_row = QHBoxLayout()
+        for title, handler in [
             (QCoreApplication.translate("Nugget", "Export"), self._on_preset_export),
             (QCoreApplication.translate("Nugget", "Partial Export"), self._on_preset_partial_export),
             (QCoreApplication.translate("Nugget", "Import"), self._on_preset_import),
         ]:
             btn = self._make_mini_button(title)
             btn.clicked.connect(handler)
-            btns_row.addWidget(btn)
-        presets_layout.addLayout(btns_row)
+            transfer_row.addWidget(btn)
+        presets_layout.addLayout(transfer_row)
 
         self.content_layout.addWidget(card)
 

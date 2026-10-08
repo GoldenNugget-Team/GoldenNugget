@@ -5204,4 +5204,50 @@ No selected file for required option</source>
         <translation>Включите изменение демонов, чтобы увидеть найденные службы.</translation>
     </message>
 </context>
+<context>
+    <name>TweakConflicts</name>
+    <message>
+        <source>{0} + {1}: {2}</source>
+        <translation>{0} + {1}: {2}</translation>
+    </message>
+    <message>
+        <source>Both layout directions are forced at the same time. Select only one.</source>
+        <translation>Одновременно принудительно заданы оба направления интерфейса. Выберите только одно.</translation>
+    </message>
+    <message>
+        <source>One tweak clears a preferences file used by the other.</source>
+        <translation>Один твик очищает файл настроек, используемый другим.</translation>
+    </message>
+    <message>
+        <source>They write different values to the same setting.</source>
+        <translation>Твики задают разные значения одного параметра.</translation>
+    </message>
+    <message>
+        <source>The later tweak replaces settings written by the earlier one.</source>
+        <translation>Последующий твик перезаписывает настройки предыдущего.</translation>
+    </message>
+    <message>
+        <source>Conflicting tweaks</source>
+        <translation>Конфликтующие твики</translation>
+    </message>
+    <message>
+        <source>Some selected tweaks contradict or overwrite each other. Return to the list to change your selection, or continue with the current selection.</source>
+        <translation>Некоторые выбранные твики противоречат друг другу или перезаписывают настройки. Вернитесь к списку и измените выбор либо продолжите с текущим набором.</translation>
+    </message>
+    <message>
+        <source>Review selection</source>
+        <translation>Изменить выбор</translation>
+    </message>
+    <message>
+        <source>Continue anyway</source>
+        <translation>Всё равно продолжить</translation>
+    </message>
+</context>
+<context>
+    <name>PresetTransfer</name>
+    <message>
+        <source>Invalid preset file. Expected a tweak dictionary and valid preset metadata.</source>
+        <translation>Неверный формат пресета. Ожидается словарь твиков и корректные сведения о пресете.</translation>
+    </message>
+</context>
 </TS>

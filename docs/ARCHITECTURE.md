@@ -398,6 +398,21 @@ runs before tweak generation and is saved only after apply succeeds; successful
 reset invalidates it. Opening the preview generates no payloads and opens no
 device session.
 
+Before starting an apply worker, the GUI also checks enabled plist writers
+with `controllers/tweak_conflicts.py`. It warns about differing values for the
+same key, a whole-file replacement or clear that overwrites another tweak,
+and simultaneous forced RTL/LTR layout. HotLoad-skipped tweaks are excluded.
+The warning defaults to reviewing the selection; continuing is explicit and
+never toggles a tweak automatically. These checks cover known plist conflicts,
+not every possible interaction with wallpapers, templates or device software.
+The same conflicts appear in View changes.
+
+Settings keeps preset Load/Delete/Refresh separate from the Export/Partial
+Export/Import row. Imports validate their container structure before saving,
+preserve legacy files without metadata, and store the preset without activating
+it. Existing JSON export semantics remain unchanged (PosterBoard is excluded;
+template and icon entries reference local assets rather than bundling them).
+
 The `Page` enum (`pages_list.py`) and the designer `pages` QStackedWidget
 share 15 indices, but the designer stack is **parked** (`main_window.py:150-152`)
 and is not the live navigator. Real navigation uses:

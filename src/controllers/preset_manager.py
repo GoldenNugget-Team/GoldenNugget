@@ -4,7 +4,7 @@ import os
 import time
 from typing import Optional
 
-from PySide6.QtCore import QStandardPaths
+from PySide6.QtCore import QStandardPaths, QCoreApplication
 
 from src.tweaks.tweak_names import TweakID
 from src.tweaks import tweak_loader
@@ -272,8 +272,9 @@ class PresetManager:
                 data = json.load(f)
             
             # Validate structure
-            if "tweaks" not in data and "metadata" not in data:
-                return False, "Invalid preset format"
+            if not self._valid_import_structure(data):
+                return False, QCoreApplication.translate(
+                    "PresetTransfer", "Invalid preset file. Expected a tweak dictionary and valid preset metadata.")
             
             # Determine name
             if new_name is None:
@@ -308,6 +309,55 @@ class PresetManager:
         except Exception as e:
             print(f"Failed to import preset: {e}")
             return False, str(e)
+
+    @staticmethod
+    def _valid_import_structure(data) -> bool:
+        """Reject malformed containers before they can enter the preset list.
+
+        Old files without metadata and unknown tweak names remain supported.
+        Import stores selections only; it never enables tweaks or applies them.
+        """
+        if not isinstance(data, dict) or not isinstance(data.get("tweaks"), dict):
+            return False
+        meta = data.get("metadata", {})
+        if not isinstance(meta, dict):
+            return False
+        for key in ("description", "device_model", "ios_version"):
+            if key in meta and not isinstance(meta[key], str):
+                return False
+        if "tags" in meta and (not isinstance(meta["tags"], list)
+                               or not all(isinstance(tag, str) for tag in meta["tags"])):
+            return False
+        for key in ("created_at", "updated_at", "version"):
+            if key in meta and type(meta[key]) not in (int, float):
+                return False
+        for name, entry in data["tweaks"].items():
+            if not isinstance(entry, dict):
+                return False
+            if "enabled" in entry and not isinstance(entry["enabled"], bool):
+                return False
+            if (name == "Daemons" or entry.get("type") == "AdvancedPlistTweak") and "value" in entry:
+                if not isinstance(entry["value"], dict):
+                    return False
+            if "templates" in entry and (not isinstance(entry["templates"], list)
+                                          or not all(isinstance(path, str) for path in entry["templates"])):
+                return False
+            if "themes" in entry:
+                if not isinstance(entry["themes"], list):
+                    return False
+                for theme in entry["themes"]:
+                    if not isinstance(theme, dict) or not all(
+                            isinstance(theme.get(key, ""), str)
+                            for key in ("bundle_id", "display_name", "icon_path")):
+                        return False
+            if "override_data" in entry:
+                if not isinstance(entry["override_data"], str):
+                    return False
+                try:
+                    base64.b64decode(entry["override_data"], validate=True)
+                except ValueError:
+                    return False
+        return True
 
     ## SERIALIZATION
     def _serialize(self) -> dict:

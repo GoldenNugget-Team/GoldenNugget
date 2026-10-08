@@ -803,7 +803,32 @@ class ApplyMixin:
                 # Re-open the summary (with the refreshed cache date) so the
                 # user can review and then confirm or cancel.
                 continue
-            return res == QtWidgets.QDialog.Accepted
+            return res == QtWidgets.QDialog.Accepted and self._confirm_tweak_conflicts()
+
+    def _confirm_tweak_conflicts(self):
+        from src.controllers.tweak_conflicts import current_conflicts
+        from src.gui.theme import t
+        conflicts = current_conflicts(self.device_manager)
+        if not conflicts:
+            return True
+        dialog = QtWidgets.QMessageBox(self)
+        dialog.setStyleSheet(t("confirm_dialog"))
+        dialog.setIcon(QtWidgets.QMessageBox.Warning)
+        dialog.setWindowTitle(QCoreApplication.translate("TweakConflicts", "Conflicting tweaks"))
+        dialog.setText(QCoreApplication.translate(
+            "TweakConflicts", "Some selected tweaks contradict or overwrite each other. "
+            "Return to the list to change your selection, or continue with the current selection."))
+        dialog.setInformativeText("\n\n".join(item.description() for item in conflicts[:5]))
+        dialog.setDetailedText("\n\n".join(item.description() for item in conflicts))
+        back = dialog.addButton(QCoreApplication.translate("TweakConflicts", "Review selection"),
+                                QtWidgets.QMessageBox.RejectRole)
+        proceed = dialog.addButton(QCoreApplication.translate("TweakConflicts", "Continue anyway"),
+                                   QtWidgets.QMessageBox.AcceptRole)
+        proceed.setObjectName("cancelBtn")
+        dialog.setDefaultButton(back)
+        dialog.setEscapeButton(back)
+        dialog.exec()
+        return dialog.clickedButton() is proceed
 
     def _show_apply_preview(self, parent):
         from src.controllers.apply_preview import load_preview, preview_lines, safe_capture_preview
@@ -817,6 +842,11 @@ class ApplyMixin:
             previous = load_preview(manager.get_current_device_udid(),
                                     manager.get_current_device_version())
             lines = preview_lines(preview, previous)
+            from src.controllers.tweak_conflicts import current_conflicts
+            conflicts = current_conflicts(manager)
+            if conflicts:
+                lines = [QCoreApplication.translate("TweakConflicts", "Conflicting tweaks")] + [
+                    item.description() for item in conflicts] + lines
         dialog = ApplyPreviewDialog(lines, parent)
         dialog.exec()
         dialog.deleteLater()
