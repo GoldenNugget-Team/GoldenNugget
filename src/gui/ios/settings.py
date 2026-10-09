@@ -16,7 +16,7 @@ from src.controllers.preset_manager import PresetManager
 from src.controllers.hotload import HotLoad
 from src.tweaks.tweaks import tweaks, TweakID
 from src.gui.thread_workers.apply_worker import ResetPairingThread
-from src.gui.theme import ColorThemeManager, AccentPicker
+from src.gui.theme import ColorThemeManager, AccentPicker, t
 from src.gui.ios.preset_menu import (
     load_preset_flow, save_preset_flow, delete_preset_flow,
     export_preset_flow, partial_export_preset_flow, import_preset_flow,
@@ -207,6 +207,8 @@ class IOSSettingsPage(QWidget):
             self._retheme_preset_inputs()
         if hasattr(self, '_preset_list'):
             self._retheme_preset_list()
+        if hasattr(self, 'history_count_lbl'):
+            self.history_count_lbl.setStyleSheet(t("value_label"))
 
     def _retheme_lang_dropdown(self):
         c = self._tm.colors
@@ -716,7 +718,14 @@ class IOSSettingsPage(QWidget):
         self.history_result_filter.currentIndexChanged.connect(self._refresh_history)
         filters.addWidget(self.history_mode_filter)
         filters.addWidget(self.history_result_filter)
+        self.history_reset_btn = self._make_mini_button(
+            QCoreApplication.translate("Nugget", "Reset Filters"))
+        self.history_reset_btn.clicked.connect(self._reset_history_filters)
+        filters.addWidget(self.history_reset_btn)
         layout.addLayout(filters)
+        self.history_count_lbl = QLabel("")
+        self.history_count_lbl.setStyleSheet(t("value_label"))
+        layout.addWidget(self.history_count_lbl)
         layout.addWidget(self.history_list)
         self._history_anims = []
         clear = self._make_mini_button(QCoreApplication.translate("Nugget", "Clear History"))
@@ -733,7 +742,7 @@ class IOSSettingsPage(QWidget):
         query = self.history_search.text().strip().casefold()
         mode_filter = self.history_mode_filter.currentData()
         result_filter = self.history_result_filter.currentData()
-        entries = []
+        matches = []
         for item in reversed(load_history()):
             if mode_filter != "all" and item.get("mode") != mode_filter:
                 continue
@@ -745,9 +754,22 @@ class IOSSettingsPage(QWidget):
                                 ("timestamp", "mode", "device", "model", "ios", "error"))
             if query and query not in haystack.casefold():
                 continue
-            entries.append(item)
-            if len(entries) == 10:
-                break
+            matches.append(item)
+        entries = matches[:10]
+        if matches:
+            if len(matches) > len(entries):
+                self.history_count_lbl.setText(
+                    QCoreApplication.translate("Nugget", "Showing {0} of {1} operations").format(
+                        len(entries), len(matches)))
+            else:
+                self.history_count_lbl.setText(
+                    QCoreApplication.translate("Nugget", "{0} operations found").format(len(matches)))
+        elif query or mode_filter != "all" or result_filter != "all":
+            self.history_count_lbl.setText(
+                QCoreApplication.translate("Nugget", "No matching operations"))
+        else:
+            self.history_count_lbl.setText(
+                QCoreApplication.translate("Nugget", "No operations recorded yet"))
         for row_index, item in enumerate(entries):
             try:
                 when = datetime.fromisoformat(item.get("timestamp", "")).astimezone().strftime("%Y-%m-%d %H:%M")
@@ -776,7 +798,13 @@ class IOSSettingsPage(QWidget):
             QTimer.singleShot(row_index * 25, animation.start)
             self._history_anims.append(animation)
         if not self.history_list.count():
-            self.history_list.addItem(QCoreApplication.translate("Nugget", "No operations recorded yet."))
+            self.history_list.addItem(
+                QCoreApplication.translate("Nugget", "No matching operations." if (query or mode_filter != "all" or result_filter != "all") else "No operations recorded yet."))
+
+    def _reset_history_filters(self):
+        self.history_search.clear()
+        self.history_mode_filter.setCurrentIndex(0)
+        self.history_result_filter.setCurrentIndex(0)
 
     def _clear_history(self):
         from src.controllers.apply_history import clear_history
