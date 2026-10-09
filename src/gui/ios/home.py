@@ -24,7 +24,7 @@ _FEATURE_ICONS = {
 
 
 class _StorageThread(QThread):
-    result = Signal(object, object)
+    result = Signal(object, object, object)
 
     def __init__(self, udid, parent=None):
         super().__init__(parent)
@@ -33,24 +33,40 @@ class _StorageThread(QThread):
     def run(self):
         import asyncio
         try:
-            total, free = asyncio.run(self._query())
+            total, free, battery = asyncio.run(self._query())
         except Exception:
-            total, free = None, None
-        self.result.emit(total, free)
+            total, free, battery = None, None, None
+        self.result.emit(total, free, battery)
 
     async def _query(self):
         from src.devicemanagement.session import lockdown_session
         from pymobiledevice3.services.diagnostics import DiagnosticsService
         async with lockdown_session(self.udid) as lockdown:
+            battery = None
             try:
                 async with DiagnosticsService(lockdown) as diagnostics:
+                    try:
+                        battery_report = await diagnostics.get_battery()
+                        if isinstance(battery_report, dict):
+                            percent = self._first_number(
+                                battery_report, "CurrentCapacity", "BatteryCurrentCapacity")
+                            if percent is not None:
+                                charging = battery_report.get("IsCharging", False)
+                                if isinstance(charging, str):
+                                    charging = charging.casefold() in ("1", "true", "yes")
+                                battery = {
+                                    "percent": percent,
+                                    "charging": bool(charging),
+                                }
+                    except Exception:
+                        pass
                     report = await diagnostics.info("All")
                 if isinstance(report, dict):
                     nested = report.get("DiskUsage") if isinstance(report.get("DiskUsage"), dict) else {}
                     total = report.get("TotalDataCapacity", nested.get("TotalDataCapacity"))
                     free = report.get("TotalDataSpace", nested.get("TotalDataSpace"))
                     if total is not None and free is not None:
-                        return int(total), int(free)
+                        return int(total), int(free), battery
             except Exception:
                 # Some iOS versions reject the diagnostics relay request while
                 # still exposing the same volume figures through AFC.
@@ -62,8 +78,8 @@ class _StorageThread(QThread):
             total = self._first_number(info, "FSTotalBytes", "TotalBytes")
             free = self._first_number(info, "FSFreeBytes", "FreeBytes")
             if total is None or free is None:
-                return None, None
-            return total, free
+                return None, None, battery
+            return total, free, battery
 
     @staticmethod
     def _first_number(values, *keys):
@@ -516,6 +532,7 @@ class IOSHomePage(QWidget):
         udid = self.window.device_manager.get_current_device_udid()
         if not udid:
             self.window._storage_info = None
+            self.window._battery_info = None
             self.storage_bar.setValue(0)
             self.storage_lbl.setText(QCoreApplication.translate(
                 "Nugget", "Connect an iPhone to view storage"))
@@ -526,7 +543,7 @@ class IOSHomePage(QWidget):
         self._storage_thread.start()
 
     @Slot(object, object)
-    def _on_storage_result(self, total, free):
+    def _on_storage_result(self, total, free, battery):
         current_udid = self.window.device_manager.get_current_device_udid()
         sender = self.sender()
         if sender is not self._storage_thread or getattr(sender, "udid", None) != current_udid:
@@ -534,6 +551,7 @@ class IOSHomePage(QWidget):
             return
         if not total or free is None or total <= 0:
             self.window._storage_info = None
+            self.window._battery_info = None
             self.storage_bar.setValue(0)
             self.storage_lbl.setText(QCoreApplication.translate(
                 "Nugget", "Storage information unavailable"))
@@ -541,6 +559,9 @@ class IOSHomePage(QWidget):
         self.window._storage_info = {
             "udid": current_udid, "total": int(total), "free": int(free)
         }
+        self.window._battery_info = {
+            "udid": current_udid, **(battery or {})
+        } if battery is not None else None
         used = max(0, total - free)
         percent = min(100, round(used * 100 / total))
         self.storage_bar.setValue(percent)

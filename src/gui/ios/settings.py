@@ -20,7 +20,7 @@ from src.gui.theme import ColorThemeManager, AccentPicker, t
 from src.gui.ios.preset_menu import (
     load_preset_flow, save_preset_flow, delete_preset_flow,
     export_preset_flow, partial_export_preset_flow, import_preset_flow,
-    preset_subtitle,
+    rollback_preset_flow, preset_subtitle,
 )
 
 
@@ -994,6 +994,7 @@ class IOSSettingsPage(QWidget):
             (QCoreApplication.translate("Nugget", "Load"), self._on_preset_load),
             (QCoreApplication.translate("Nugget", "Delete"), self._on_preset_delete),
             (QCoreApplication.translate("Nugget", "Refresh"), self.refresh_presets),
+            (QCoreApplication.translate("Nugget", "Rollback Last Apply"), self._on_preset_rollback),
         ]:
             btn = self._make_mini_button(title)
             btn.clicked.connect(handler)
@@ -1024,6 +1025,8 @@ class IOSSettingsPage(QWidget):
         self.preset_list.clear()
         for meta in self.preset_manager.list_presets_with_metadata():
             name = meta["name"]
+            if name.startswith("__"):
+                continue
             desc = meta.get("description", "")
             sub = preset_subtitle(meta)
             if desc:
@@ -1053,6 +1056,9 @@ class IOSSettingsPage(QWidget):
         if not name:
             return
         load_preset_flow(self, self.window, self.preset_manager, name)
+
+    def _on_preset_rollback(self):
+        rollback_preset_flow(self, self.window, self.preset_manager)
 
     def _selected_preset_name(self) -> str:
         """Name of the preset selected in the list ("" when nothing is)."""

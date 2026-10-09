@@ -775,6 +775,13 @@ class ApplyMixin:
         the cache's creation date, the refresh runs in a background thread,
         and the dialog re-opens with the fresh date.
         """
+        if not self.device_manager.get_current_device_udid():
+            QtWidgets.QMessageBox.warning(
+                self,
+                QCoreApplication.translate("Nugget", "No iPhone connected"),
+                QCoreApplication.translate(
+                    "Nugget", "Connect and unlock an iPhone before applying tweaks."))
+            return False
         cache_enabled = self._backup_cache_enabled()
         while True:
             lines, total = self._build_apply_summary()
@@ -794,6 +801,12 @@ class ApplyMixin:
             storage_warning = self._storage_warning_line()
             if storage_warning:
                 lines.append(storage_warning)
+            battery_warning = self._battery_warning_line()
+            if battery_warning:
+                lines.append(battery_warning)
+            compatibility_warning = self._compatibility_warning_line()
+            if compatibility_warning:
+                lines.append(compatibility_warning)
             from src.gui.ios.components import IOSSummaryDialog
             dlg = IOSSummaryDialog(
                 title=QCoreApplication.translate("Nugget", "Apply Tweaks"),
@@ -835,6 +848,43 @@ class ApplyMixin:
             "⚠ Low iPhone storage: {0} GB free. Restoring tweaks may require "
             "at least {1} GB free and could fail if the device runs out of space."
         ).format(f"{free / (1024 ** 3):.1f}", f"{threshold / (1024 ** 3):.1f}")
+
+    def _battery_warning_line(self):
+        info = getattr(self, "_battery_info", None)
+        current_udid = self.device_manager.get_current_device_udid()
+        if not info or info.get("udid") != current_udid:
+            return None
+        percent = info.get("percent")
+        if percent is None or bool(info.get("charging", False)) or percent > 20:
+            return None
+        return QCoreApplication.translate(
+            "Nugget",
+            "⚠ Low iPhone battery: {0}%. Connect the charger before restoring."
+        ).format(int(percent))
+
+    def _compatibility_warning_line(self):
+        from src.gui.ios.compat import is_tweak_compatible
+        from src.tweaks.registry import SPECS_BY_ID
+        version = self.device_manager.get_current_device_version() or ""
+        model = self.device_manager.get_current_device_model() or ""
+        if not version or not model:
+            return None
+        is_iphone = model.lower().startswith("iphone")
+        incompatible = []
+        for tweak_id, spec in SPECS_BY_ID.items():
+            tweak = tweaks.get(tweak_id)
+            if (tweak is not None and getattr(tweak, "enabled", False)
+                    and not is_tweak_compatible(tweak_id, version, is_iphone)):
+                incompatible.append(spec.title)
+        if not incompatible:
+            return None
+        names = ", ".join(incompatible[:4])
+        if len(incompatible) > 4:
+            names += QCoreApplication.translate("Nugget", " and more")
+        return QCoreApplication.translate(
+            "Nugget",
+            "⚠ Compatibility warning: {0} selected tweak(s) may not support iOS {1}: {2}."
+        ).format(len(incompatible), version, names)
 
     def _confirm_tweak_conflicts(self):
         from src.controllers.tweak_conflicts import current_conflicts
@@ -952,6 +1002,8 @@ class ApplyMixin:
             # Applies (not resets) get a what-will-change summary first.
             if reset_pages is None and not self._confirm_apply_summary():
                 return
+            if reset_pages is None:
+                self._prepare_rollback_preset()
             self.apply_in_progress = True
             self.toggle_thread_btns(disabled=True)
             self.worker_thread = ApplyThread(manager=self.device_manager, settings=self.settings, reset_pages=reset_pages)
@@ -962,6 +1014,26 @@ class ApplyMixin:
             self.worker_thread.finished_with_result.connect(self.finish_apply_thread)
             self.worker_thread.finished.connect(self.worker_thread.deleteLater)
             self.worker_thread.start()
+
+    def _prepare_rollback_preset(self):
+        """Keep the last successful apply available as a one-click rollback."""
+        import shutil
+        try:
+            source = self.preset_manager.get_preset_path("__LastApplied")
+            target = self.preset_manager.get_preset_path("__Rollback")
+            if os.path.isfile(source):
+                shutil.copyfile(source, target)
+        except Exception:
+            pass
+
+    def _save_last_applied_preset(self):
+        try:
+            self.preset_manager.save_preset(
+                "__LastApplied", "Internal rollback snapshot", tags=["internal"],
+                device_model=self.device_manager.get_current_device_model() or "",
+                ios_version=self.device_manager.get_current_device_version() or "")
+        except Exception:
+            pass
 
 
     def alert_message(self, alert: Optional[ApplyAlertMessage], log_to_console: bool = True):
@@ -1136,6 +1208,7 @@ class ApplyMixin:
             pass
         if success:
             if worker is not None and not is_reset:
+                self._save_last_applied_preset()
                 self.prompt_star_on_github()
         else:
             # Show error notification if not already shown via alert

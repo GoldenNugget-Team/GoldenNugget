@@ -120,8 +120,10 @@ def daemon_compat_warning(name: str, meta, window) -> Optional[str]:
 # actions (shared by the Settings page and the popup)
 # ---------------------------------------------------------------------------
 
-def load_preset_flow(parent, window, pm: PresetManager, name: str) -> bool:
+def load_preset_flow(parent, window, pm: PresetManager, name: str,
+                     display_name: str = None) -> bool:
     """Confirm, safety-check, load *name*, then restart. True if loaded."""
+    shown_name = display_name or name
     meta = pm.get_preset_metadata(name)
     desc = meta.get("description", "") if meta else ""
     model = meta.get("device_model", "Unknown") if meta else "Unknown"
@@ -131,7 +133,7 @@ def load_preset_flow(parent, window, pm: PresetManager, name: str) -> bool:
         _T("Nugget",
            "Load preset \"{0}\"?\n\nDescription: {1}\nDevice: {2} • iOS {3}"
            "\n\nThis will replace your current configuration.").format(
-               name, desc, model, ios))
+               shown_name, desc, model, ios))
     if confirm != QMessageBox.StandardButton.Yes:
         return False
 
@@ -178,9 +180,22 @@ def load_preset_flow(parent, window, pm: PresetManager, name: str) -> bool:
         parent, _T("Nugget", "Load Preset"),
         _T("Nugget",
            "Preset \"{0}\" loaded.\n\nGoldenNugget will now restart to "
-           "apply the changes.").format(name))
+           "apply the changes.").format(shown_name))
     restart_app()
     return True
+
+
+def rollback_preset_flow(parent, window, pm: PresetManager) -> bool:
+    """Load the snapshot captured before the last successful apply."""
+    name = "__Rollback"
+    if not os.path.isfile(pm.get_preset_path(name)):
+        QMessageBox.information(
+            parent, _T("Nugget", "Rollback Last Apply"),
+            _T("Nugget", "There is no previous successful apply to roll back yet."))
+        return False
+    return load_preset_flow(
+        parent, window, pm, name,
+        display_name=_T("Nugget", "Previous applied state"))
 
 
 def save_preset_flow(parent, window, pm: PresetManager,
@@ -509,7 +524,8 @@ class PresetPopup(QFrame):
             row.deleteLater()
         self._row_widgets.clear()
 
-        metas = self.pm.list_presets_with_metadata()
+        metas = [meta for meta in self.pm.list_presets_with_metadata()
+                 if not meta["name"].startswith("__")]
         self._empty.setVisible(not metas)
         for meta in metas:
             name = meta["name"]
