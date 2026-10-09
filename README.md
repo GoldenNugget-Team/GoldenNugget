@@ -15,9 +15,6 @@ Make sure you have installed the [requirements](#requirements) if you are on Win
 
 ## Quick Start
 
-> [!WARNING]
-> **Back up your device before applying tweaks.** GoldenNugget can cause data loss, boot loops, or other unexpected device problems. Use this project at your own risk; the authors are not responsible for damage to your device or data. See the [full disclaimer](docs/DISCLAIMER.md).
-
 1. Install the device connection tools listed in [Requirements](#requirements).
 2. Create and activate a virtual environment:
 
