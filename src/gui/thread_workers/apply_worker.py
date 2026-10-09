@@ -108,12 +108,16 @@ class ApplyThread(QThread):
             self.success = True
             self._error_msg = ""
             log_context(f"FINISH {mode} OK")
+            from src.controllers.apply_history import record_operation
+            record_operation(self.manager, mode, True)
             self.finished_with_result.emit(True, "")
         except Exception as e:
             self.success = False
             self._error_msg = f"{type(e).__name__}: {e}"
             traceback_str = traceback.format_exc()
             self._log.error("%s failed: %s\n%s", mode, e, traceback_str)
+            from src.controllers.apply_history import record_operation
+            record_operation(self.manager, mode, False, self._error_msg)
             self.alert.emit(ApplyAlertMessage(
                 f"Operation failed: {e}",
                 title="Error",

@@ -152,6 +152,8 @@ class IOSSettingsPage(QWidget):
         restore_btn.clicked.connect(self._on_restore_data_clicked)
         self.content_layout.addWidget(restore_btn)
 
+        self._make_history_section()
+
         # Setup
         self.content_layout.addWidget(IOSSectionHeader(QCoreApplication.translate("Nugget", "Setup")))
 
@@ -687,6 +689,44 @@ class IOSSettingsPage(QWidget):
         btn.setFixedHeight(44)
         btn.clicked.connect(on_click)
         self.content_layout.addWidget(btn)
+
+    def _make_history_section(self):
+        self.content_layout.addWidget(IOSSectionHeader(
+            QCoreApplication.translate("Nugget", "Operation History")))
+        card = QWidget()
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(16, 10, 16, 10)
+        self.history_list = QListWidget()
+        self.history_list.setMinimumHeight(120)
+        layout.addWidget(self.history_list)
+        clear = self._make_mini_button(QCoreApplication.translate("Nugget", "Clear History"))
+        clear.clicked.connect(self._clear_history)
+        layout.addWidget(clear)
+        self.content_layout.addWidget(card)
+        self._refresh_history()
+
+    def _refresh_history(self):
+        from datetime import datetime
+        from src.controllers.apply_history import load_history
+        self.history_list.clear()
+        for item in reversed(load_history()[-10:]):
+            try:
+                when = datetime.fromisoformat(item.get("timestamp", "")).astimezone().strftime("%Y-%m-%d %H:%M")
+            except (ValueError, TypeError):
+                when = item.get("timestamp", "")
+            mode = QCoreApplication.translate("Nugget", "Apply") if item.get("mode") == "apply" else QCoreApplication.translate("Nugget", "Reset")
+            result = QCoreApplication.translate("Nugget", "Success") if item.get("success") else QCoreApplication.translate("Nugget", "Failed")
+            text = f"{when}  •  {mode}  •  {item.get('device', 'Unknown device')}  •  iOS {item.get('ios', '?')}  •  {result}"
+            if item.get("error"):
+                text += f"\n{item['error']}"
+            self.history_list.addItem(text)
+        if not self.history_list.count():
+            self.history_list.addItem(QCoreApplication.translate("Nugget", "No operations recorded yet."))
+
+    def _clear_history(self):
+        from src.controllers.apply_history import clear_history
+        clear_history()
+        self._refresh_history()
 
     def _make_mini_button(self, title: str):
         from PySide6.QtWidgets import QPushButton

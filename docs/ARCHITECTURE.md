@@ -407,6 +407,11 @@ never toggles a tweak automatically. These checks cover known plist conflicts,
 not every possible interaction with wallpapers, templates or device software.
 The same conflicts appear in View changes.
 
+Apply and reset workers append a bounded local operation history through
+`controllers/apply_history.py`. Settings shows the ten newest entries with
+timestamp, operation, device, iOS version and result; it can clear the history
+without touching presets, backups or the device.
+
 Settings keeps preset Load/Delete/Refresh separate from the Export/Partial
 Export/Import row. Imports validate their container structure before saving,
 preserve legacy files without metadata, and store the preset without activating

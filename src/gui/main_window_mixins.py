@@ -1086,6 +1086,10 @@ class ApplyMixin:
     def finish_apply_thread(self, success: bool = False, error_msg: str = ""):
         self.apply_in_progress = False
         self.toggle_thread_btns(disabled=False)
+        try:
+            self.ios_settings._refresh_history()
+        except Exception:
+            pass
         worker = getattr(self, 'worker_thread', None)
         is_reset = worker is not None and worker.reset_pages is not None
         # Show completion indicator on the iOS home page
