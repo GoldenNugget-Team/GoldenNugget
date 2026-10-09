@@ -42,16 +42,41 @@ class _StorageThread(QThread):
         from src.devicemanagement.session import lockdown_session
         from pymobiledevice3.services.diagnostics import DiagnosticsService
         async with lockdown_session(self.udid) as lockdown:
-            async with DiagnosticsService(lockdown) as diagnostics:
-                report = await diagnostics.info("All")
-        if not isinstance(report, dict):
-            return None, None
-        nested = report.get("DiskUsage") if isinstance(report.get("DiskUsage"), dict) else {}
-        total = report.get("TotalDataCapacity", nested.get("TotalDataCapacity"))
-        free = report.get("TotalDataSpace", nested.get("TotalDataSpace"))
-        if total is None or free is None:
-            return None, None
-        return int(total), int(free)
+            try:
+                async with DiagnosticsService(lockdown) as diagnostics:
+                    report = await diagnostics.info("All")
+                if isinstance(report, dict):
+                    nested = report.get("DiskUsage") if isinstance(report.get("DiskUsage"), dict) else {}
+                    total = report.get("TotalDataCapacity", nested.get("TotalDataCapacity"))
+                    free = report.get("TotalDataSpace", nested.get("TotalDataSpace"))
+                    if total is not None and free is not None:
+                        return int(total), int(free)
+            except Exception:
+                # Some iOS versions reject the diagnostics relay request while
+                # still exposing the same volume figures through AFC.
+                pass
+
+            from pymobiledevice3.services.afc import AfcService
+            async with AfcService(lockdown) as afc:
+                info = await afc.get_device_info()
+            total = self._first_number(info, "FSTotalBytes", "TotalBytes")
+            free = self._first_number(info, "FSFreeBytes", "FreeBytes")
+            if total is None or free is None:
+                return None, None
+            return total, free
+
+    @staticmethod
+    def _first_number(values, *keys):
+        if not isinstance(values, dict):
+            return None
+        for key in keys:
+            value = values.get(key)
+            try:
+                if value is not None:
+                    return int(value)
+            except (TypeError, ValueError):
+                continue
+        return None
 
 
 class _TileCard(IOSCard):
