@@ -698,6 +698,25 @@ class IOSSettingsPage(QWidget):
         layout.setContentsMargins(16, 10, 16, 10)
         self.history_list = QListWidget()
         self.history_list.setMinimumHeight(120)
+        self.history_search = QLineEdit()
+        self.history_search.setPlaceholderText(QCoreApplication.translate(
+            "Nugget", "Search history..."))
+        self.history_search.textChanged.connect(self._refresh_history)
+        layout.addWidget(self.history_search)
+        filters = QHBoxLayout()
+        self.history_mode_filter = QComboBox()
+        self.history_mode_filter.addItem(QCoreApplication.translate("Nugget", "All operations"), "all")
+        self.history_mode_filter.addItem(QCoreApplication.translate("Nugget", "Apply"), "apply")
+        self.history_mode_filter.addItem(QCoreApplication.translate("Nugget", "Reset"), "reset")
+        self.history_result_filter = QComboBox()
+        self.history_result_filter.addItem(QCoreApplication.translate("Nugget", "All results"), "all")
+        self.history_result_filter.addItem(QCoreApplication.translate("Nugget", "Success"), "success")
+        self.history_result_filter.addItem(QCoreApplication.translate("Nugget", "Failed"), "failed")
+        self.history_mode_filter.currentIndexChanged.connect(self._refresh_history)
+        self.history_result_filter.currentIndexChanged.connect(self._refresh_history)
+        filters.addWidget(self.history_mode_filter)
+        filters.addWidget(self.history_result_filter)
+        layout.addLayout(filters)
         layout.addWidget(self.history_list)
         self._history_anims = []
         clear = self._make_mini_button(QCoreApplication.translate("Nugget", "Clear History"))
@@ -706,12 +725,29 @@ class IOSSettingsPage(QWidget):
         self.content_layout.addWidget(card)
         self._refresh_history()
 
-    def _refresh_history(self):
+    def _refresh_history(self, *_args):
         from datetime import datetime
         from src.controllers.apply_history import load_history
         self._history_anims.clear()
         self.history_list.clear()
-        entries = list(reversed(load_history()[-10:]))
+        query = self.history_search.text().strip().casefold()
+        mode_filter = self.history_mode_filter.currentData()
+        result_filter = self.history_result_filter.currentData()
+        entries = []
+        for item in reversed(load_history()):
+            if mode_filter != "all" and item.get("mode") != mode_filter:
+                continue
+            if result_filter == "success" and not item.get("success"):
+                continue
+            if result_filter == "failed" and item.get("success"):
+                continue
+            haystack = " ".join(str(item.get(key, "")) for key in
+                                ("timestamp", "mode", "device", "model", "ios", "error"))
+            if query and query not in haystack.casefold():
+                continue
+            entries.append(item)
+            if len(entries) == 10:
+                break
         for row_index, item in enumerate(entries):
             try:
                 when = datetime.fromisoformat(item.get("timestamp", "")).astimezone().strftime("%Y-%m-%d %H:%M")

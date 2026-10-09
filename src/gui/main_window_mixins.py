@@ -515,8 +515,8 @@ class NavigationMixin:
     #
     # The curve is deliberately soft and the duration long: a short OutCubic
     # reads as a snap on a page as tall as the window, so it drifts in instead.
-    # The home page never animates at all — it is the app's anchor, and a slide
-    # on the way back to it makes coming home flicker.
+    # Returning to Home uses the reverse direction so the back navigation feels
+    # like a real stack pop instead of an abrupt page replacement.
     PAGE_SLIDE_MS = 240
     HOME_PAGE = 0
 
@@ -524,8 +524,8 @@ class NavigationMixin:
         """The only place that switches the iOS page stack.
 
         Guards the index, snaps any page still mid-slide to its final spot and
-        then slides the incoming page in from the right. The home page is
-        switched without a slide.
+        then slides the incoming page in. Home enters from the left when it is
+        opened as the destination of a back navigation.
         """
         stack = self.ios_pages
         if not isinstance(index, int) or index < 0 or index >= stack.count():
@@ -535,19 +535,25 @@ class NavigationMixin:
         self._stop_page_slide()
         stack.setCurrentIndex(index)
         page = stack.widget(index)
-        if animate and index != self.HOME_PAGE and stack.isVisible():
-            self._slide_page_in(page)
+        if animate and stack.isVisible():
+            self._slide_page_in(page, from_left=index == self.HOME_PAGE)
 
-    def _slide_page_in(self, page):
+    def _slide_page_in(self, page, from_left=False):
         y = page.y()
         if page.width() <= 0 or page.height() <= 0:
             page.move(QtCore.QPoint(0, y))
             return
         anim = QtCore.QPropertyAnimation(page, b"pos", self)
-        anim.setDuration(self.PAGE_SLIDE_MS)
-        anim.setStartValue(QtCore.QPoint(page.width(), y))
-        anim.setEndValue(QtCore.QPoint(0, y))
-        anim.setEasingCurve(QtCore.QEasingCurve.Type.InOutCubic)
+        start_x = -page.width() if from_left else page.width()
+        start_pos = QtCore.QPoint(start_x, y)
+        end_pos = QtCore.QPoint(0, y)
+        # Move before starting the animation so the freshly selected page is
+        # never painted once at its final position and then snapped away.
+        page.move(start_pos)
+        anim.setDuration(self.PAGE_SLIDE_MS + (40 if from_left else 0))
+        anim.setStartValue(start_pos)
+        anim.setEndValue(end_pos)
+        anim.setEasingCurve(QtCore.QEasingCurve.Type.OutCubic)
         self._page_slide_anim = anim
         anim.finished.connect(self._stop_page_slide)
         anim.start(QtCore.QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)

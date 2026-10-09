@@ -1,11 +1,11 @@
 from PySide6.QtCore import (
-    Qt, QCoreApplication, Slot, QTimer, QSize, QEvent,
+    Qt, QCoreApplication, Slot, QTimer, QSize, QEvent, Signal, QThread,
     QPropertyAnimation, QEasingCurve,
 )
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton,
-    QComboBox, QSizePolicy, QScrollArea, QGraphicsOpacityEffect
+    QComboBox, QSizePolicy, QScrollArea, QGraphicsOpacityEffect, QProgressBar
 )
 
 from src.gui.ios.components import IOSCard, IOSPrimaryButton, IOSDangerButton
@@ -21,6 +21,37 @@ _FEATURE_ICONS = {
     "Icon Themes": ":/icon/brush.svg",
     "Passcode Theme": ":/icon/lock.svg",
 }
+
+
+class _StorageThread(QThread):
+    result = Signal(object, object)
+
+    def __init__(self, udid, parent=None):
+        super().__init__(parent)
+        self.udid = udid
+
+    def run(self):
+        import asyncio
+        try:
+            total, free = asyncio.run(self._query())
+        except Exception:
+            total, free = None, None
+        self.result.emit(total, free)
+
+    async def _query(self):
+        from src.devicemanagement.session import lockdown_session
+        from pymobiledevice3.services.diagnostics import DiagnosticsService
+        async with lockdown_session(self.udid) as lockdown:
+            async with DiagnosticsService(lockdown) as diagnostics:
+                report = await diagnostics.info("All")
+        if not isinstance(report, dict):
+            return None, None
+        nested = report.get("DiskUsage") if isinstance(report.get("DiskUsage"), dict) else {}
+        total = report.get("TotalDataCapacity", nested.get("TotalDataCapacity"))
+        free = report.get("TotalDataSpace", nested.get("TotalDataSpace"))
+        if total is None or free is None:
+            return None, None
+        return int(total), int(free)
 
 
 class _TileCard(IOSCard):
@@ -227,6 +258,25 @@ class IOSHomePage(QWidget):
         self.status_lbl.setTextFormat(Qt.RichText)
         layout.addWidget(self.status_lbl)
 
+        self.storage_card = IOSCard()
+        storage_layout = QVBoxLayout(self.storage_card)
+        storage_layout.setContentsMargins(16, 12, 16, 12)
+        storage_layout.setSpacing(6)
+        self.storage_title = QLabel(QCoreApplication.translate("Nugget", "iPhone Storage"))
+        self.storage_title.setStyleSheet(t("home_tile_title"))
+        storage_layout.addWidget(self.storage_title)
+        self.storage_bar = QProgressBar()
+        self.storage_bar.setRange(0, 100)
+        self.storage_bar.setValue(0)
+        self.storage_bar.setTextVisible(False)
+        self.storage_bar.setFixedHeight(8)
+        storage_layout.addWidget(self.storage_bar)
+        self.storage_lbl = QLabel(QCoreApplication.translate("Nugget", "Connect an iPhone to view storage"))
+        self.storage_lbl.setStyleSheet(t("home_tile_subtitle"))
+        storage_layout.addWidget(self.storage_lbl)
+        layout.addWidget(self.storage_card)
+        self._storage_thread = None
+
         cards_row = [self._make_card(
             "PosterBoard", "Animated wallpapers & templates", 2),
             self._make_card(
@@ -320,6 +370,12 @@ class IOSHomePage(QWidget):
         self._apply_icon(self._logs_btn, ":/icon/file-earmark-text.svg")
         self._settings_btn.setStyleSheet(t("home_icon_button"))
         self._apply_icon(self._settings_btn, ":/icon/gear.svg")
+        self.storage_title.setStyleSheet(t("home_tile_title"))
+        self.storage_lbl.setStyleSheet(t("home_tile_subtitle"))
+        self.storage_bar.setStyleSheet(f"""
+            QProgressBar {{ background: {c.bg_input}; border: none; border-radius: 4px; }}
+            QProgressBar::chunk {{ background: {c.accent}; border-radius: 4px; }}
+        """)
         self.process_status_lbl.setStyleSheet(t("process_status_green"))
         self.update_status()
         # Feature tiles: recolor the icon and restyle the two labels
@@ -427,6 +483,44 @@ class IOSHomePage(QWidget):
             self.subtitle.setText(QCoreApplication.translate("Nugget", "iPhone (iOS {0} {1})").format(ver, build))
         except AttributeError:
             self.subtitle.setText(QCoreApplication.translate("Nugget", "iPhone (iOS —)"))
+        self._refresh_storage()
+
+    def _refresh_storage(self):
+        if self._storage_thread is not None and self._storage_thread.isRunning():
+            return
+        udid = self.window.device_manager.get_current_device_udid()
+        if not udid:
+            self.storage_bar.setValue(0)
+            self.storage_lbl.setText(QCoreApplication.translate(
+                "Nugget", "Connect an iPhone to view storage"))
+            return
+        self.storage_lbl.setText(QCoreApplication.translate("Nugget", "Loading storage…"))
+        self._storage_thread = _StorageThread(udid, self)
+        self._storage_thread.result.connect(self._on_storage_result)
+        self._storage_thread.start()
+
+    @Slot(object, object)
+    def _on_storage_result(self, total, free):
+        current_udid = self.window.device_manager.get_current_device_udid()
+        sender = self.sender()
+        if sender is not self._storage_thread or getattr(sender, "udid", None) != current_udid:
+            QTimer.singleShot(0, self._refresh_storage)
+            return
+        if not total or free is None or total <= 0:
+            self.storage_bar.setValue(0)
+            self.storage_lbl.setText(QCoreApplication.translate(
+                "Nugget", "Storage information unavailable"))
+            return
+        used = max(0, total - free)
+        percent = min(100, round(used * 100 / total))
+        self.storage_bar.setValue(percent)
+        self.storage_lbl.setText(QCoreApplication.translate(
+            "Nugget", "Used {0} GB · Free {1} GB").format(
+                self._format_gb(used), self._format_gb(free)))
+
+    @staticmethod
+    def _format_gb(value):
+        return f"{value / (1024 ** 3):.1f}"
 
     def refresh_device_combo(self):
         self.populate_device_picker()
