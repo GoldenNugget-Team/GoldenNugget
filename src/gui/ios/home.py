@@ -1,8 +1,11 @@
-from PySide6.QtCore import Qt, QCoreApplication, Slot, QTimer, QSize, QEvent
+from PySide6.QtCore import (
+    Qt, QCoreApplication, Slot, QTimer, QSize, QEvent,
+    QPropertyAnimation, QEasingCurve,
+)
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton,
-    QComboBox, QSizePolicy, QScrollArea
+    QComboBox, QSizePolicy, QScrollArea, QGraphicsOpacityEffect
 )
 
 from src.gui.ios.components import IOSCard, IOSPrimaryButton, IOSDangerButton
@@ -22,6 +25,29 @@ _FEATURE_ICONS = {
 
 class _TileCard(IOSCard):
     """A home feature tile (icon + name). Same look as a card, plus hover."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._hover_effect = QGraphicsOpacityEffect(self)
+        self._hover_effect.setOpacity(0.92)
+        self.setGraphicsEffect(self._hover_effect)
+        self._hover_anim = QPropertyAnimation(self._hover_effect, b"opacity", self)
+        self._hover_anim.setDuration(180)
+        self._hover_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+    def _animate_hover(self, opacity: float):
+        self._hover_anim.stop()
+        self._hover_anim.setStartValue(self._hover_effect.opacity())
+        self._hover_anim.setEndValue(opacity)
+        self._hover_anim.start()
+
+    def enterEvent(self, event):
+        self._animate_hover(1.0)
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self._animate_hover(0.92)
+        super().leaveEvent(event)
 
     def _retheme(self):
         self.setStyleSheet(t("home_tile"))

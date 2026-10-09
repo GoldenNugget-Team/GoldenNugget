@@ -1,8 +1,8 @@
-from PySide6.QtCore import Qt, QCoreApplication, QTimer
+from PySide6.QtCore import Qt, QCoreApplication, QTimer, QPropertyAnimation, QEasingCurve
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea,
     QComboBox, QLineEdit, QListWidget, QListWidgetItem, QMessageBox, QInputDialog,
-    QFileDialog, QDialog, QProgressDialog
+    QFileDialog, QDialog, QProgressDialog, QGraphicsOpacityEffect
 )
 from pathlib import Path
 
@@ -699,6 +699,7 @@ class IOSSettingsPage(QWidget):
         self.history_list = QListWidget()
         self.history_list.setMinimumHeight(120)
         layout.addWidget(self.history_list)
+        self._history_anims = []
         clear = self._make_mini_button(QCoreApplication.translate("Nugget", "Clear History"))
         clear.clicked.connect(self._clear_history)
         layout.addWidget(clear)
@@ -708,8 +709,10 @@ class IOSSettingsPage(QWidget):
     def _refresh_history(self):
         from datetime import datetime
         from src.controllers.apply_history import load_history
+        self._history_anims.clear()
         self.history_list.clear()
-        for item in reversed(load_history()[-10:]):
+        entries = list(reversed(load_history()[-10:]))
+        for row_index, item in enumerate(entries):
             try:
                 when = datetime.fromisoformat(item.get("timestamp", "")).astimezone().strftime("%Y-%m-%d %H:%M")
             except (ValueError, TypeError):
@@ -719,7 +722,23 @@ class IOSSettingsPage(QWidget):
             text = f"{when}  •  {mode}  •  {item.get('device', 'Unknown device')}  •  iOS {item.get('ios', '?')}  •  {result}"
             if item.get("error"):
                 text += f"\n{item['error']}"
-            self.history_list.addItem(text)
+            list_item = QListWidgetItem(self.history_list)
+            label = QLabel(text)
+            label.setWordWrap(True)
+            label.setMinimumHeight(30)
+            label.setStyleSheet("background-color: transparent; padding: 5px 2px;")
+            self.history_list.setItemWidget(list_item, label)
+            list_item.setSizeHint(label.sizeHint())
+            effect = QGraphicsOpacityEffect(label)
+            label.setGraphicsEffect(effect)
+            effect.setOpacity(0.0)
+            animation = QPropertyAnimation(effect, b"opacity", self)
+            animation.setStartValue(0.0)
+            animation.setEndValue(1.0)
+            animation.setDuration(220)
+            animation.setEasingCurve(QEasingCurve.Type.OutCubic)
+            QTimer.singleShot(row_index * 25, animation.start)
+            self._history_anims.append(animation)
         if not self.history_list.count():
             self.history_list.addItem(QCoreApplication.translate("Nugget", "No operations recorded yet."))
 
