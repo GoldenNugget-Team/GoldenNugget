@@ -515,6 +515,7 @@ class IOSHomePage(QWidget):
             return
         udid = self.window.device_manager.get_current_device_udid()
         if not udid:
+            self.window._storage_info = None
             self.storage_bar.setValue(0)
             self.storage_lbl.setText(QCoreApplication.translate(
                 "Nugget", "Connect an iPhone to view storage"))
@@ -532,10 +533,14 @@ class IOSHomePage(QWidget):
             QTimer.singleShot(0, self._refresh_storage)
             return
         if not total or free is None or total <= 0:
+            self.window._storage_info = None
             self.storage_bar.setValue(0)
             self.storage_lbl.setText(QCoreApplication.translate(
                 "Nugget", "Storage information unavailable"))
             return
+        self.window._storage_info = {
+            "udid": current_udid, "total": int(total), "free": int(free)
+        }
         used = max(0, total - free)
         percent = min(100, round(used * 100 / total))
         self.storage_bar.setValue(percent)

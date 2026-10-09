@@ -791,6 +791,9 @@ class ApplyMixin:
                 cache_line = self._backup_cache_summary_line()
                 if cache_line:
                     lines.append(cache_line)
+            storage_warning = self._storage_warning_line()
+            if storage_warning:
+                lines.append(storage_warning)
             from src.gui.ios.components import IOSSummaryDialog
             dlg = IOSSummaryDialog(
                 title=QCoreApplication.translate("Nugget", "Apply Tweaks"),
@@ -810,6 +813,28 @@ class ApplyMixin:
                 # user can review and then confirm or cancel.
                 continue
             return res == QtWidgets.QDialog.Accepted and self._confirm_tweak_conflicts()
+
+    def _storage_warning_line(self):
+        """Return a warning when the selected device has little free space."""
+        info = getattr(self, "_storage_info", None)
+        current_udid = self.device_manager.get_current_device_udid()
+        if not info or not current_udid or info.get("udid") != current_udid:
+            return None
+        total = int(info.get("total", 0) or 0)
+        free = int(info.get("free", 0) or 0)
+        if total <= 0 or free < 0:
+            return None
+        # iOS restores need working room in addition to the tweak payloads.
+        # Use the larger of 5 GiB or 10% of the data volume as a conservative
+        # warning threshold; this warns without blocking the user's choice.
+        threshold = max(5 * 1024 ** 3, int(total * 0.10))
+        if free >= threshold:
+            return None
+        return QCoreApplication.translate(
+            "Nugget",
+            "⚠ Low iPhone storage: {0} GB free. Restoring tweaks may require "
+            "at least {1} GB free and could fail if the device runs out of space."
+        ).format(f"{free / (1024 ** 3):.1f}", f"{threshold / (1024 ** 3):.1f}")
 
     def _confirm_tweak_conflicts(self):
         from src.controllers.tweak_conflicts import current_conflicts
