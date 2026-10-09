@@ -9,6 +9,38 @@ Customize your device with animated wallpapers, disable pesky daemons, and more!
 
 Make sure you have installed the [requirements](#requirements) if you are on Windows or Linux.
 
+## Quick Start
+
+1. Install the device connection tools listed in [Requirements](#requirements).
+2. Create and activate a virtual environment:
+
+```bash
+python -m venv .venv
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+# macOS/Linux
+source .venv/bin/activate
+```
+
+3. Install the pinned dependencies and start GoldenNugget:
+
+```bash
+python -m pip install -r requirements.txt
+python main_app.py
+```
+
+Make a full device backup before applying tweaks. Use `python main_app.py --test-mode`
+to open the interface with mock devices and no iPhone connected.
+
+## Compatibility
+
+| Component | Supported | Notes |
+| --- | --- | --- |
+| iOS | 26.2–27.x | Older versions are blocked by the app. |
+| Windows | Apple Devices or iTunes | Install one before connecting an iPhone. |
+| Linux | `usbmuxd` and `libimobiledevice` | Both are required for USB access. |
+| Python | 3.10+ | Use the pinned packages in `requirements.txt`. |
+
 > [!NOTE]
 > Please back up your data before using this Project! GoldenNugget may cause unforeseen problems, so it is better to be safe than sorry. We are not responsible for any damage done to your device.
 
@@ -95,6 +127,36 @@ We already developed a on-device GoldenNugget Mobile that do not need computer. 
   - Internet Tethering (aka Personal Hotspot)
   - PassBook
   - Spotlight
+</details>
+
+## Screenshots
+
+<details>
+<summary>Open the English interface screenshots</summary>
+
+<table>
+<tr>
+<td><img src="docs/screenshots/home.png" alt="Home" width="320"></td>
+<td><img src="docs/screenshots/tweaks.png" alt="Tweaks" width="320"></td>
+<td><img src="docs/screenshots/posterboard.png" alt="PosterBoard" width="320"></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/daemons.png" alt="Daemons" width="320"></td>
+<td><img src="docs/screenshots/settings.png" alt="Settings" width="320"></td>
+<td><img src="docs/screenshots/statusbar.png" alt="Status Bar" width="320"></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/apply.png" alt="Apply" width="320"></td>
+<td><img src="docs/screenshots/springboard.png" alt="SpringBoard" width="320"></td>
+<td><img src="docs/screenshots/internal.png" alt="Internal" width="320"></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/liquidglass.png" alt="Liquid Glass" width="320"></td>
+<td><img src="docs/screenshots/icon-themes.png" alt="Icon Themes" width="320"></td>
+<td><img src="docs/screenshots/passcode-themes.png" alt="Passcode Themes" width="320"></td>
+</tr>
+</table>
+
 </details>
 
 ## Contributors 
