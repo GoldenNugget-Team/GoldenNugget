@@ -255,16 +255,6 @@ pyside6-lupdate main_app.py src/gui/main_window.py src/gui/pages/page.py src/gui
 pyside6-lrelease src/qt/translations/Nugget_{language code}.ts -qm src/qt/translations/Nugget_{language code}.qm # compile to binary
 ```
 
-> **Note:** `src/qt/mainwindow.ui` is no longer in the list. The Classic UI
-> source was deleted (see the "TEMP: Classic UI removed" note in
-> [AGENTS.md](AGENTS.md)), so the pattern matched nothing. Its generated
-> counterpart `src/qt/mainwindow_ui.py` cannot stand in either: `pyside6-uic`
-> emits `u"..."` string literals and **lupdate silently skips `u`-prefixed
-> literals** (verified: stripping the prefix recovers the sidebar strings,
-> leaving it yields zero). The Classic-UI strings already in the catalogs are
-> therefore unreachable by the pipeline and can only come back together with
-> `mainwindow.ui`. Re-add the pattern when Classic returns.
-
 The application itself can be compiled by running `compile.py`.
 
 # Contributing and forking.
