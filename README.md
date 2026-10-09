@@ -1,6 +1,10 @@
 ![Artboard][NuggetLogo]
 
 # GoldenNugget
+
+> [!WARNING]
+> GoldenNugget can cause data loss, boot loops, or other unexpected device problems. Make a full backup before applying tweaks. Use this project at your own risk; the authors are not responsible for damage to your device or data.
+
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 
 Unlock your device's full potential, with iOS 27 support!
@@ -41,11 +45,6 @@ to open the interface with mock devices and no iPhone connected.
 | Linux | `usbmuxd` and `libimobiledevice` | Both are required for USB access. |
 | Python | 3.10+ | Use the pinned packages in `requirements.txt`. |
 
-> [!NOTE]
-> Please back up your data before using this Project! GoldenNugget may cause unforeseen problems, so it is better to be safe than sorry. We are not responsible for any damage done to your device.
-
-> [!WARNING]
->  **I AM NOT RESPONSIBLE IN ANY DATA LOSS OR BOOTLOOPS, IF SOMETHING GOES OFF ITS YOUR FAULT**
 ## Discord server
 Wanted support? Join our [Discord Server][server].
 
