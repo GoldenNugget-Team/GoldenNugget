@@ -21,7 +21,7 @@ When submitting bug fixes (`[FIX]`), please ensure that:
 ### Quality of Life (QOL) / App Features
 * Features should **not** be redundant or useless. 
 * GoldenNugget is already a large project; we want to avoid turning it into an overloaded "super-app" or bloatware ("elephant").
-* Backports (e.g Cache function from 9.0 to 8.x) is NOT ALLOWED.
+* Backports (e.g. a cache function from 9.0 to 8.x) are NOT ALLOWED.
 
 ### Customization Tweaks
 We welcome the following types of tweaks:
@@ -42,7 +42,7 @@ To keep the repository history clean and easy to read, please use the appropriat
 * **`[CA]`** - For CoreAnimation preview commits
 * **`[HOTFIX]`** - For hotfixes
 * **`[REFACTOR]`** - For backend updates
-* **`[?]`** - For changes that does not apply to any of existing tags.
+* **`[?]`** - For changes that do not apply to any existing tag.
 
 ### Examples
 
@@ -52,7 +52,7 @@ To keep the repository history clean and easy to read, please use the appropriat
 | `[FIX] Fix SEGV after restore` | `added new tweak please merge` |
 | `[QOL] Improve logging` | `update` |
 
-> ⚠️ **Note:** Any PR still will be reviewed but i recommend to follow this rules. 
+> ⚠️ **Note:** Every PR will still be reviewed, but I recommend following these rules.
 
 ---
 
