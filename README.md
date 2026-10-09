@@ -3,7 +3,7 @@
 # GoldenNugget
 
 > [!WARNING]
-> GoldenNugget can cause data loss, boot loops, or other unexpected device problems. Make a full backup before applying tweaks. Use this project at your own risk; the authors are not responsible for damage to your device or data.
+> **Back up your device before applying tweaks.** GoldenNugget can cause data loss, boot loops, or other unexpected device problems. Use this project at your own risk; the authors are not responsible for damage to your device or data.
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 
