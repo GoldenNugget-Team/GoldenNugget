@@ -894,28 +894,31 @@ class ApplyMixin:
         ).format(int(percent))
 
     def _compatibility_warning_line(self):
-        from src.gui.ios.compat import is_tweak_compatible
+        from src.gui.ios.compat import compatibility_reasons, device_family
         from src.tweaks.registry import SPECS_BY_ID
         version = self.device_manager.get_current_device_version() or ""
         model = self.device_manager.get_current_device_model() or ""
         if not version or not model:
             return None
-        is_iphone = model.lower().startswith("iphone")
+        family = device_family(model)
+        is_iphone = None if family is None else family == "iphone"
         incompatible = []
         for tweak_id, spec in SPECS_BY_ID.items():
             tweak = tweaks.get(tweak_id)
-            if (tweak is not None and getattr(tweak, "enabled", False)
-                    and not is_tweak_compatible(tweak_id, version, is_iphone)):
-                incompatible.append(spec.title)
+            if tweak is None or not getattr(tweak, "enabled", False):
+                continue
+            reasons = compatibility_reasons(tweak_id, version, model, is_iphone)
+            if reasons:
+                incompatible.append((spec.title, "; ".join(reasons)))
         if not incompatible:
             return None
-        names = ", ".join(incompatible[:4])
+        names = ", ".join(f"{title} ({reason})" for title, reason in incompatible[:4])
         if len(incompatible) > 4:
             names += QCoreApplication.translate("Nugget", " and more")
         return QCoreApplication.translate(
             "Nugget",
-            "⚠ Compatibility warning: {0} selected tweak(s) may not support iOS {1}: {2}."
-        ).format(len(incompatible), version, names)
+            "⚠ Compatibility warning: {0} selected tweak(s) do not match {1} ({2}): {3}."
+        ).format(len(incompatible), version, model, names)
 
     def _confirm_tweak_conflicts(self):
         from src.controllers.tweak_conflicts import current_conflicts

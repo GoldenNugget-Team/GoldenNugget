@@ -267,6 +267,29 @@ class IOSHomePage(QWidget):
         self.device_combo.currentIndexChanged.connect(self.on_device_changed)
         header.addWidget(self.device_combo)
 
+        # Keep the device's storage at a glance in the same top bar as the
+        # device picker, instead of using a full-width card above the tiles.
+        self.storage_card = IOSCard()
+        self.storage_card.setFixedWidth(220)
+        self.storage_card.setFixedHeight(64)
+        storage_layout = QVBoxLayout(self.storage_card)
+        storage_layout.setContentsMargins(10, 7, 10, 7)
+        storage_layout.setSpacing(3)
+        self.storage_title = QLabel(QCoreApplication.translate("Nugget", "iPhone Storage"))
+        self.storage_title.setStyleSheet(t("home_tile_title"))
+        storage_layout.addWidget(self.storage_title)
+        self.storage_bar = QProgressBar()
+        self.storage_bar.setRange(0, 100)
+        self.storage_bar.setValue(0)
+        self.storage_bar.setTextVisible(False)
+        self.storage_bar.setFixedHeight(6)
+        storage_layout.addWidget(self.storage_bar)
+        self.storage_lbl = QLabel(QCoreApplication.translate("Nugget", "Connect an iPhone to view storage"))
+        self.storage_lbl.setStyleSheet(t("home_tile_subtitle"))
+        self.storage_lbl.setWordWrap(False)
+        storage_layout.addWidget(self.storage_lbl)
+        header.addWidget(self.storage_card)
+
         self._refresh_btn = QPushButton(self)
         self._refresh_btn.setFixedSize(36, 36)
         self._refresh_btn.setIconSize(QSize(18, 18))
@@ -298,24 +321,6 @@ class IOSHomePage(QWidget):
         self.status_lbl.setWordWrap(True)
         self.status_lbl.setTextFormat(Qt.RichText)
         layout.addWidget(self.status_lbl)
-
-        self.storage_card = IOSCard()
-        storage_layout = QVBoxLayout(self.storage_card)
-        storage_layout.setContentsMargins(16, 12, 16, 12)
-        storage_layout.setSpacing(6)
-        self.storage_title = QLabel(QCoreApplication.translate("Nugget", "iPhone Storage"))
-        self.storage_title.setStyleSheet(t("home_tile_title"))
-        storage_layout.addWidget(self.storage_title)
-        self.storage_bar = QProgressBar()
-        self.storage_bar.setRange(0, 100)
-        self.storage_bar.setValue(0)
-        self.storage_bar.setTextVisible(False)
-        self.storage_bar.setFixedHeight(8)
-        storage_layout.addWidget(self.storage_bar)
-        self.storage_lbl = QLabel(QCoreApplication.translate("Nugget", "Connect an iPhone to view storage"))
-        self.storage_lbl.setStyleSheet(t("home_tile_subtitle"))
-        storage_layout.addWidget(self.storage_lbl)
-        layout.addWidget(self.storage_card)
         self._storage_thread = None
 
         cards_row = [self._make_card(
@@ -469,7 +474,9 @@ class IOSHomePage(QWidget):
         self.window.show_ios_page(index)
 
     def open_apply_classic(self):
-        self.window.apply_changes()
+        """Open the dedicated Apply page before starting an operation."""
+        self.window.show_ios_page(6)
+        self.window._sync_sidebar_selection()
 
     def reset_tweaks(self):
         from src.gui.dialogs.reset_dialog import ResetDialog

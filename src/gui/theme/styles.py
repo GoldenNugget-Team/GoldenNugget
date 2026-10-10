@@ -83,7 +83,7 @@ STYLES = {
             padding: 10px 4px 10px 4px;
         }}
         QPushButton#iosCollapsibleHeader:hover {{ color: {text_primary}; }}
-        QPushButton#iosCollapsibleHeader:checked {{ color: {text_primary}; }}
+        QPushButton#iosCollapsibleHeader:checked {{ color: {accent}; }}
     """,
 
     "card": """
@@ -94,7 +94,11 @@ STYLES = {
         }}
     """,
 
-    "nav_bar": "background-color: {bg_secondary}; border-bottom: 1px solid {divider};",
+    "nav_bar": """
+        background-color: {bg_secondary};
+        border: 1px solid {divider};
+        border-radius: 14px;
+    """,
 
     "nav_back_btn": """
         QPushButton {{
@@ -243,7 +247,7 @@ STYLES = {
         }}
         QPushButton#presetRow:hover {{ background-color: {surface_hover}; }}
         QPushButton#presetRow:checked {{
-            background-color: {surface_hover};
+            background-color: {accent_pressed};
             border: 1px solid {accent};
         }}
     """,

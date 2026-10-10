@@ -351,14 +351,17 @@ class IOSNavBar(QWidget):
         self.setStyleSheet(t("nav_bar"))
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(16, 8, 16, 8)
+        # Keep the rounded shell clear of the back label and give the title
+        # a stable center even when the label width changes with translation.
+        layout.setContentsMargins(20, 8, 20, 8)
         layout.setSpacing(0)
 
         self._left_pad = QWidget(self)
-        self._left_pad.setFixedWidth(90)
+        self._left_pad.setFixedWidth(96)
         layout.addWidget(self._left_pad)
 
         self.back_btn = QPushButton(QCoreApplication.translate("Nugget", "←  Back"), self)
+        self.back_btn.setMinimumWidth(96)
         self.back_btn.setCursor(Qt.PointingHandCursor)
         self.back_btn.setStyleSheet(t("nav_back_btn"))
         self.back_btn.clicked.connect(self._handle_back)
@@ -526,7 +529,9 @@ class IOSSwitch(QPushButton):
         c = ColorThemeManager.instance().colors
         p = self._progress
         off = QColor(c.border)
-        on = QColor(c.success)
+        # A selected switch is an active control, so it follows the user's
+        # chosen accent instead of the semantic success green.
+        on = QColor(c.accent)
         track = QColor(
             round(off.red() + (on.red() - off.red()) * p),
             round(off.green() + (on.green() - off.green()) * p),

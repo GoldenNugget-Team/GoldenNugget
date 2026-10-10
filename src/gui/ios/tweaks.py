@@ -8,7 +8,7 @@ from src.gui.ios.components import (
     IOSSwitch, TextInputDialog, NumberInputDialog, decimals_for_step,
     IOSSearchField, IOSSearchEmpty,
 )
-from src.gui.ios.compat import is_tweak_compatible
+from src.gui.ios.compat import device_family, is_tweak_compatible
 from src.gui.theme import ColorThemeManager
 from src.tweaks.tweaks import tweaks, TweakID
 from src.tweaks.registry import SPECS_BY_SECTION, SECTION_FEATURES, Kind, Section
@@ -137,10 +137,10 @@ class IOSSectionContent(QWidget):
             model = self.window.device_manager.get_current_device_model() or ""
         except Exception:
             model = ""
-        is_iphone = model.startswith("iPhone")
+        is_iphone = device_family(model) == "iphone"
 
         def is_compatible(tweak_id: TweakID) -> bool:
-            return is_tweak_compatible(tweak_id, device_ver, is_iphone)
+            return is_tweak_compatible(tweak_id, device_ver, is_iphone, model)
 
         # Helper to create a switch row for boolean tweaks
         def make_switch(tweak_id: TweakID, title: str, description: str = "",

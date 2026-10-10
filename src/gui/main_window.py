@@ -208,7 +208,16 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         ios_root_layout = QtWidgets.QVBoxLayout(ios_root)
         ios_root_layout.setContentsMargins(0, 0, 0, 0)
         ios_root_layout.setSpacing(0)
-        ios_root_layout.addWidget(self.ios_nav)
+        # Keep the shared navigation bar visually distinct from the page:
+        # the inset wrapper gives its rounded corners room to show against
+        # the surrounding dark surface.
+        nav_wrap = QtWidgets.QWidget(ios_root)
+        nav_wrap.setObjectName("iosNavWrap")
+        nav_wrap_layout = QtWidgets.QVBoxLayout(nav_wrap)
+        nav_wrap_layout.setContentsMargins(8, 8, 8, 0)
+        nav_wrap_layout.setSpacing(0)
+        nav_wrap_layout.addWidget(self.ios_nav)
+        ios_root_layout.addWidget(nav_wrap)
         ios_root_layout.addWidget(self.ios_pages)
 
         # Unified shell: classic sidebar + [classic home | iOS root | classic daemons].
@@ -334,6 +343,10 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
             QToolButton:hover {{
                 color: {c.text_primary};
                 background-color: {c.surface_hover};
+            }}
+            QToolButton:checked {{
+                color: {c.text_inverse};
+                background-color: {c.accent};
             }}
             QLabel {{ color: {c.text_primary}; }}
         """
