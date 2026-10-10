@@ -801,6 +801,10 @@ class ApplyMixin:
             storage_warning = self._storage_warning_line()
             if storage_warning:
                 lines.append(storage_warning)
+            storage_estimate = self._storage_estimate_line()
+            if storage_estimate:
+                lines.append(storage_estimate)
+            lines.append(self._time_estimate_line(total))
             battery_warning = self._battery_warning_line()
             if battery_warning:
                 lines.append(battery_warning)
@@ -848,6 +852,33 @@ class ApplyMixin:
             "⚠ Low iPhone storage: {0} GB free. Restoring tweaks may require "
             "at least {1} GB free and could fail if the device runs out of space."
         ).format(f"{free / (1024 ** 3):.1f}", f"{threshold / (1024 ** 3):.1f}")
+
+    def _storage_estimate_line(self):
+        """Show the recommended working room for backup and restore."""
+        info = getattr(self, "_storage_info", None)
+        current_udid = self.device_manager.get_current_device_udid()
+        if not info or not current_udid or info.get("udid") != current_udid:
+            return None
+        total = int(info.get("total", 0) or 0)
+        if total <= 0:
+            return None
+        recommended = max(5 * 1024 ** 3, int(total * 0.10))
+        return QCoreApplication.translate(
+            "Nugget",
+            "Estimated working space: keep at least {0} GB free for the backup and restore."
+        ).format(f"{recommended / (1024 ** 3):.1f}")
+
+    def _time_estimate_line(self, selected_count):
+        """Give a deliberately conservative estimate for the apply flow."""
+        count = max(1, int(selected_count or 0))
+        seconds = 120 + (count * 8)
+        minutes, remainder = divmod(seconds, 60)
+        if remainder >= 30:
+            minutes += 1
+        return QCoreApplication.translate(
+            "Nugget",
+            "Estimated time: about {0} minutes, depending on the iPhone and connection."
+        ).format(minutes)
 
     def _battery_warning_line(self):
         info = getattr(self, "_battery_info", None)
