@@ -287,6 +287,7 @@ class IOSCollapsibleSection(QWidget):
         super().__init__(parent)
         self.setObjectName("iosCollapsibleSection")
         self._title = title
+        self._title_suffix = ""
         self._expanded = bool(expanded)
 
         layout = QVBoxLayout(self)
@@ -323,12 +324,20 @@ class IOSCollapsibleSection(QWidget):
         changed = expanded != self._expanded
         self._expanded = expanded
         self.header.setChecked(expanded)
-        self.header.setText(
-            f"{self.EXPANDED_CHEVRON if expanded else self.COLLAPSED_CHEVRON}"
-            f"  {self._title}")
+        self._update_header_text()
         self.body.setVisible(expanded)
         if changed:
             self.toggled.emit(expanded)
+
+    def set_title_suffix(self, suffix: str):
+        """Append a compact status/count suffix to the section title."""
+        self._title_suffix = str(suffix or "")
+        self._update_header_text()
+
+    def _update_header_text(self):
+        self.header.setText(
+            f"{self.EXPANDED_CHEVRON if self._expanded else self.COLLAPSED_CHEVRON}"
+            f"  {self._title}{self._title_suffix}")
 
     def toggle(self):
         self.set_expanded(not self._expanded)

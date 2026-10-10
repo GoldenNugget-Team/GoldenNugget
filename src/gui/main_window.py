@@ -46,6 +46,7 @@ from src.gui.ios.posterboard import IOSPosterboardPage
 from src.gui.ios.daemons import IOSDaemonsPage
 from src.gui.ios.apply import IOSApplyPage
 from src.gui.ios.settings import IOSSettingsPage
+from src.gui.ios.presets import IOSPresetsPage
 from src.gui.ios.statusbar import IOSStatusBarPage
 from src.gui.ios.icon_themes import IOSIconThemesPage
 from src.gui.ios.passcode_theme import IOSPasscodeThemePage
@@ -149,7 +150,7 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         # build the iOS-style pages stack
         # 0 = home, 1 = tweaks, 2 = posterboard, 3 = daemons, 4 = settings,
         # 5 = statusbar, 6 = apply, 7 = springboard, 8 = internal, 9 = liquidglass,
-        # 10 = icon themes, 11 = passcode themes
+        # 10 = icon themes, 11 = passcode themes, 12 = presets
         self.ios_pages = QtWidgets.QStackedWidget(self)
         self.ios_pages.setStyleSheet(t("page_bg"))
         self.ios_home = IOSHomePage(self)
@@ -157,6 +158,7 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         self.ios_posterboard = IOSPosterboardPage(self)
         self.ios_daemons = IOSDaemonsPage(self)
         self.ios_settings = IOSSettingsPage(self)
+        self.ios_presets = IOSPresetsPage(self)
         self.ios_statusbar = IOSStatusBarPage(self)
         self.ios_apply = IOSApplyPage(self)
         self.ios_springboard = IOSSectionPage(self, Section.SPRINGBOARD)
@@ -176,6 +178,7 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         self.ios_pages.addWidget(self.ios_liquidglass)
         self.ios_pages.addWidget(self.ios_iconthemes)
         self.ios_pages.addWidget(self.ios_passthemes)
+        self.ios_pages.addWidget(self.ios_presets)
 
         # Shared reusable header: one instance for every iOS subpage,
         # reconfigured on page change (title / back / right action).
@@ -194,6 +197,7 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
             9: QtCore.QCoreApplication.translate("Nugget", "Liquid Glass"),
             10: QtCore.QCoreApplication.translate("Nugget", "Icon Themes"),
             11: QCoreApplication.translate("Nugget", "Passcode Themes"),
+            12: QCoreApplication.translate("Nugget", "Presets"),
         }
         self._nav_right_actions = {
             2: ("+ Add Tendies", self.ios_posterboard.show_add_tendies_dialog),

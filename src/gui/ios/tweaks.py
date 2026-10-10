@@ -1,6 +1,6 @@
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QScrollArea, QDialog, QLabel, QHBoxLayout
+    QWidget, QVBoxLayout, QScrollArea, QDialog, QLabel, QHBoxLayout, QComboBox
 )
 
 from src.gui.ios.components import (
@@ -90,14 +90,25 @@ class IOSSectionContent(QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
         self.search = IOSSearchField(self)
+        self.filter_combo = QComboBox(self)
+        self.filter_combo.addItem(
+            QCoreApplication.translate("Nugget", "All tweaks"), "all")
+        self.filter_combo.addItem(
+            QCoreApplication.translate("Nugget", "Enabled only"), "enabled")
+        self.filter_combo.setFixedWidth(132)
+        self.filter_combo.setAccessibleName(
+            QCoreApplication.translate("Nugget", "Tweak filter"))
         search_row = QHBoxLayout()
         search_row.setContentsMargins(16, 16, 16, 0)
-        search_row.addWidget(self.search)
+        search_row.setSpacing(8)
+        search_row.addWidget(self.search, 1)
+        search_row.addWidget(self.filter_combo)
         root.addLayout(search_row)
         self._inner = None
 
         self.rebuild()
         self.search.textChanged.connect(self._apply_search)
+        self.filter_combo.currentIndexChanged.connect(self._apply_search)
 
     def rebuild(self):
         """(Re)build the section controls for the currently selected device.
@@ -263,7 +274,14 @@ class IOSSectionContent(QWidget):
             start = len(self._search_rows)
             for spec in SPECS_BY_SECTION[section]:
                 renderers[spec.kind](spec, collapsible.body_layout)
-            self._search_sections.append((collapsible, self._search_rows[start:]))
+            section_rows = self._search_rows[start:]
+            enabled_count = sum(
+                bool(getattr(tweaks.get(row[1]), "enabled", False))
+                for row in section_rows)
+            collapsible.set_title_suffix(
+                QCoreApplication.translate("Nugget", "  ·  {0}/{1} enabled")
+                .format(enabled_count, len(section_rows)))
+            self._search_sections.append((collapsible, section_rows))
 
         self.search_empty = IOSSearchEmpty(self)
         layout.addWidget(self.search_empty)
@@ -274,12 +292,16 @@ class IOSSectionContent(QWidget):
             self.force_solarium_fallback_card.setVisible(self._solarium_visible)
         self._apply_search()
 
-    def _apply_search(self):
+    def _apply_search(self, *_args):
         searching = bool(self.search.text().strip())
+        filter_mode = self.filter_combo.currentData()
         matches = 0
         for card, tid, title, description, compatible in self._search_rows:
+            enabled = bool(getattr(tweaks.get(tid), "enabled", False))
             available = compatible and not (
                 tid == TweakID.ForceSolariumFallback and self._solarium_visible is False)
+            if filter_mode == "enabled" and not enabled:
+                available = False
             visible = available and self.search.matches(title, description, tid.name)
             card.setVisible(visible)
             matches += visible
@@ -297,6 +319,16 @@ class IOSSectionContent(QWidget):
             section.header.setEnabled(not searching)
         self.search_empty.setVisible(searching and matches == 0)
 
+    def refresh_section_counts(self):
+        """Update enabled counts after a switch changes without rebuilding."""
+        for section, rows in self._search_sections:
+            enabled_count = sum(
+                bool(getattr(tweaks.get(row[1]), "enabled", False))
+                for row in rows)
+            section.set_title_suffix(
+                QCoreApplication.translate("Nugget", "  ·  {0}/{1} enabled")
+                .format(enabled_count, len(rows)))
+
     def set_force_solarium_fallback_visible(self, visible: bool):
         # remember the intended state so a rebuild re-applies it (the card
         # pointer is recreated by rebuild())
@@ -305,6 +337,22 @@ class IOSSectionContent(QWidget):
 
     def _retheme(self):
         c = ColorThemeManager.instance().colors
+        self.filter_combo.setStyleSheet(f"""
+            QComboBox {{
+                background-color: {c.bg_input};
+                border: 1px solid {c.border};
+                border-radius: 9px;
+                color: {c.text_primary};
+                padding: 7px 10px;
+                min-height: 18px;
+            }}
+            QComboBox::drop-down {{ border: none; width: 20px; }}
+            QComboBox QAbstractItemView {{
+                background-color: {c.bg_tertiary};
+                color: {c.text_primary};
+                selection-background-color: {c.accent};
+            }}
+        """)
         for lbl in self._switch_labels:
             lbl.setStyleSheet(f"color: {c.text_primary}; font-size: 15px;")
 

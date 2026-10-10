@@ -332,6 +332,18 @@ class SettingsMixin:
 
     def _on_tweak_changed(self):
         """Called when any tweak value changes - schedule autosave."""
+        # Keep the visible configuration summary/counts in sync while the
+        # user is toggling controls; these widgets intentionally do not rebuild
+        # the whole page for every switch change.
+        try:
+            if hasattr(self, "ios_home"):
+                self.ios_home.refresh_summary()
+            for page in getattr(self, "ios_pages", []):
+                content = getattr(page, "content", None)
+                if content is not None and hasattr(content, "refresh_section_counts"):
+                    content.refresh_section_counts()
+        except Exception:
+            pass
         if not self.autosave_enabled():
             # Still registered (so the callback is never dangling) but inert:
             # no debounce timer is even scheduled while the option is off.
@@ -577,12 +589,11 @@ class NavigationMixin:
 
 
     def open_presets_section(self):
-        """Open the settings page and scroll straight to the presets section."""
+        """Open the dedicated preset manager page."""
         self.content_stack.setCurrentIndex(1)
-        self.set_ios_page(4)
-        self._update_shared_nav(4)
+        self.set_ios_page(12)
+        self._update_shared_nav(12)
         self._sync_sidebar_selection()
-        self.ios_settings.scroll_to_presets()
 
 
     def eventFilter(self, obj, event):

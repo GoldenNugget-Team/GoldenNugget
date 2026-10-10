@@ -9,8 +9,8 @@ from PySide6.QtWidgets import (
 )
 
 from src.gui.ios.components import IOSCard, IOSPrimaryButton, IOSDangerButton
-from src.gui.preset_widget import PresetWidget
 from src.gui.theme import t, ColorThemeManager, theme_icon, theme_pixmap
+from src.tweaks.tweaks import tweaks
 
 # Feature tile icon per home card (keyed by the card title).
 _FEATURE_ICONS = {
@@ -321,6 +321,29 @@ class IOSHomePage(QWidget):
         self.status_lbl.setWordWrap(True)
         self.status_lbl.setTextFormat(Qt.RichText)
         layout.addWidget(self.status_lbl)
+
+        # Compact configuration summary: the home page should answer what is
+        # currently selected before the user starts an apply operation.
+        self.summary_card = IOSCard()
+        summary_layout = QHBoxLayout(self.summary_card)
+        summary_layout.setContentsMargins(16, 9, 16, 9)
+        summary_layout.setSpacing(12)
+        summary_text = QVBoxLayout()
+        summary_text.setSpacing(2)
+        self.summary_title = QLabel(QCoreApplication.translate(
+            "Nugget", "Current configuration"))
+        self.summary_title.setStyleSheet(t("home_tile_title"))
+        summary_text.addWidget(self.summary_title)
+        self.summary_detail = QLabel("")
+        self.summary_detail.setStyleSheet(t("home_tile_subtitle"))
+        summary_text.addWidget(self.summary_detail)
+        summary_layout.addLayout(summary_text, 1)
+        self.summary_cache = QLabel("")
+        self.summary_cache.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.summary_cache.setWordWrap(True)
+        self.summary_cache.setStyleSheet(t("home_tile_subtitle"))
+        summary_layout.addWidget(self.summary_cache)
+        layout.addWidget(self.summary_card)
         self._storage_thread = None
 
         cards_row = [self._make_card(
@@ -341,8 +364,7 @@ class IOSHomePage(QWidget):
         self.cards_grid = _CardGrid(cards_row)
         layout.addWidget(self.cards_grid)
 
-        # Apply / Reset share one row instead of stacking, which also keeps the
-        # preset widget closer to the top on short windows.
+        # Apply / Reset share one row on the home screen.
         actions = QHBoxLayout()
         actions.setContentsMargins(0, 0, 0, 0)
         actions.setSpacing(12)
@@ -356,10 +378,6 @@ class IOSHomePage(QWidget):
         actions.addWidget(reset_btn, 1)
 
         layout.addLayout(actions)
-
-        self.preset_widget = PresetWidget(
-            window=self.window, on_manage=self.open_presets_section, ios_style=True)
-        layout.addWidget(self.preset_widget)
 
         self.process_status_lbl = QLabel("", self)
         self.process_status_lbl.setWordWrap(True)
@@ -378,6 +396,7 @@ class IOSHomePage(QWidget):
         self._retheme()
         self.update_status()
         self.update_device_info()
+        self.refresh_summary()
         self.refresh_preset_widget()
 
     def _style_device_combo(self):
@@ -584,7 +603,36 @@ class IOSHomePage(QWidget):
         self.populate_device_picker()
 
     def refresh_preset_widget(self):
-        self.preset_widget.refresh()
+        # Kept as a compatibility hook for MainWindow; presets now live on
+        # their own page and are intentionally absent from Home.
+        self.refresh_summary()
+
+    def refresh_summary(self):
+        """Refresh the lightweight configuration/cache summary on Home."""
+        enabled = sum(1 for tweak in tweaks.values()
+                      if getattr(tweak, "enabled", False))
+        self.summary_detail.setText(QCoreApplication.translate(
+            "Nugget", "{0} enabled tweak(s)").format(enabled))
+
+        manager = getattr(self.window.device_manager, "pref_manager", None)
+        cache_enabled = bool(getattr(manager, "use_backup_cache", False))
+        if not cache_enabled:
+            cache_text = QCoreApplication.translate(
+                "Nugget", "Backup cache: off")
+        elif not self.window.device_manager.get_current_device_udid():
+            cache_text = QCoreApplication.translate(
+                "Nugget", "Backup cache: waiting for device")
+        else:
+            try:
+                from src.restore.protective_cache import peek_cache_info
+                info = peek_cache_info(
+                    self.window.device_manager.get_current_device_udid())
+            except Exception:
+                info = None
+            cache_text = QCoreApplication.translate(
+                "Nugget", "Backup cache: ready" if info else
+                "Backup cache: will be created on apply")
+        self.summary_cache.setText(cache_text)
 
     def set_statusbar_visible(self, visible: bool):
         self.statusbar_card.setVisible(visible)

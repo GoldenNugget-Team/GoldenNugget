@@ -175,9 +175,6 @@ class IOSSettingsPage(QWidget):
             self._on_org_name_edited,
         )
 
-        # Presets
-        self._make_presets_section()
-
         # About
         self.content_layout.addWidget(IOSSectionHeader(QCoreApplication.translate("Nugget", "About")))
 
@@ -185,7 +182,6 @@ class IOSSettingsPage(QWidget):
         about_btn.clicked.connect(self.show_about)
         self.content_layout.addWidget(about_btn)
 
-        self.refresh_presets()
         self.content_layout.addStretch()
 
         self._retheme()

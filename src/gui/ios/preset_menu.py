@@ -463,11 +463,15 @@ class PresetPopup(QFrame):
         self._empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._rows.insertWidget(0, self._empty)
 
-        # Delete sits alone on the last row, pinned to the far right
+        # Keep the popup quick, with a link to the full manager and Delete
+        # pinned to the far right.
         footer = QHBoxLayout()
         footer.setContentsMargins(0, 0, 0, 0)
         footer.setSpacing(6)
         footer.addStretch(1)
+        self._manage_btn = _MiniButton(_T("Nugget", "Manage presets"))
+        self._manage_btn.clicked.connect(self._open_manager)
+        footer.addWidget(self._manage_btn)
         self._delete_btn = _MiniButton(_T("Nugget", "Delete"), danger=True)
         self._delete_btn.clicked.connect(self._on_delete)
         footer.addWidget(self._delete_btn)
@@ -566,6 +570,13 @@ class PresetPopup(QFrame):
         if delete_preset_flow(self, self.pm, deleted):
             self._selected = None
             self.refresh()
+
+    def _open_manager(self):
+        self.close()
+        try:
+            self.window.open_presets_section()
+        except Exception:
+            pass
 
     # ---- show / hide with animation ------------------------------------
 

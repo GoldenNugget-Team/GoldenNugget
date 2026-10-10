@@ -169,6 +169,15 @@ class PresetWidget(QWidget):
         name = self._current_preset_name()
         self.banner.set_active_preset(name, autosave=self._autosave_enabled())
 
+    def active_preset_name(self) -> str:
+        """Return the preset name currently represented by the banner."""
+        name = self._current_preset_name()
+        if name:
+            return name
+        return (QCoreApplication.translate("Nugget", "AutoSave")
+                if self._autosave_enabled()
+                else QCoreApplication.translate("Nugget", "Not Saved"))
+
     def _autosave_enabled(self) -> bool:
         if self.window is None:
             return True
