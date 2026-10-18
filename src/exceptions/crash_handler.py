@@ -382,6 +382,17 @@ def _excepthook(exc_type, exc_value, exc_tb):
     _handle_crash(exc_type, exc_value, exc_tb)
 
 
+def _is_dead_object_event(exc_value, exc_tb) -> bool:
+    """True when Qt delivered an event to an object whose Python wrapper is
+    already gone, usually while windows are torn down on close. PySide raises
+    while converting that object for a Python event filter, before any of our
+    code runs, so the traceback has no frame past ``notify``. Nothing can
+    handle such an event; errors raised inside our own handlers have deeper
+    frames and still reach the crash dialog."""
+    return ("already deleted" in str(exc_value)
+            and exc_tb is not None and exc_tb.tb_next is None)
+
+
 class CrashHandlerApp(QApplication):
     """QApplication subclass that routes Qt event-handler exceptions to the
     crash handler instead of silently printing and dropping them."""
@@ -389,6 +400,13 @@ class CrashHandlerApp(QApplication):
     def notify(self, receiver: QObject, event: QEvent) -> bool:
         try:
             return super().notify(receiver, event)
+        except RuntimeError:
+            exc_type, exc_value, exc_tb = sys.exc_info()
+            if _is_dead_object_event(exc_value, exc_tb):
+                logger.warning("Dropped %s event: %s", event.type(), exc_value)
+                return False
+            _handle_crash(exc_type, exc_value, exc_tb)
+            return False
         except Exception:
             exc_type, exc_value, exc_tb = sys.exc_info()
             _handle_crash(exc_type, exc_value, exc_tb)
