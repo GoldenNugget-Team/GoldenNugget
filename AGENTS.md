@@ -523,6 +523,20 @@ backup in the persistent app-data store
   hold plaintext-injected rows (per-file wrapped keys → MBErrorDomain/205), so
   on those the tweaks still ride the sparse pass; PosterBoard-only edge cases
   keep injecting just the AppDomain rows.
+- **Preference baselines** (`_prepare_preference_merges` in `src/restore/inject.py`):
+  every preference tweak (`is_preference_file` targets) is MERGED onto the
+  device's current file from the backup. A file with NO manifest row does not
+  exist on the device — the protective capture keeps every preference file in
+  these domains — so the tweak payload is delivered as a NEW file (recorded in
+  `preference_baseline_creates` and listed in the apply summary), never an
+  apply abort (Commit 399853a's hard ValueError broke applies on any device
+  without e.g. `com.apple.backboardd.plist` managed policy — do not reinstate).
+  Preference resets (`PreferenceKeyReset`) against a missing row are skipped
+  (nothing to reset, recorded in `preference_baseline_skips`); a
+  FeatureFlags/Global.plist RESET still raises `FeatureFlagBaselineUnavailable`
+  with its explicit instruction; rows that EXIST but have a missing payload or
+  unreadable content still abort the injection loudly (the file may hold the
+  user's baseline that a patch-only file would clobber).
 
 **Phase 2 (40-60%)**: Sparse Restore — **no reboot** (default, merged phases)
 - `perform_restore()` applies tweaks via sparse restore with `reboot=not merge_phases`; if it drops at 0% it waits 25 s and retries once on a fresh connection.

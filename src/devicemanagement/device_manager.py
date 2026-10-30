@@ -517,12 +517,15 @@ class DeviceManager:
             if not self.get_current_device_partially_supported():
                 self._report_operation_stage("tweaks")
             update_label(QCoreApplication.tr("Preparing to restore...") + self.do_not_unplug)
-            from src.restore.inject import (preference_baseline_skips,
+            from src.restore.inject import (preference_baseline_creates,
+                                            preference_baseline_skips,
                                             preference_delivery_warnings)
             delivery_warnings = []
             baseline_skips = []
+            baseline_creates = []
             warning_token = preference_delivery_warnings.set(delivery_warnings)
             skip_token = preference_baseline_skips.set(baseline_skips)
+            create_token = preference_baseline_creates.set(baseline_creates)
             try:
                 await restore_files(
                     files=files_to_restore, reboot=self.pref_manager.auto_reboot,
@@ -541,6 +544,7 @@ class DeviceManager:
             finally:
                 preference_delivery_warnings.reset(warning_token)
                 preference_baseline_skips.reset(skip_token)
+                preference_baseline_creates.reset(create_token)
             tweaks[TweakID.PosterBoard].config_manager.save_staged_ids(self.get_current_device_udid())
             if tweaks[TweakID.PosterBoard].full_reset:
                 # the on-device PosterBoard container was wiped — the stale
@@ -565,6 +569,12 @@ class DeviceManager:
                     "\n\nPreference tweaks were skipped because the backup did not contain current baselines for: {0}. "
                     "Those preferences were left unchanged; other selected changes were applied.").format(
                         ', '.join(sorted(set(baseline_skips))))
+            if baseline_creates:
+                msg += QCoreApplication.tr(
+                    "\n\nThe backup had no existing settings file for: {0}. "
+                    "It was created new with only the selected tweaks' settings, "
+                    "like on a device that never had that file.").format(
+                        ', '.join(sorted(set(baseline_creates))))
             return ApplyAlertMessage(txt=QCoreApplication.tr("All done! ") + msg, title=QCoreApplication.tr("Success!"), icon=QMessageBox.Information)
 
     def _report_operation_stage(self, stage, category=""):

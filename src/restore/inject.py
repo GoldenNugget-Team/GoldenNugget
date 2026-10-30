@@ -38,6 +38,10 @@ from src.utils.preference_reset import PreferenceKeyReset
 _logger = logging.getLogger("GoldenNugget.inject")
 preference_delivery_warnings = ContextVar('preference_delivery_warnings', default=None)
 preference_baseline_skips = ContextVar('preference_baseline_skips', default=None)
+# Baselines whose manifest row is absent AND that were delivered anyway as a
+# new file (see _prepare_preference_merges). Recorded so the apply summary can
+# say the file was created from the tweak's keys only.
+preference_baseline_creates = ContextVar('preference_baseline_creates', default=None)
 _OPTIONAL_MISSING_BASELINE_PATHS = frozenset({
     ('HomeDomain', 'Library/Preferences/com.apple.SwiftUI.plist'),
     ('HomeDomain', 'Library/Preferences/com.apple.AvatarUI.Staryu.plist'),
@@ -158,6 +162,30 @@ def _prepare_preference_merges(conn, device_dir, files):
                         'Skipping preference edits for %s because its current baseline '
                         'is absent from the backup', f'{domain}/{path}')
                     continue
+                if (domain == 'SystemPreferencesDomain'
+                        and path == 'FeatureFlags/Global.plist'):
+                    # A feature-flag RESET was requested and no Global.plist
+                    # exists to take the negative keys out of. Refuse with the
+                    # explicit instruction instead of guessing at a baseline.
+                    raise FeatureFlagBaselineUnavailable(
+                        'Feature flag overrides cannot be safely prepared from this backup: '
+                        f'{domain}/{path} has no file row in the backup. No injection started. '
+                        'Set feature-flag controls to Not Used to leave them out of this apply. '
+                        'This includes controls outside Internal Options '
+                        'that also use FeatureFlags/Global.plist. Another full backup is not guaranteed '
+                        'to expose this file. No empty baseline was substituted; this does not prove '
+                        'the file is absent from the phone or that iOS accepts these overrides.')
+                if isinstance(contents, PreferenceKeyReset):
+                    # A reset removes keys the tweaks previously set. A file
+                    # the backup has no row for does not exist on the device,
+                    # so there is nothing to remove — the reset is vacuous.
+                    skipped = preference_baseline_skips.get()
+                    if skipped is not None:
+                        skipped.append(f'{domain}/{path}')
+                    _logger.warning(
+                        'Preference reset for %s skipped because no baseline file '
+                        'exists in the backup (nothing to reset)', f'{domain}/{path}')
+                    continue
                 if (domain == 'ManagedPreferencesDomain'
                         and path in ('mobile/com.apple.UIKit.plist',
                                      'mobile/com.apple.springboard.plist')):
@@ -166,7 +194,22 @@ def _prepare_preference_merges(conn, device_dir, files):
                     if _native_patch_covers(contents, mirror):
                         omitted_managed.append(path)
                         continue
-                missing.append((domain, path, 'no file row in the backup'))
+                # The protective capture keeps EVERY preference file in these
+                # domains (mid-stream filter and prune keep-set), so a missing
+                # manifest row means the device does not have this file.
+                # Delivering the tweak payload as the whole file is then the
+                # same thing the sparse restore used to lay down for a new
+                # file before delivery moved into Phase 1's injection — not a
+                # clobbering of unseen content. (A row that exists with a
+                # unreadable/missing payload IS still an error below.)
+                created = preference_baseline_creates.get()
+                if created is not None:
+                    created.append(f'{domain}/{path}')
+                _logger.warning(
+                    'No baseline row for %s in the backup; the file does not exist '
+                    'on the device, so the tweak payload is delivered as a new file',
+                    f'{domain}/{path}')
+                prepared.append((domain, path, contents, mode, owner, group))
                 continue
             file_id = row[0]
             payload = device_dir / file_id[:2] / file_id
@@ -197,8 +240,8 @@ def _prepare_preference_merges(conn, device_dir, files):
                 'to expose this file. No empty baseline was substituted; this does not prove '
                 'the file is absent from the phone or that iOS accepts these overrides.')
         raise ValueError(
-            f'{len(missing)} current preference baseline(s) are unavailable: {details}. '
-            'No injection started. A full backup with the current capture scope is required; '
+            f'{len(missing)} current preference baseline(s) could not be merged: {details}. '
+            'No injection started. Retry the apply so the backup is captured again; '
             'missing backup entries are not proof that the files do not exist on the phone.')
     for path in omitted_managed:
         warnings = preference_delivery_warnings.get()

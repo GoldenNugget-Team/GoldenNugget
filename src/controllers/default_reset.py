@@ -32,6 +32,11 @@ def remaining_reset_entries(entries, pages):
 
 
 def preference_reset_plan(entries, pages):
+    if entries is None:
+        # No applied-selection record for this device/iOS version: nothing was
+        # recorded to take keys out of, so the keyed preference reset is empty
+        # (other reset targets are built straight from the tweak registry).
+        return {}
     selected = {PAGE_SECTIONS[page] for page in pages if page in PAGE_SECTIONS}
     paths = defaultdict(set)
     specs = {spec.id.name: spec for spec in SPECS}
