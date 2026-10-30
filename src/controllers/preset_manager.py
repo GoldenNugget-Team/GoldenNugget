@@ -29,6 +29,7 @@ from src.tweaks.icon_themes.icon_themes_tweak import IconThemesTweak
 from src.tweaks.icon_themes.icon_theme import IconTheme
 from src.tweaks.posterboard.device_overrides import PosterKitOverrides
 from src.controllers.hotload import HotLoad
+from .retired_feature_flags import is_retired_feature_flag
 
 PRESETS_DIR_NAME = "Presets"
 PRESET_VERSION = 2
@@ -449,6 +450,8 @@ class PresetManager:
             self._load_all_tweaks()
             hidden_names = current_hidden_tweak_names()
             def prepare(name, tweak_data):
+                if is_retired_feature_flag(tweak_data):
+                    return None
                 try:
                     key = TweakID[name]
                 except KeyError:

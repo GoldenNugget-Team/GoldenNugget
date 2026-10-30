@@ -5,6 +5,7 @@ from copy import deepcopy
 from pathlib import Path
 
 from PySide6.QtCore import QLockFile
+from .retired_feature_flags import is_retired_feature_flag
 
 
 def _merge_local_changes(local, baseline, latest):
@@ -38,6 +39,9 @@ def write_autosave(path, data, baseline=None):
             merged[name] = (_merge_local_changes(entry, baseline[name], existing[name])
                             if baseline is not None and name in baseline and name in existing
                             else deepcopy(entry))
+        for name, entry in merged.items():
+            if is_retired_feature_flag(entry):
+                merged[name] = {**entry, 'enabled': False}
         result = {**data, 'tweaks': merged}
         with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=path.parent,
                                          prefix='.autosave-', delete=False) as stream:
