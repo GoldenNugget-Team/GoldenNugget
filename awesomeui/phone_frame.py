@@ -75,7 +75,7 @@ class PhoneFrame(QWidget):
         self._ca_pixmap = None
         if renderer is not None:
             self._render_ca_frame()
-            if self._ca_loop > 0.5:
+            if self._ca_loop > 0.5 and not self._ca_timer.isActive():
                 self._ca_timer.start()
         self.update()
 
@@ -91,6 +91,9 @@ class PhoneFrame(QWidget):
         self.update()
 
     def _stop_ca(self):
+        # Guard against multiple calls (e.g., from closeEvent and destructor)
+        if self._ca_renderer is None and self._ca_timer.isActive():
+            return
         self._ca_timer.stop()
         self._ca_renderer = None
         self._ca_home_renderer = None
@@ -133,12 +136,15 @@ class PhoneFrame(QWidget):
         return (_time.monotonic() - started) * 1000.0
 
     def _advance_ca(self):
+        # Guard against being called after the timer has been stopped
+        if self._ca_renderer is None:
+            return
         took_ms = self._render_ca_frame()
         self.update()
         desired = 33
         if 30 < took_ms < 1000:
             desired = max(33, int(took_ms * 1.5))
-        if self._ca_timer.interval() != desired:
+        if self._ca_timer.isActive() and self._ca_timer.interval() != desired:
             self._ca_timer.stop()
             self._ca_timer.setInterval(desired)
             self._ca_timer.start()

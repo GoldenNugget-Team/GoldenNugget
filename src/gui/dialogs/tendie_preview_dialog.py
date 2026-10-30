@@ -205,6 +205,7 @@ class TendiePreviewDialog(QDialog):
         if self._closed:
             return
         self._tendie_bundle, path = result
+        # Only set up CA if the dialog is still open
         if self._setup_ca():
             return
         if self._tendie_bundle is not None and path is None:
@@ -299,6 +300,10 @@ class TendiePreviewDialog(QDialog):
 
     def closeEvent(self, event):
         self._closed = True
+        # Stop any running Core Animation
+        if hasattr(self, '_frame') and self._frame is not None:
+            # Stop the timer to prevent it from firing after close
+            self._frame._stop_ca()
         task = getattr(self, '_load_task', None)
         if task is not None:
             task.cancel()
