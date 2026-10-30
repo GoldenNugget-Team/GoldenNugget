@@ -11,7 +11,13 @@ name = "gn-sideload"
 path = "src/main.rs"
 
 [dependencies]
-isideload = "0.5.2"
+# isideload 0.5.2 pins zip ^8.3, which sits inside five open Dependabot
+# alerts on the `zip` crate — a critical zip-cloaking arbitrary-file rewrite
+# (GHSA-m665-v7pm-7grj, fixed 9.0.5) plus four 9.0.0 fixes. No upstream
+# release carries zip 9 yet, so this engine builds a one-line patch branch.
+# Return to the registry version ("isideload = \"0.5.x\"") the moment
+# nab138/isideload publishes a zip 9 release.
+isideload = { git = "https://github.com/GoldenNugget-Team/isideload", branch = "zip-9.1-security" }
 idevice = { version = "0.1.61", default-features = false, features = ["usbmuxd", "ring"] }
 tokio = { version = "1.40.0", features = ["rt-multi-thread", "macros"] }
 tracing = "0.1.44"
