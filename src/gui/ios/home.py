@@ -1135,7 +1135,10 @@ class IOSHomePage(QWidget):
 
         def open_helper(_event):
             from src.gui.dialogs.mobile_helper_dialog import MobileHelperDialog
-            MobileHelperDialog(self.window()).exec()
+            # self.window is the owning MainWindow instance (stored in
+            # __init__), not QWidget.window() — pass it straight through,
+            # exactly like the mobile promo call in main_window_mixins.
+            MobileHelperDialog(self.window).exec()
 
         card.mousePressEvent = open_helper
         card.setCursor(Qt.PointingHandCursor)
