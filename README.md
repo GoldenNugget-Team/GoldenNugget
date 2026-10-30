@@ -20,7 +20,11 @@ For a packaged app, download the archive for your platform from the
 [latest release](https://github.com/GoldenNugget-Team/GoldenNugget/releases/latest).
 See the [installation guide](https://github.com/GoldenNugget-Team/GoldenNugget/wiki/Installation-and-first-launch) for setup help.
 
-To run from source, download or clone this repository and open a terminal in its folder.
+## Running from source
+Requirements
+Python 3.10+
+QT 6.9.6+
+Rust (Mobile companion)
 
 1. Install the device connection tools listed in [Requirements](#requirements).
 2. Create and activate a virtual environment:
