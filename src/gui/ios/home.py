@@ -429,14 +429,16 @@ class IOSHomePage(QWidget):
             "Status Bar", "Customize the status bar", 5),
             self._make_card(
             "Icon Themes", "Themed app icons & labels", 10),
-            self._make_mobile_card(),
             self._make_card(
             "Passcode Theme", "Custom keypad theme (.passthm)", 11)]
         (self.posterboard_card, _, self.daemons_card,
-         self.statusbar_card, _, self.mobile_card,
-         self.passcode_theme_card) = cards_row
+         self.statusbar_card, _, self.passcode_theme_card) = cards_row
         self.cards_grid = _CardGrid(cards_row)
         layout.addWidget(self.cards_grid)
+        # GoldenNugget Mobile opens a dialog, not a page — it gets the compact
+        # one-line row the Catalog uses, so the tile grid stays 6-wide.
+        self.mobile_row = self._make_mobile_row()
+        layout.addWidget(self.mobile_row)
         # Keep the catalog as a compact row below the feature tiles.
         self.catalog_card = self._make_catalog_row()
         layout.addWidget(self.catalog_card)
@@ -598,6 +600,7 @@ class IOSHomePage(QWidget):
         self.picker_software.setStyleSheet(self.device_software.styleSheet())
         self.picker_combo.setStyleSheet(self.device_combo.styleSheet())
         self._paint_catalog_row()
+        self._paint_mobile_row()
         self.update_passcode_support()
 
     def _device_picker_label(self, device):
@@ -1060,13 +1063,8 @@ class IOSHomePage(QWidget):
         self.statusbar_card.setVisible(visible)
         self.cards_grid.reflow()
 
-    def _make_card(self, title: str, subtitle: str, page_index: int,
-                   on_click=None) -> IOSCard:
-        """One home feature tile: a big themed icon with the name below it.
-
-        ``on_click`` replaces the default "switch to page" behaviour for tiles
-        that open a dialog instead (GoldenNugget Mobile).
-        """
+    def _make_card(self, title: str, subtitle: str, page_index: int) -> IOSCard:
+        """One home feature tile: a big themed icon with the name below it."""
         card = _TileCard()
         card.setProperty('liquidHomeCard',True)
         card.setMaximumWidth(180)
@@ -1107,28 +1105,42 @@ class IOSHomePage(QWidget):
         # kept for _retheme(): icons are recolored, labels restyled
         self._tiles.append((icon_lbl, icon_res, title_lbl, sub_lbl))
 
-        card.mousePressEvent = (on_click if on_click is not None
-                                else lambda e: self.switch_to_ios_page(page_index))
+        card.mousePressEvent = lambda e: self.switch_to_ios_page(page_index)
         card.setCursor(Qt.PointingHandCursor)
         return card
 
-    def _make_mobile_card(self) -> IOSCard:
-        """The GoldenNugget Mobile tile: opens the sideload helper dialog.
+    def _make_mobile_row(self) -> IOSCard:
+        """The GoldenNugget Mobile compact row: opens the helper dialog.
 
-        There is no dedicated page behind this tile — the click pulls up
-        MobileHelperDialog instead of a page switch. Kept it right before the
-        Passcode tile so _tiles[-1] still resolves to Passcode Theme for
-        update_passcode_support().
+        Same one-line shape as _make_catalog_row() — this entry has no page
+        of its own, it exec()s MobileHelperDialog on a click.
         """
+        card = _TileCard()
+        card.setProperty('liquidCatalog', True)
+        row = QHBoxLayout(card)
+        row.setContentsMargins(16, 10, 16, 10)
+        row.setSpacing(12)
+        self._mobile_icon = QLabel(card)
+        self._mobile_icon.setFixedSize(38, 38)
+        self._mobile_icon.setStyleSheet("background-color: transparent;")
+        row.addWidget(self._mobile_icon)
+        self._mobile_title = QLabel(
+            QCoreApplication.translate("Nugget", "GoldenNugget Mobile"), card)
+        row.addWidget(self._mobile_title)
+        self._mobile_caption = QLabel(QCoreApplication.translate(
+            "Nugget", "Companion app for your iPhone"), card)
+        row.addWidget(self._mobile_caption, 1)
+        self._mobile_chevron = QLabel("›", card)
+        row.addWidget(self._mobile_chevron)
 
         def open_helper(_event):
             from src.gui.dialogs.mobile_helper_dialog import MobileHelperDialog
             MobileHelperDialog(self.window()).exec()
 
-        return self._make_card(
-            "GoldenNugget Mobile",
-            QT_TRANSLATE_NOOP("Nugget", "Companion app for your iPhone"),
-            -1, on_click=open_helper)
+        card.mousePressEvent = open_helper
+        card.setCursor(Qt.PointingHandCursor)
+        self._paint_mobile_row()
+        return card
 
     def _make_catalog_row(self) -> IOSCard:
         """The Community Catalog entry: icon, name and caption on one line."""
@@ -1181,6 +1193,16 @@ class IOSHomePage(QWidget):
         self._catalog_caption.setStyleSheet(t("home_tile_subtitle") + "font-size: 14px;")
         self._catalog_chevron.setStyleSheet(t("home_tile_subtitle") + "font-size: 20px;")
 
+    def _paint_mobile_row(self):
+        if not hasattr(self, "_mobile_icon"):
+            return
+        self._mobile_icon.setPixmap(theme_pixmap(
+            FEATURE_ICONS["GoldenNugget Mobile"], self._c.text_primary,
+            38, self.devicePixelRatioF()))
+        self._mobile_title.setStyleSheet(t("home_tile_title") + "font-size: 18px;")
+        self._mobile_caption.setStyleSheet(t("home_tile_subtitle") + "font-size: 14px;")
+        self._mobile_chevron.setStyleSheet(t("home_tile_subtitle") + "font-size: 20px;")
+
     def _paint_tile_icon(self, label: QLabel, icon_res: str):
         """Draw a feature icon at tile size (and screen density) in the
         current text color."""
@@ -1190,7 +1212,6 @@ class IOSHomePage(QWidget):
             FEATURE_ICONS["Status Bar"]: 138,
             FEATURE_ICONS["Icon Themes"]: 120,
             FEATURE_ICONS["Daemons"]: 126,
-            FEATURE_ICONS["GoldenNugget Mobile"]: 126,
             FEATURE_ICONS["Tweaks"]: 126,
             FEATURE_ICONS["PosterBoard"]: 126,
         }
