@@ -2,6 +2,7 @@
     <qresource prefix="/">
         <file>icon/features/community-catalog.png</file>
         <file>icon/features/daemons.png</file>
+        <file>icon/features/goldennugget-mobile.png</file>
         <file>icon/features/icon-themes.png</file>
         <file>icon/features/passcode-theme.png</file>
         <file>icon/features/posterboard.png</file>

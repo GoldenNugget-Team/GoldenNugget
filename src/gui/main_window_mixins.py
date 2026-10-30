@@ -175,14 +175,22 @@ class DeviceBarMixin:
         except AttributeError:
             prev = None
         self._mobile_promo_prev_connected = connected_now
-        if not connected_now or prev is not False:
+        # Dev/test hook: GOLDENNUGGET_SHOW_MOBILE_PROMO=1 reveals the pop-up on
+        # the FIRST device scan (no unplug/replug dance, no session/persisted
+        # dismissal) without altering the production trigger logic.
+        debug_force = os.environ.get("GOLDENNUGGET_SHOW_MOBILE_PROMO") == "1"
+        if debug_force:
+            if getattr(self, "_mobile_promo_shown", False):
+                return
+        elif not connected_now or prev is not False:
             return
         if getattr(self, "_mobile_promo_shown", False):
             return
         if self.settings.value("mobile_helper/promo_dismissed", False, type=bool):
             return
         if (self.apply_in_progress or getattr(self, "_cache_restore_in_progress", False)):
-            return
+            if not debug_force:
+                return
 
         from src.gui.dialogs.mobile_helper_dialog import MobileHelperDialog
 

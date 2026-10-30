@@ -429,10 +429,12 @@ class IOSHomePage(QWidget):
             "Status Bar", "Customize the status bar", 5),
             self._make_card(
             "Icon Themes", "Themed app icons & labels", 10),
+            self._make_mobile_card(),
             self._make_card(
             "Passcode Theme", "Custom keypad theme (.passthm)", 11)]
         (self.posterboard_card, _, self.daemons_card,
-         self.statusbar_card, _, self.passcode_theme_card) = cards_row
+         self.statusbar_card, _, self.mobile_card,
+         self.passcode_theme_card) = cards_row
         self.cards_grid = _CardGrid(cards_row)
         layout.addWidget(self.cards_grid)
         # Keep the catalog as a compact row below the feature tiles.
@@ -1058,8 +1060,13 @@ class IOSHomePage(QWidget):
         self.statusbar_card.setVisible(visible)
         self.cards_grid.reflow()
 
-    def _make_card(self, title: str, subtitle: str, page_index: int) -> IOSCard:
-        """One home feature tile: a big themed icon with the name below it."""
+    def _make_card(self, title: str, subtitle: str, page_index: int,
+                   on_click=None) -> IOSCard:
+        """One home feature tile: a big themed icon with the name below it.
+
+        ``on_click`` replaces the default "switch to page" behaviour for tiles
+        that open a dialog instead (GoldenNugget Mobile).
+        """
         card = _TileCard()
         card.setProperty('liquidHomeCard',True)
         card.setMaximumWidth(180)
@@ -1100,9 +1107,28 @@ class IOSHomePage(QWidget):
         # kept for _retheme(): icons are recolored, labels restyled
         self._tiles.append((icon_lbl, icon_res, title_lbl, sub_lbl))
 
-        card.mousePressEvent = lambda e: self.switch_to_ios_page(page_index)
+        card.mousePressEvent = (on_click if on_click is not None
+                                else lambda e: self.switch_to_ios_page(page_index))
         card.setCursor(Qt.PointingHandCursor)
         return card
+
+    def _make_mobile_card(self) -> IOSCard:
+        """The GoldenNugget Mobile tile: opens the sideload helper dialog.
+
+        There is no dedicated page behind this tile — the click pulls up
+        MobileHelperDialog instead of a page switch. Kept it right before the
+        Passcode tile so _tiles[-1] still resolves to Passcode Theme for
+        update_passcode_support().
+        """
+
+        def open_helper(_event):
+            from src.gui.dialogs.mobile_helper_dialog import MobileHelperDialog
+            MobileHelperDialog(self.window()).exec()
+
+        return self._make_card(
+            "GoldenNugget Mobile",
+            QT_TRANSLATE_NOOP("Nugget", "Companion app for your iPhone"),
+            -1, on_click=open_helper)
 
     def _make_catalog_row(self) -> IOSCard:
         """The Community Catalog entry: icon, name and caption on one line."""
@@ -1164,6 +1190,7 @@ class IOSHomePage(QWidget):
             FEATURE_ICONS["Status Bar"]: 138,
             FEATURE_ICONS["Icon Themes"]: 120,
             FEATURE_ICONS["Daemons"]: 126,
+            FEATURE_ICONS["GoldenNugget Mobile"]: 126,
             FEATURE_ICONS["Tweaks"]: 126,
             FEATURE_ICONS["PosterBoard"]: 126,
         }

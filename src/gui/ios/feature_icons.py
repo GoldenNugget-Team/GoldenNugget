@@ -5,6 +5,7 @@ FEATURE_ICONS = {
     "PosterBoard": ":/icon/features/posterboard.png",
     "Templates": ":/icon/file-earmark-text.svg",
     "Daemons": ":/icon/features/daemons.png",
+    "GoldenNugget Mobile": ":/icon/features/goldennugget-mobile.png",
     "Status Bar": ":/icon/features/status-bar.png",
     "Icon Themes": ":/icon/features/icon-themes.png",
     "Passcode Theme": ":/icon/features/passcode-theme.png",
