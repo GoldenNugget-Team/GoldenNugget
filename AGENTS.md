@@ -249,7 +249,14 @@ pairing record:
   `<repo>/tools/sideload-engine/target/release/`. When absent, the dialog
   offers "Build Engine (cargo)" (runs `cargo build --release` in the engine
   dir, cwd = `tools/sideload-engine`) and "Locate engine binary…" (verified
-  with a quick `--version` probe before the override is saved). Signing state
+  with a quick `--version` probe before the override is saved). The frozen
+  app bundles the engine: `compile.py` `--add-binary`s it on all platforms
+  (a Universal2 mac build REFUSES a single-arch engine;
+  `tools/build_sideload_engine.sh universal2` lipo-merges both slices — the
+  CI workflow runs it before compile.py and re-checks the bundled binary;
+  the script pins the rustup toolchain's bin ahead of PATH, since a
+  MacPorts/Homebrew `rustc` earlier in PATH carries no rustup std for cross
+  targets). Signing state
   persists in the platform keyring (service `goldennugget`), team/certificate
   prompts only re-appear when Apple's answers reset. Windows needs usbmuxd
   served by Apple Devices/iTunes; limit the UI copy to the free-account

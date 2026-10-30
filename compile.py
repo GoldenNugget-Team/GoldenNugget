@@ -85,6 +85,40 @@ args = [
 if target_arch:
     args.append(target_arch)
 
+# --- gn-sideload signing engine (GoldenNugget Mobile helper) ---
+# mobile_helper.find_engine() looks for the engine at the PyInstaller bundle
+# root (sys._MEIPASS), so it is added there as a plain binary when present.
+# Universal2 mac builds NEED a UNIVERSAL engine: a single-arch slice cannot
+# exec on the other half of the app's audiences. Enforced the same way as the
+# portable libusb check above (tools/build_sideload_engine.sh builds it).
+_engine_name = ("gn-sideload.exe" if os.name == "nt" else "gn-sideload")
+_engine_path = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "tools", "sideload-engine", "target", "release", _engine_name)
+_engine_required = (platform == "darwin"
+                    and target_arch == "--target-arch=universal2")
+if os.path.isfile(_engine_path):
+    if platform == "darwin" and _engine_required:
+        lipo_info = subprocess.run(
+            ["lipo", "-info", _engine_path], capture_output=True, text=True,
+            check=True).stdout
+        if "x86_64" not in lipo_info or "arm64" not in lipo_info:
+            raise SystemExit(
+                "Universal2 build requires a UNIVERSAL gn-sideload engine; "
+                "" + _engine_path + " is not one. Run: "
+                "bash tools/build_sideload_engine.sh universal2")
+    sep = os.pathsep
+    args.append(f"--add-binary={_engine_path}{sep}.")
+elif _engine_required:
+    raise SystemExit(
+        "Universal2 build requires the gn-sideload engine. Run: "
+        "bash tools/build_sideload_engine.sh universal2")
+else:
+    print("[!] gn-sideload engine not bundled: tools/sideload-engine/"
+          "target/release/" + _engine_name + " was not built "
+          "(the helper dialog will offer to build it with cargo)")
+
+
 # macOS-specific flags
 if platform == "darwin":
     libusb_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".macos-libusb")

@@ -119,10 +119,36 @@ jobs:
           python -m pip freeze > macOS-dependencies.txt
       - name: Build portable Universal2 libusb
         run: bash tools/build_macos_libusb.sh
+      # gn-sideload (GoldenNugget Mobile side-load engine) must ship UNIVERSAL:
+      # compile.py refuses a single-arch slice in a Universal2 app.
+      - name: Cache Rust engine build
+        id: engine-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            tools/sideload-engine/target
+          key: gn-sideload-universal2-${{ hashFiles('tools/sideload-engine/Cargo.lock') }}
+      # Hard block on bad builds: compile.py re-verifies the engine is truly
+      # universal before it enters the freeze, and this step now also runs a
+      # real exec check on the host.
+      - name: Build universal2 gn-sideload engine
+        run: |
+          bash tools/build_sideload_engine.sh universal2
+          arch -x86_64 tools/sideload-engine/target/release/gn-sideload --version
+          arch -arm64 tools/sideload-engine/target/release/gn-sideload --version
       - name: Build Universal2, validate and package DMG
         run: |
           python compile.py --target-arch=universal2
           python tools/package_macos.py
+          # The bundled engine has to carry both app architectures — a stale
+          # single-arch binary in the cache would break half of the users.
+          test -x dist/GoldenNugget.app/Contents/MacOS/gn-sideload
+          engine_info=$(lipo -info dist/GoldenNugget.app/Contents/MacOS/gn-sideload)
+          echo "$engine_info"
+          echo "$engine_info" | grep -q x86_64
+          echo "$engine_info" | grep -q arm64
           # Keep every uploaded file under dist/: upload-artifact roots the
           # artifact at the common parent, and a file outside dist/ would nest
           # the ZIP and DMG under dist/ where the smoke test cannot find them.
@@ -168,6 +194,22 @@ jobs:
         with:
           python-version: '3.15'
 
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust engine build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\.cargo\registry
+            ~\.cargo\git
+            tools\sideload-engine\target
+          key: gn-sideload-windows-${{ runner.arch }}-${{ hashFiles('tools/sideload-engine/Cargo.lock') }}
+
+      - name: Build gn-sideload engine
+        run: cargo build --release
+        working-directory: tools/sideload-engine
+
       - name: Install dependencies
         run: |
           python -m pip install -U pip setuptools wheel
@@ -176,6 +218,17 @@ jobs:
 
       - name: Build Windows
         run: python compile.py
+
+      - name: Verify bundled engine
+        shell: pwsh
+        run: |
+          $engine = Get-ChildItem dist/GoldenNugget -Recurse -Filter gn-sideload.exe |
+            Select-Object -First 1
+          if (-not $engine) {
+            Write-Host "::error::gn-sideload.exe was not bundled into the frozen app"
+            exit 1
+          }
+          Write-Host "Engine bundled at $($engine.FullName)"
 
       - name: Upload Windows
         uses: actions/upload-artifact@v6
@@ -202,6 +255,22 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libssl-dev pkg-config
 
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust engine build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            tools/sideload-engine/target
+          key: gn-sideload-linux-${{ runner.arch }}-${{ hashFiles('tools/sideload-engine/Cargo.lock') }}
+
+      - name: Build gn-sideload engine
+        run: bash ../tools/build_sideload_engine.sh
+        working-directory: tools/sideload-engine
+
       - name: Install dependencies
         run: |
           set -uo pipefail
@@ -220,9 +289,20 @@ jobs:
             exit 1
           fi
           pip check
+          test -x tools/sideload-engine/target/release/gn-sideload
+          tools/sideload-engine/target/release/gn-sideload --version
 
       - name: Build Linux
         run: python compile.py
+
+      - name: Verify bundled engine
+        run: |
+          engine=$(find dist/GoldenNugget -name gn-sideload -perm -u+x | head -1)
+          if [ -z "$engine" ]; then
+            echo "::error::gn-sideload was not bundled into the frozen app"
+            exit 1
+          fi
+          echo "Engine bundled at $engine"
 
       - name: Upload Linux
         uses: actions/upload-artifact@v6
@@ -249,6 +329,22 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libssl-dev pkg-config
 
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust engine build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            tools/sideload-engine/target
+          key: gn-sideload-linux-${{ runner.arch }}-${{ hashFiles('tools/sideload-engine/Cargo.lock') }}
+
+      - name: Build gn-sideload engine
+        run: bash ../tools/build_sideload_engine.sh
+        working-directory: tools/sideload-engine
+
       - name: Install dependencies
         run: |
           set -uo pipefail
@@ -267,9 +363,19 @@ jobs:
             exit 1
           fi
           pip check
+          test -x tools/sideload-engine/target/release/gn-sideload
 
       - name: Build Linux ARM
         run: python compile.py
+
+      - name: Verify bundled engine
+        run: |
+          engine=$(find dist/GoldenNugget -name gn-sideload -perm -u+x | head -1)
+          if [ -z "$engine" ]; then
+            echo "::error::gn-sideload was not bundled into the frozen app"
+            exit 1
+          fi
+          echo "Engine bundled at $engine"
 
       - name: Upload Linux ARM
         uses: actions/upload-artifact@v6
