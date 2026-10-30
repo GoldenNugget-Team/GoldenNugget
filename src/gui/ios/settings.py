@@ -124,6 +124,15 @@ class IOSSettingsPage(QWidget):
         reset_pairing_btn.clicked.connect(self._on_reset_pairing_clicked)
         self.content_layout.addWidget(reset_pairing_btn)
 
+        mobile_helper_btn = IOSSettingsAction(
+            QCoreApplication.translate("Nugget", "GoldenNugget Mobile Helper"))
+        mobile_helper_btn.setToolTip(QCoreApplication.translate(
+            "Nugget",
+            "Install GoldenNugget Mobile on the iPhone and export the "
+            "pairing file into it."))
+        mobile_helper_btn.clicked.connect(self._on_mobile_helper_clicked)
+        self.content_layout.addWidget(mobile_helper_btn)
+
         standard_layout = self.content_layout
         self.advanced_section = IOSCollapsibleSection(
             QCoreApplication.translate("Nugget", "Advanced"),
@@ -523,6 +532,11 @@ class IOSSettingsPage(QWidget):
                 QCoreApplication.translate(
                     "Nugget", "Failed to reset device pairing: %1").replace("%1", error)
             )
+
+    def _on_mobile_helper_clicked(self):
+        from src.gui.dialogs.mobile_helper_dialog import MobileHelperDialog
+        dialog = MobileHelperDialog(self.window)
+        dialog.exec()
 
     def _on_restore_data_clicked(self):
         reply = ask_confirmation(self.window,

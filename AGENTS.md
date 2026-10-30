@@ -207,6 +207,66 @@ navigating to Settings. The module is deliberately split in two:
   `ios_style` is False (the classic page still navigates) or when no window is
   available to own the popup.
 
+## GoldenNugget Mobile Helper (src/devicemanagement/mobile_helper.py + src/gui/dialogs/mobile_helper_dialog.py)
+
+Settings → Device → **"GoldenNugget Mobile Helper"** sideloads the on-device
+port (`GoldenNugget-Team/GoldenNugget-mobile`, bundle id
+`com.awesomenull.goldennugget`) onto the connected iPhone and delivers its
+pairing record:
+
+- Device logic (`mobile_helper.py`) is the only consumer allowed to pair with a
+  device whose record is not known yet — everything still goes through
+  `lockdown_session`. `read_pairing_record()` returns the record **the host
+  already holds** (no re-pair), `pairing_record_xml()` dumps it as an
+  **XML plist**: the mobile app's importer (`PairingRecord.accept`) only parses
+  UTF-8 text plists — a binary plist is silently refused there.
+- Delivery rides `HouseArrestService` (`VendDocuments`): the record must land
+  exactly at `Documents/pairingfile.mobiledevicepairing` (`AppPaths.pairingFile`
+  on the app side) — filename and location are contract, not convenience.
+  `AppNotInstalledError` is translated into a save-to-disk fallback, same
+  `save_pairing` flow used by the explicit "Save to Disk…" action (the manual
+  AirDrop route when the app is not installed yet).
+- IPA installation goes through `InstallationProxyService.install_from_local`
+  on a background async-loop QThread (pattern of `FetchAppsThread`) for
+  **already-signed** IPAs. Latest-release downloads ride QtNetwork
+  (icon-pack downloader pattern), and the downloaded temp IPA is deleted only
+  when the install has finished (`_pending_ipa_path`).
+- **The Apple-ID sign-and-sideload engine is `gn-sideload`**
+  (`tools/sideload-engine/`, built on the Rust crate `isideload` from
+  nab138/iloader — NOT xtool, which does not run on Windows). One run does:
+  GrandSlam Apple-ID login → 2FA → free-provisioning Developer Services dance
+  → re-sign the IPA → install; "Sign in with Apple ID && Sideload" then pushes
+  the pairing file automatically. The dialog drives it as a QProcess using its
+  **line protocol** on stdout (`PROTOCOL n` / `PROGRESS` / `STAGE` /
+  `PROMPT PASSWORD|2FA <json>|TEAM <json>|CERTS <json>` / `RESULT OK|ERROR`) —
+  a prompt engine in `_pump_engine` opens a modal for every `PROMPT` line and
+  writes the answer to stdin (2FA accepts `d`/`r`/`p<id>`; team is a 1-based
+  index; certs a comma list). The password rides `--password-stdin` after the
+  `PROMPT PASSWORD` handshake so it never lands in the process list; it lives
+  in memory only and is sent to Apple alone.
+- **Engine discovery** is `find_engine()` in `mobile_helper.py`: settings
+  override `mobile_helper/engine_path` → PATH → bundled (PyInstaller root) →
+  `<repo>/tools/sideload-engine/target/release/`. When absent, the dialog
+  offers "Build Engine (cargo)" (runs `cargo build --release` in the engine
+  dir, cwd = `tools/sideload-engine`) and "Locate engine binary…" (verified
+  with a quick `--version` probe before the override is saved). Signing state
+  persists in the platform keyring (service `goldennugget`), team/certificate
+  prompts only re-appear when Apple's answers reset. Windows needs usbmuxd
+  served by Apple Devices/iTunes; limit the UI copy to the free-account
+  constraints (3 active apps, 2 certs, 7-day profiles, Developer Mode on
+  iOS 16+).
+- The mobile app reads the pairing file **at launch** — the dialog tells the
+  user to send it while the app is closed and reopen it afterwards.
+- **Device quirks (both hit live in the field):**
+  - the engine's free provisioning renames the bundle id at signing time to
+    `com.awesomenull.goldennugget.<TEAM_ID>` (e.g. `…goldennugget.R56X75AKLF`);
+    installation checks and house_arrest vends must match by PREFIX (`_match_mobile_app`
+    in `mobile_helper.py`), an exact-equality lookup reports "not installed";
+  - `VendDocuments` on this app serves a dead AFC root (every op fails with
+    status 10) even when `Documents` exists — vend the WHOLE container
+    (`VendContainer`) and write to `Documents/pairingfile.mobiledevicepairing`
+    from the container root instead (`send_pairing_to_app`).
+
 ## Tweak Registry (src/tweaks/registry.py)
 
 Single source of truth for every plist-based tweak: id, section, title,

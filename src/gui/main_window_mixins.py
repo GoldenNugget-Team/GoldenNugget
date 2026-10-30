@@ -160,6 +160,66 @@ class DeviceBarMixin:
             self.show_ios_page(0)
 
 
+    def _maybe_show_mobile_promo(self):
+        """One-shot "did you know" pop-up when a phone connects.
+
+        GoldenNugget Mobile runs on the iPhone itself, so a freshly connected
+        phone is exactly the moment to mention it. Shown once per session, and
+        never again after the user picked "Don't show me this again"
+        (``mobile_helper/promo_dismissed``). Kept out of the way while an apply
+        or restore runs — those re-connect the phone on their own.
+        """
+        connected_now = bool(self.device_manager.devices)
+        try:
+            prev = self._mobile_promo_prev_connected
+        except AttributeError:
+            prev = None
+        self._mobile_promo_prev_connected = connected_now
+        if not connected_now or prev is not False:
+            return
+        if getattr(self, "_mobile_promo_shown", False):
+            return
+        if self.settings.value("mobile_helper/promo_dismissed", False, type=bool):
+            return
+        if (self.apply_in_progress or getattr(self, "_cache_restore_in_progress", False)):
+            return
+
+        from src.gui.dialogs.mobile_helper_dialog import MobileHelperDialog
+
+        def _show():
+            self._mobile_promo_shown = True
+            dialog = QtWidgets.QMessageBox(self)
+            dialog.setWindowTitle(QCoreApplication.translate("Nugget", "GoldenNugget Mobile"))
+            dialog.setIcon(QtWidgets.QMessageBox.Information)
+            dialog.setText(QCoreApplication.translate(
+                "Nugget",
+                "Did you know that GoldenNugget has a mobile version?\n\n"
+                "You can use it right on your iPhone without even touching "
+                "the PC."))
+            install_btn = dialog.addButton(
+                QCoreApplication.translate("Nugget", "Install"),
+                QtWidgets.QMessageBox.AcceptRole)
+            dialog.addButton(
+                QCoreApplication.translate("Nugget", "Later"),
+                QtWidgets.QMessageBox.RejectRole)
+            never_btn = dialog.addButton(
+                QCoreApplication.translate("Nugget", "Don't show me this again"),
+                QtWidgets.QMessageBox.ActionRole)
+            dialog.setDefaultButton(install_btn)
+            dialog.exec()
+            clicked = dialog.clickedButton()
+            if clicked is never_btn:
+                self.settings.setValue("mobile_helper/promo_dismissed", True)
+                self.settings.sync()
+                return
+            if clicked is install_btn:
+                helper = MobileHelperDialog(self)
+                helper.exec()
+
+        # Let the shell finish re-drawing around the new device first; the
+        # pop-up should feel like a nudge, not a race with the device pages.
+        QtCore.QTimer.singleShot(800, _show)
+
     @QtCore.Slot()
     def refresh_devices(self):
         if not self.refresh_in_progress:
@@ -413,6 +473,7 @@ class DeviceBarMixin:
         self.ios_home.update_status()
         # no device -> gate the whole iOS shell behind the connect placeholder
         self._update_device_gate()
+        self._maybe_show_mobile_promo()
         if self._device_reconnect_expected():
             target = getattr(self, '_reconnecting_udid', None)
             if any(device.udid == target for device in self.device_manager.devices):

@@ -20,6 +20,7 @@ homedomain_extracted
 # local dev environment & build artifacts
 .venv/
 .claude/
+tools/sideload-engine/target/
 *.log
 .pytest_cache/
 .mypy_cache/

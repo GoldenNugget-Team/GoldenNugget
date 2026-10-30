@@ -1,5 +1,4 @@
 """Shared bottom navigation with scroll-direction reveal."""
-import random
 
 from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, QPoint, QPointF, QSizeF, QEvent, QRect, QRectF, QVariantAnimation
 from PySide6.QtWidgets import QWidget, QFrame, QHBoxLayout, QPushButton, QAbstractScrollArea, QLayout, QGraphicsOpacityEffect
@@ -7,23 +6,10 @@ from PySide6.QtCore import QSize
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QRegion, QLinearGradient, QFont, QPixmap
 from shiboken6 import isValid
 from src.gui.theme import ColorThemeManager, theme_icon
+from src.gui.slogans import launch_slogan
 
-
-# Pick once per process so rebuilding navigation keeps the launch's slogan.
-_LAUNCH_SLOGAN = random.choice((
-    "works on my device",
-    "posterboard my beloved",
-    "trust the process",
-    "sparse restore enjoyer",
-    "certified nugget moment",
-    "Phase 5 speedrun",
-    "no refunds!",
-    "free at point of use",
-    "MBErrorDomain 205 club",
-    "tested on one device",
-    "siri, don't testify",
-    "hi",
-))
+# The launch's slogan, shared with the liquid dock's brand (src/gui/slogans).
+_LAUNCH_SLOGAN = launch_slogan()
 
 
 class NavigationGlass(QFrame):

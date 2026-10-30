@@ -1,0 +1,21 @@
+[package]
+name = "gn-sideload"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "GoldenNugget Mobile sideload engine — Apple ID sign + install, driven by the GoldenNugget desktop app"
+repository = "https://github.com/GoldenNugget-Team/GoldenNugget"
+
+[[bin]]
+name = "gn-sideload"
+path = "src/main.rs"
+
+[dependencies]
+isideload = "0.5.2"
+idevice = { version = "0.1.61", default-features = false, features = ["usbmuxd", "ring"] }
+tokio = { version = "1.40.0", features = ["rt-multi-thread", "macros"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", default-features = false, features = ["fmt", "std"] }
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
+rootcause = "0.12"
+serde_json = "1.0.149"

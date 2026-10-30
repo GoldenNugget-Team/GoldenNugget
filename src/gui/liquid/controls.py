@@ -394,7 +394,9 @@ class LiquidBrand(LiquidButton):
         self.reveal=1.0
         self.phase=0.0
         self.setAccessibleName('GoldenNugget')
-        self.setAccessibleDescription('Powering NugiOS')
+        from ..slogans import launch_slogan
+        self._slogan=launch_slogan()
+        self.setAccessibleDescription(self._slogan)
         self.shimmer=QVariantAnimation(self)
         self.shimmer.setDuration(1800)
         self.shimmer.setStartValue(0.0)
@@ -455,18 +457,21 @@ class LiquidBrand(LiquidButton):
         p.setFont(title_font)
         label=self.text() if self.text()!='GN'else 'GoldenNugget'
         title_rect=QRectF(44,5,120,22)
-        slogan_rect=QRectF(44,27,120,16)
+        slogan_rect=QRectF(44,26,120,22)
         p.drawText(title_rect,Qt.AlignVCenter,label)
+        slogan_font.setPixelSize(9)
         p.setFont(slogan_font)
         p.setPen(QColor('#B08B58'))
-        p.drawText(slogan_rect,Qt.AlignVCenter,'Powering NugiOS')
+        p.drawText(slogan_rect,Qt.AlignLeft|Qt.AlignTop|Qt.TextWordWrap,self._slogan)
         if hover:
             p.setOpacity(self.reveal*hover)
             p.setPen(QPen(gradient,1))
-            for font,rect,text in ((title_font,title_rect,label),
-                                   (slogan_font,slogan_rect,'Powering NugiOS')):
+            for font,rect,(text,wrap) in (
+                    (title_font,title_rect,(label,False)),
+                    (slogan_font,slogan_rect,(self._slogan,True))):
                 p.setFont(font)
-                p.drawText(rect,Qt.AlignVCenter,text)
+                p.drawText(rect,(Qt.AlignLeft|Qt.AlignTop|Qt.TextWordWrap)
+                           if wrap else Qt.AlignVCenter,text)
 
 
 class ActionStretchSurface(QWidget):

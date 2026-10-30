@@ -413,6 +413,31 @@ STYLES = {
         QPushButton#appListClose {{ background-color: {surface_hover}; color: {text_primary}; }}
     """,
 
+    "mobile_helper_dialog": """
+        QDialog {{ background-color: {bg_elevated}; }}
+        QLabel {{ color: {text_primary}; font-size: 14px; background-color: transparent; }}
+        QLabel#mhTitle {{ font-size: 22px; font-weight: 600; }}
+        QLabel#mhIntro {{ color: {text_secondary}; }}
+        QLabel#mhHint {{ color: {text_secondary}; font-size: 12px; }}
+        QLabel#mhStatus {{
+            color: {text_primary}; font-size: 14px;
+            background-color: {bg_secondary}; border: 1px solid {border};
+            border-radius: 10px; padding: 10px 12px;
+        }}
+        QPushButton {{
+            background-color: {bg_secondary}; border: 1px solid {border};
+            border-radius: 10px; color: {text_primary}; font-size: 14px;
+            font-weight: 600; padding: 10px 14px;
+        }}
+        QPushButton:hover {{ background-color: {bg_tertiary}; }}
+        QPushButton:disabled {{ color: {text_disabled}; background-color: {bg_secondary}; }}
+        QPushButton#mhPrimary, QPushButton#mhAction {{
+            background-color: {accent}; border: none; color: {text_inverse};
+        }}
+        QPushButton#mhPrimary:hover, QPushButton#mhAction:hover {{ background-color: {accent_hover}; }}
+        QPushButton#mhClose {{ background-color: {surface_hover}; border: none; }}
+    """,
+
     "confirmation_dialog": """
         QDialog#themedConfirmation {{ background-color: {bg_primary}; }}
         QLabel#confirmationTitle {{ color: {text_primary}; font-size: 20px; font-weight: 600; background: transparent; }}

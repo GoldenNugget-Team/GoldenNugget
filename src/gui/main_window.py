@@ -131,6 +131,11 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         # must not be shown while that scan is still running (the device list
         # is empty then, even with a phone plugged in).
         self.device_scan_completed = False
+        # GoldenNugget Mobile one-shot promo: None until the first scan resolves
+        # (no pop-up just because the app started with a phone plugged in),
+        # then tracks whether a phone was connected after the last scan.
+        self._mobile_promo_prev_connected = None
+        self._mobile_promo_shown = False
         self._cache_restore_in_progress = False
         self._cache_restore_thread = None
 
