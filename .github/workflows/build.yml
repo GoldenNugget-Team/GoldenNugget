@@ -267,9 +267,11 @@ jobs:
             tools/sideload-engine/target
           key: gn-sideload-linux-${{ runner.arch }}-${{ hashFiles('tools/sideload-engine/Cargo.lock') }}
 
+      # The script resolves the repo root from its own path and cds into
+      # tools/sideload-engine itself, so it runs from the workspace root — a
+      # working-directory override makes the script path unresolvable.
       - name: Build gn-sideload engine
-        run: bash ../tools/build_sideload_engine.sh
-        working-directory: tools/sideload-engine
+        run: bash tools/build_sideload_engine.sh
 
       - name: Install dependencies
         run: |
@@ -341,9 +343,11 @@ jobs:
             tools/sideload-engine/target
           key: gn-sideload-linux-${{ runner.arch }}-${{ hashFiles('tools/sideload-engine/Cargo.lock') }}
 
+      # The script resolves the repo root from its own path and cds into
+      # tools/sideload-engine itself, so it runs from the workspace root — a
+      # working-directory override makes the script path unresolvable.
       - name: Build gn-sideload engine
-        run: bash ../tools/build_sideload_engine.sh
-        working-directory: tools/sideload-engine
+        run: bash tools/build_sideload_engine.sh
 
       - name: Install dependencies
         run: |
