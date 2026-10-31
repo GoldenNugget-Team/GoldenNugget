@@ -822,9 +822,9 @@ async def _restore_ios27(back: backup.Backup, reboot: bool,
                       earlier in the apply flow (fresh Phase-0 live
                       backup, or the persistent cache master + incremental
                       refresh): a fresh live run is pruned IN PLACE, a cache
-                      master is snapshotted first then pruned and
-                      tweak-injected in place (the master IS the restore
-                      source). With ``skip_protective_backup`` the whole phase
+                      master is restored from a disposable view (pruned and
+                      tweak-injected there), so the master itself is never
+                      modified. With ``skip_protective_backup`` the whole phase
                       (and Phase 3) is skipped — the user opted out on low
                       disk space.
     Phase 2 (40-60%): Apply tweaks via sparse restore → reboot, which
@@ -894,19 +894,24 @@ async def _restore_ios27(back: backup.Backup, reboot: bool,
     manifest_password = ((prepared_backup_root.manifest_password if using_cache else "")
                          or backup_password)
     protective_dir = None
-    snapshot_dir = None
-    # Cache masters carry the tweak files through Phase 3 in place (they ARE the
-    # restore source), returning to their pristine full-manifest state once the
-    # apply succeeds via a snapshot/regenerate cycle.
-    regenerate_cache = using_cache and prepared_backup_root.master
-    if regenerate_cache:
-        # Record the pristine state of the master (and what this injection will
-        # change) BEFORE pruning/injecting tweaks into it in place. After the
-        # apply the master is regenerated from this snapshot.
-        snapshot_dir = await disk_call(
-            make_cache_snapshot, prepared_backup_root.root, udid, list(inject_files or []))
-        log_info('Cache recovery snapshot prepared; the restore will reuse the source without creating another dated archive')
-        backup_root = prepared_backup_root.root
+    # Per-apply restore view of the cache master ('' when this run restores
+    # from a live backup instead). Disposable: dropped in the ``finally`` below.
+    view_dir = None
+    # A cache master is the pristine incremental store AND the diff base of the
+    # next refresh, so the apply must never prune or tweak-inject it. The prune
+    # and the injection run against a disposable *view* of it (hardlinked
+    # payloads, real-copied metadata) and Phase 3 restores from that view, so
+    # the master stays intact even if the apply dies between Phase 2 and 3.
+    if using_cache and prepared_backup_root.master:
+        # The view must sit on the master's filesystem or the payload hardlinks
+        # degrade into full copies (the caller normally supplies this path).
+        view_root = (prepared_backup_root.view_root
+                     or str(Path(prepared_backup_root.root).parent / "view"))
+        view_dir = await disk_call(
+            make_restore_view, prepared_backup_root.root, udid, view_root)
+        log_info('Cache restore view prepared; the master stays pristine and '
+                 'is reused by the next refresh')
+        backup_root = view_dir
         # No protective_dir: a cache master must never be rmtree'd (it is the
         # incremental store + the only copy of user data between Phase 2 and 3).
     elif using_cache:
@@ -965,7 +970,7 @@ async def _restore_ios27(back: backup.Backup, reboot: bool,
         progress_callback(0)
         if using_cache:
             log_info("Phase 1: Using prepared protective backup "
-                     "(cached master snapshotted + modified in place, "
+                     "(cache master restored through a disposable view, "
                      "or the fresh Phase-0 live backup pruned in place)")
         elif skip_protective_backup:
             log_warn("Phase 1: protective backup SKIPPED at the user's request "
@@ -1267,10 +1272,15 @@ async def _restore_ios27(back: backup.Backup, reboot: bool,
                 log_info("Phase 6: Reboot command sent")
             progress_callback(100)
         finally:
+            # ``lc`` owns the current session — it is replaced on every
+            # reconnect above, so close that client, not the stale Phase-0 one.
+            # A failure here must be logged: silently swallowing it leaks the
+            # lockdown session and hides the bug (that is exactly how the old
+            # ``session.client.close()`` NameError stayed invisible).
             try:
-                await session.client.close()
-            except Exception:
-                pass
+                await lc.close()
+            except Exception as close_err:
+                log_warn(f"Could not close the restore session: {close_err}")
         if sparse_failure is not None:
             raise NuggetException(
                 "The protective data restore completed, but the device rejected "
@@ -1341,10 +1351,11 @@ async def restore_files(files: list[FileToRestore], reboot: bool = False, lockdo
     # AppDomain-* domains: the device drops the connection at 0% and no
     # security recovery triggers. With a prepared protective backup we can
     # deliver tweak files through Phase 3's native restore instead — injected
-    # into the backup Phase 3 restores (the cache master is snapshotted,
-    # pruned and tweak-injected in place, then regenerated from the snapshot;
-    # a fresh Phase-0 live run is pruned in place). ALL tweak files
-    # ride that channel when the backup is unencrypted (plaintext injection;
+    # into the backup Phase 3 restores (a cache master goes through a
+    # disposable restore view that is pruned and tweak-injected, so the master
+    # itself is never touched; a fresh Phase-0 live run is pruned in place). ALL
+    # tweak files ride that channel when the backup is unencrypted (plaintext
+    # injection;
     # encrypted backups fill their rows with wrapped per-file keys, so a
     # locally injected payload would fail the Phase 3 decrypt with
     # MBErrorDomain/205 — those keep the sparse delivery).

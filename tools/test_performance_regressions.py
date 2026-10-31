@@ -168,21 +168,32 @@ class PayloadTests(unittest.TestCase):
         retire.assert_called_once_with(working.parent)
         self.assertTrue(master.is_dir())
 
-    def test_snapshot_recovers_missing_master_and_clone_is_independent(self):
-        from src.restore.protective import make_cache_snapshot, regenerate_cache_from_snapshot
+    def test_restore_view_is_independent_and_discards_cleanly(self):
+        from src.restore.protective import make_restore_view, discard_restore_view
         from src.utils.filecopy import clone_or_copy
         source, cloned = self.root / "source", self.root / "cloned"
         source.write_bytes(b"original")
         clone_or_copy(source, cloned)
         cloned.write_bytes(b"changed")
         self.assertEqual(source.read_bytes(), b"original")
-        device = backup_fixture(self.root / "master")
-        snapshot = make_cache_snapshot(str(device.parent), "udid")
-        retired = device.with_name(".retired-udid-test")
-        device.rename(retired)  # Simulate interruption between generation renames.
-        with patch("src.restore.backup_store._retire_backup_tree"):
-            regenerate_cache_from_snapshot(snapshot, str(device.parent), "udid")
-        self.assertTrue((device / "Manifest.db").is_file())
+        master = backup_fixture(self.root / "master")
+        payload = master / "Library/Preferences/payload"
+        payload.parent.mkdir(parents=True)
+        payload.write_bytes(b"master")
+        master_manifest = (master / "Manifest.db").read_bytes()
+        view = make_restore_view(str(master.parent), "udid", str(self.root / "view"))
+        self.assertEqual(view, str(self.root / "view"))
+        view_device = self.root / "view" / "udid"
+        # The manifest is real-copied (the prune rewrites it in place), the
+        # payload is hardlinked (no disk cost, no copy).
+        self.assertEqual((view_device / "Manifest.db").read_bytes(), master_manifest)
+        self.assertEqual(os.stat(view_device / "Library/Preferences/payload").st_ino,
+                         os.stat(payload).st_ino)
+        (view_device / "Manifest.db").write_bytes(b"pruned")
+        self.assertEqual((master / "Manifest.db").read_bytes(), master_manifest)
+        discard_restore_view(view, "udid")
+        self.assertFalse(view_device.exists())
+        self.assertEqual(payload.read_bytes(), b"master")
 
 
 class DemuxMemoryAfc(MemoryAfc):

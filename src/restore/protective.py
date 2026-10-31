@@ -1379,10 +1379,11 @@ def clean_backup_for_restore(backup_dir: "str | Path", udid: str,
 
     Encrypted backups are supported when ``manifest_password`` is given:
     pymobiledevice3 decrypts the manifest, prunes it and re-encrypts it in
-    place. For a cache master the caller snapshots it first and regenerates it
-    from the snapshot afterwards, so the master's own full-manifest encrypted
-    state always comes back; for a fresh live backup the pruned directory IS
-    the restore source.
+    place. A cache master is never passed here directly — the caller prunes a
+    disposable restore *view* of it (``make_restore_view``), whose metadata is
+    real-copied, so the master keeps its own full-manifest encrypted state. A
+    fresh live backup is pruned in place: the pruned directory IS the restore
+    source.
 
     Returns (removed_manifest_rows, removed_payload_files).
     """

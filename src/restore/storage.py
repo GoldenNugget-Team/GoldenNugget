@@ -57,7 +57,7 @@ def is_custom_backup_dir() -> bool:
 
 
 def cache_base() -> Path:
-    """Root of the protective backup cache (master, media store, snapshots)."""
+    """Root of the protective backup cache (master, media store, restore views)."""
     root = _configured_root()
     if is_custom_backup_dir():
         return root / "backup_cache"

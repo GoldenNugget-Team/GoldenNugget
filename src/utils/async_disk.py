@@ -23,7 +23,7 @@ async def disk_call(function, *args, **kwargs):
         return await asyncio.shield(task)
     except asyncio.CancelledError:
         # A thread cannot be forcibly cancelled. Its file mutation must finish
-        # before rollback, snapshot regeneration or temporary-file cleanup.
+        # before rollback, restore-view discard or temporary-file cleanup.
         while not task.done():
             try:
                 await asyncio.shield(task)

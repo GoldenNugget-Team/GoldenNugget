@@ -313,24 +313,29 @@ class RewriteTests(unittest.TestCase):
         finally:
             release.set()
 
-    def test_restore_cancel_regenerates_pristine_cache(self):
+    def test_restore_cancel_discards_view_and_keeps_master(self):
         from src.restore import restore
         from src.restore.protective import PreparedBackup
         from src.restore.verification import PruneResult
         from unittest.mock import Mock
         client = SimpleNamespace(udid="device", close=AsyncMock())
-        prepared = PreparedBackup(root=str(self.root / "master"), master=True)
-        regenerate = Mock()
-        with patch.object(restore, "make_cache_snapshot", return_value=str(self.root / "snapshot")), \
+        prepared = PreparedBackup(root=str(self.root / "master"), master=True,
+                                  view_root=str(self.root / "view"))
+        build_view = Mock(return_value=str(self.root / "view"))
+        discard = Mock()
+        with patch.object(restore, "make_restore_view", build_view), \
                 patch.object(restore, "clean_backup_for_restore", return_value=PruneResult()), \
                 patch.object(restore, "verify_backup_payloads", return_value=[]), \
                 patch.object(restore, "_restore_protective_backup", AsyncMock(side_effect=asyncio.CancelledError())), \
-                patch.object(restore, "regenerate_cache_from_snapshot", regenerate), \
+                patch.object(restore, "discard_restore_view", discard), \
                 patch.object(restore.asyncio, "sleep", AsyncMock()):
             with self.assertRaises(asyncio.CancelledError):
                 asyncio.run(restore._restore_ios27(SimpleNamespace(files=[]), False, client,
                     lambda value: None, prepared_backup_root=prepared, skip_setup=False))
-        regenerate.assert_called_once_with(str(self.root / "snapshot"), prepared.root, "device")
+        # The master is never pruned/injected in place: the apply restores from a
+        # disposable view and drops it, whatever the outcome.
+        build_view.assert_called_once_with(prepared.root, "device", prepared.view_root)
+        discard.assert_called_once_with(str(self.root / "view"), "device")
         client.close.assert_awaited_once()
 
     def test_conversion_error_identifies_stage_and_preserves_cause(self):
