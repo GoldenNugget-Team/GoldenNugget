@@ -1153,9 +1153,10 @@ Returns (PreparedBackup, posterboard_db_ok). When the PosterBoard
                 log_warn("Encrypted cache cannot yield a readable PosterBoard DB — "
                          "falling back to a separate backup")
                 return prepared, False
-            if pb_from_cache:
-                return prepared, _register_pb_db(master_root)
-            return prepared, False
+            # The cache path above always refreshes the master (with the
+            # PosterBoard container when wallpapers are pending), so the fresh
+            # master is always a valid source for the PosterBoard DB.
+            return prepared, _register_pb_db(master_root)
 
     async def refresh_backup_cache(self, update_label=lambda x: None) -> str:
         """Force a refresh of the backup cache master for the current device.
