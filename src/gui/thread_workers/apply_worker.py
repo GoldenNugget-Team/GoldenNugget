@@ -16,6 +16,7 @@ import threading
 from src.utils.alerts import ApplyAlertMessage
 from src.exceptions.nugget_exception import NuggetException
 from src.restore.find_my_wait import FindMyWaitControl, ApplyCancelledError, current_find_my_wait
+from src.gui.thread_workers.gc_guard import worker_gc_guard
 
 
 class _SudoState:
@@ -100,6 +101,12 @@ class ApplyThread(QThread):
             return "abort"
 
     def run(self):
+        # Never let Python's cyclic GC destroy a Qt widget from this thread —
+        # see src/gui/thread_workers/gc_guard.py for the crash it causes.
+        with worker_gc_guard():
+            self._run_apply()
+
+    def _run_apply(self):
         import logging
         from src.controllers.nugget_logger import log_context
         self._log = logging.getLogger("GoldenNugget.apply")
@@ -248,6 +255,11 @@ class RestoreCacheThread(QThread):
         self.progress.emit(txt)
 
     def run(self):
+        # Same guard as ApplyThread: no widget may be freed from this thread.
+        with worker_gc_guard():
+            self._run_restore()
+
+    def _run_restore(self):
         import logging
         from src.controllers.nugget_logger import log_context
         from src.devicemanagement.eta import ProgressEta
@@ -448,6 +460,11 @@ class CacheUpdateThread(QThread):
         self.progress.emit(txt)
 
     def run(self):
+        # Same guard as ApplyThread: no widget may be freed from this thread.
+        with worker_gc_guard():
+            self._run_cache_update()
+
+    def _run_cache_update(self):
         import logging
         import asyncio
         from src.controllers.nugget_logger import log_context
@@ -490,6 +507,12 @@ class RefreshDevicesThread(QThread):
         self.alert.emit(msg)
 
     def run(self):
+        # Same guard as ApplyThread: this worker runs device I/O, and a
+        # collection here would free a stale dialog wrapper off the GUI thread.
+        with worker_gc_guard():
+            self._run_refresh()
+
+    def _run_refresh(self):
         import logging
         log = logging.getLogger("GoldenNugget.refresh")
         try:
@@ -592,6 +615,11 @@ class ResetPairingThread(QThread):
         self.manager = manager
 
     def run(self):
+        # Same guard as ApplyThread: no widget may be freed from this thread.
+        with worker_gc_guard():
+            self._run_pairing()
+
+    def _run_pairing(self):
         import logging
         import asyncio
         log = logging.getLogger("GoldenNugget.pairing")

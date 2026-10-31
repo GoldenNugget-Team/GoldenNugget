@@ -248,6 +248,26 @@ def main() -> int:
             tweaks[TweakID.Templates].add_template(arg)
 
     logger.info("GoldenNugget launched.")
+
+    # Qt widgets may only be destroyed on the GUI thread, but Python's cyclic GC
+    # runs on whichever thread trips its threshold — and widget wrappers sit in
+    # cycles constantly (every ``signal.connect(lambda: self....)`` is one). A
+    # device worker (ApplyThread, the device monitor, ...) collecting one of
+    # those destroys a QWidget off-thread and segfaults the app inside PySide's
+    # ``getWrapperForQObject`` while the GUI thread is dispatching for it.
+    #
+    # Refcounting still frees objects immediately, so only *cycles* are deferred
+    # here: they are collected by a timer on the GUI thread instead. The startup
+    # UI graph is frozen first so it is never scanned (or collected) at all.
+    import gc
+    gc.freeze()
+    gc.disable()
+
+    _gc_timer = QTimer(app)
+    _gc_timer.setInterval(120_000)
+    _gc_timer.timeout.connect(gc.collect)
+    _gc_timer.start()
+
     sys.exit(app.exec())
 
 

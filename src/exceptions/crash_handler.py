@@ -315,6 +315,42 @@ class CrashDialog(QDialog):
         return super().exec()
 
 
+# Dialogs currently on screen. Keeping a strong reference here means the cyclic
+# collector can never be the one that frees the wrapper while the C++ widget is
+# still alive (see ``_exec_dialog_on_gui_thread``).
+_live_dialogs: list = []
+
+
+def _exec_dialog_on_gui_thread(dialog: CrashDialog) -> None:
+    """``exec()`` a crash dialog and destroy its C++ object on the GUI thread.
+
+    Every button in :class:`CrashDialog` is connected to a lambda/bound method
+    that captures ``self``, so the Python wrapper sits in a reference cycle. If
+    that cycle is left to the cyclic GC, it is collected by whichever thread
+    happens to trigger a collection — and during an apply that is ApplyThread.
+    Shiboken then destroys the QDialog off the GUI thread, which tears down its
+    children and delivers their events while the main thread is still
+    dispatching for the same widget; the result is a SIGSEGV inside
+    ``PySide::getWrapperForQObject``.
+
+    So: pin the wrapper for the lifetime of the modal loop, then delete the C++
+    side here (``deleteLater`` is processed by the GUI thread) and drop the pin.
+    Whatever GC does with the leftover cycle afterwards is harmless because the
+    wrapper is already invalidated.
+    """
+    _live_dialogs.append(dialog)
+    try:
+        dialog.exec()
+    finally:
+        try:
+            dialog.deleteLater()
+        finally:
+            try:
+                _live_dialogs.remove(dialog)
+            except ValueError:
+                pass
+
+
 def show_error_dialog(summary: str, traceback_text: str, info: Optional[dict] = None,
                       backup_path: Optional[str] = None,
                       on_restore: Optional[Callable[[], None]] = None):
@@ -329,7 +365,7 @@ def show_error_dialog(summary: str, traceback_text: str, info: Optional[dict] = 
         return
     dialog = CrashDialog(summary=summary, traceback_text=traceback_text,
                          info=info, backup_path=backup_path, on_restore=on_restore)
-    dialog.exec()
+    _exec_dialog_on_gui_thread(dialog)
 
 
 def _show_crash_dialog(summary: str, traceback_text: str, exc_type=None, exc_value=None):
@@ -341,7 +377,7 @@ def _show_crash_dialog(summary: str, traceback_text: str, exc_type=None, exc_val
         print(f"CRASH: {summary}\n{traceback_text}", file=sys.stderr)
         return
     dialog = CrashDialog(summary=summary, traceback_text=traceback_text, info=info)
-    dialog.exec()
+    _exec_dialog_on_gui_thread(dialog)
 
 
 def _restart_app():

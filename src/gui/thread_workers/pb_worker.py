@@ -5,6 +5,7 @@ import queue
 import traceback
 
 from src.gui.thread_workers.apply_worker import ApplyAlertMessage
+from src.gui.thread_workers.gc_guard import worker_gc_guard
 
 
 class PBDBThread(QThread):
@@ -93,6 +94,12 @@ class PBRebuildThread(QThread):
             return "abort"
 
     def run(self):
+        # Never let Python's cyclic GC destroy a Qt widget from this thread —
+        # see src/gui/thread_workers/gc_guard.py for the crash it causes.
+        with worker_gc_guard():
+            self._run_rebuild()
+
+    def _run_rebuild(self):
         from src.controllers.nugget_logger import log_context
         from src.tweaks.posterboard.posterboard_rebuild import rebuild_posterboard
         try:
