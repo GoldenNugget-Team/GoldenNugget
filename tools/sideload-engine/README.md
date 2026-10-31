@@ -15,6 +15,15 @@ Windows** (Windows needs usbmuxd served by Apple Devices/iTunes).
 cargo build --release        # → target/release/gn-sideload[.exe]
 ```
 
+Linux needs the D-Bus development headers: `isideload` persists its signing
+state through the platform keyring, whose Linux backend
+(`dbus-secret-service` → `libdbus-sys`) needs `dbus-1.pc` and aborts the build
+without it. Install the headers first:
+
+```sh
+sudo apt-get install -y libssl-dev pkg-config libdbus-1-dev
+```
+
 The GoldenNugget desktop app discovers the binary itself: settings override
 (`mobile_helper/engine_path`) → PATH → bundled copy (PyInstaller root) →
 this checkout's `target/release/`. The helper dialog also has a
