@@ -142,10 +142,14 @@ jobs:
         run: |
           python compile.py --target-arch=universal2
           python tools/package_macos.py
-          # The bundled engine has to carry both app architectures — a stale
-          # single-arch binary in the cache would break half of the users.
-          test -x dist/GoldenNugget.app/Contents/MacOS/gn-sideload
-          engine_info=$(lipo -info dist/GoldenNugget.app/Contents/MacOS/gn-sideload)
+          # PyInstaller puts --add-binary payloads in Contents/Frameworks for a
+          # .app bundle — that directory IS sys._MEIPASS, which is where
+          # mobile_helper.find_engine() looks. The bundled engine has to carry
+          # both app architectures: a stale single-arch binary in the cache
+          # would break half of the users.
+          engine=dist/GoldenNugget.app/Contents/Frameworks/gn-sideload
+          test -x "$engine"
+          engine_info=$(lipo -info "$engine")
           echo "$engine_info"
           echo "$engine_info" | grep -q x86_64
           echo "$engine_info" | grep -q arm64

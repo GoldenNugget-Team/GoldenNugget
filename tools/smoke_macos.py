@@ -23,8 +23,13 @@ assert cv2.cvtColor(numpy.zeros((2,2,3),dtype=numpy.uint8),cv2.COLOR_BGR2GRAY).s
 from src.gui.main_window import MainWindow
 from src.gui.ios.daemons import IOSDaemonsContent
 from src.devicemanagement.device_manager import DeviceManager
+from src.devicemanagement.mobile_helper import find_engine
 from src.tweaks.tweak_loader import load_daemons
 from types import SimpleNamespace
+# The bundled engine is what the Mobile helper execs, and it must be where the
+# app's own resolver looks (sys._MEIPASS), not merely somewhere in the bundle.
+engine=find_engine()
+assert engine,'gn-sideload engine missing from the frozen bundle'
 app=QApplication([])
 load_daemons()
 widget=IOSDaemonsContent(SimpleNamespace(settings=None,device_manager=None))
@@ -33,6 +38,6 @@ widget.show()
 app.processEvents()
 assert widget.recover_notifications_button.text()
 widget.close()
-print(json.dumps({'frozen':getattr(sys,'frozen',False),'numpy':numpy.__version__,'opencv':cv2.__version__,'gui':'ok','crypto':'ok'}))
+print(json.dumps({'frozen':getattr(sys,'frozen',False),'numpy':numpy.__version__,'opencv':cv2.__version__,'gui':'ok','crypto':'ok','engine':os.path.basename(engine)}))
 
 print("MACOS_SMOKE_OK")
