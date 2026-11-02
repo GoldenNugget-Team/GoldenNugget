@@ -97,12 +97,14 @@ class _MobileHelperThread(QThread):
                 installed = await mh.is_mobile_app_installed(self.udid)
                 if installed is None:
                     return {"action": "send", "sent": False, "xml": xml}
-                await mh.send_pairing_to_app(self.udid, xml, bundle_id=installed["bundle_id"])
+                status = await mh.send_pairing_to_app(
+                    self.udid, xml, bundle_id=installed["bundle_id"])
             except NuggetException as e:
                 if "not installed" in str(e).lower():
                     return {"action": "send", "sent": False, "xml": xml}
                 raise
             return {"action": "send", "sent": True, "xml": xml,
+                    "kept_existing": status == "kept",
                     "app": installed["display_name"], "version": installed["version"]}
 
         if self.action == "save":
@@ -1027,7 +1029,17 @@ class MobileHelperDialog(QDialog):
                 "file picker.").format(result.get("path", "")))
             return
         # action == "send"
-        if result.get("sent"):
+        if result.get("sent") and result.get("kept_existing"):
+            # The app paired itself over RemotePairing and that record is the
+            # one it needs; ours would force the lockdown transport instead.
+            self._report(QCoreApplication.translate(
+                "Nugget",
+                "{0} already holds its own wireless pairing record on the "
+                "phone, and it was left untouched. A record sent from here "
+                "would replace it and may leave the app unable to connect on "
+                "iOS 26.4+ — nothing to do, just reopen the app.").format(
+                    result.get("app", "GoldenNugget Mobile")))
+        elif result.get("sent"):
             self._report(QCoreApplication.translate(
                 "Nugget",
                 "Pairing file delivered to {0} {1}. Reopen the app to pair.").format(

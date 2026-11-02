@@ -144,6 +144,29 @@ def complete_pairing_record(record: dict, udid: str, *,
     return completed
 
 
+def pairing_file_action(existing: bytes | None) -> str:
+    """Whether the record already on the phone is kept or replaced.
+
+    GoldenNugget Mobile can pair **itself** over RemotePairing (iOS 17+): its
+    setup guide writes an ``.rppairing`` record (``identifier``,
+    ``private_key``, ``public_key``) to the same path, and that record rides a
+    transport a lockdown record cannot provide. Delivering ours on top of it
+    forced the lockdown path, which some iOS 26.4+ setups cannot serve
+    (``InvalidVPN``) — the app then started unpaired. So an app-generated
+    record is kept; anything else (no file, an old lockdown record, a damaged
+    file) is ours to replace.
+    """
+    if not existing:
+        return "replace"
+    try:
+        parsed = plistlib.loads(existing)
+    except Exception:
+        return "replace"
+    if isinstance(parsed, dict) and is_remote_pairing_record(parsed):
+        return "keep"
+    return "replace"
+
+
 async def _lockdown_values(ld, keys: tuple[str, ...]) -> dict:
     """Best-effort ``GetValue`` lookups; a key the device refuses is skipped."""
     found: dict = {}
@@ -270,12 +293,19 @@ async def install_ipa(udid: str, ipa_path: str, progress=None) -> None:
 
 async def send_pairing_to_app(udid: str, xml: bytes,
                               bundle_id: str | None = None,
-                              app_name: str = MOBILE_APP_NAME) -> None:
+                              app_name: str = MOBILE_APP_NAME) -> str:
     """Write a pairing record to ``Documents/pairingfile.mobiledevicepairing``.
 
     The record rides house_arrest (AFC into one app's container). The file must
     land exactly at ``Documents/pairingfile.mobiledevicepairing`` — the spot
     the mobile app's minimuxer reads at launch.
+
+    A record the app generated **itself** is never replaced (see
+    :func:`pairing_file_action`): on iOS 17+ its setup guide writes a
+    RemotePairing record to the same path, and that record uses a transport
+    the app cannot get from a lockdown record — overwriting it cost the user a
+    working install (``InvalidVPN`` on iOS 26.4+). Returns ``"delivered"`` or
+    ``"kept"`` for the caller to report.
 
     Two device quirks drive the shape of this function:
 
@@ -294,6 +324,7 @@ async def send_pairing_to_app(udid: str, xml: bytes,
                 f"{app_name} is not installed on the device. Install the app "
                 "first, then try again.")
         bundle_id = installed["bundle_id"]
+    status = "delivered"
     async with lockdown_session(udid) as ld:
         house = HouseArrestService(lockdown=ld, documents_only=False)
         try:
@@ -301,8 +332,20 @@ async def send_pairing_to_app(udid: str, xml: bytes,
             listing = await house.listdir(".")
             if "Documents" not in listing:
                 await house.mkdir("Documents")
-            await house.set_file_contents(
-                f"Documents/{PAIRING_FILE_NAME}", xml)
+            existing = None
+            try:
+                existing = await house.get_file_contents(
+                    f"Documents/{PAIRING_FILE_NAME}")
+            except Exception:                       # no record yet, or unreadable
+                existing = None
+            if pairing_file_action(existing) == "keep":
+                status = "kept"
+                log.info("kept the app's own RemotePairing record in %s — a "
+                         "lockdown record cannot serve that transport",
+                         bundle_id)
+            else:
+                await house.set_file_contents(
+                    f"Documents/{PAIRING_FILE_NAME}", xml)
         except AppNotInstalledError as e:
             raise NuggetException(
                 f"{app_name} is not installed on the device. Install the app "
@@ -312,5 +355,7 @@ async def send_pairing_to_app(udid: str, xml: bytes,
                 await house.close()
             except Exception:
                 pass
-    log.info("pairing record delivered to %s/Documents/%s", bundle_id,
-             PAIRING_FILE_NAME)
+    if status == "delivered":
+        log.info("pairing record delivered to %s/Documents/%s", bundle_id,
+                 PAIRING_FILE_NAME)
+    return status

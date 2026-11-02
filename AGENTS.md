@@ -233,6 +233,15 @@ pairing record:
   `AppNotInstalledError` is translated into a save-to-disk fallback, same
   `save_pairing` flow used by the explicit "Save to Disk…" action (the manual
   AirDrop route when the app is not installed yet).
+- **The phone's own record is never overwritten.** On iOS 17+ the app's setup
+  guide pairs itself over RemotePairing and writes an `.rppairing` record
+  (`identifier`/`private_key`/`public_key`) to the same path; that record uses
+  a transport a desktop lockdown record cannot provide, and replacing it left
+  the app unpaired (`InvalidVPN` on iOS 26.4+ — the transport check rejects a
+  userspace utun VPN). `send_pairing_to_app()` reads the file first and
+  `pairing_file_action()` keeps an app-generated record ("kept"); only a
+  missing, damaged or old lockdown record is replaced ("delivered"), and the
+  dialog reports which happened.
 - IPA installation goes through `InstallationProxyService.install_from_local`
   on a background async-loop QThread (pattern of `FetchAppsThread`) for
   **already-signed** IPAs. Latest-release downloads ride QtNetwork
