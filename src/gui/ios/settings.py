@@ -28,6 +28,19 @@ from src.gui.ios.preset_menu import (
 )
 
 
+def _searchable_text(widget) -> str:
+    """All label/button text under ``widget`` (and its own), one tree walk.
+
+    The index used to call ``findChildren`` twice (once for QLabel, once for
+    QAbstractButton) on every row, i.e. two full subtree walks per node.
+    """
+    parts = [item.text() for item in widget.findChildren(QWidget)
+             if isinstance(item, (QLabel, QAbstractButton))]
+    if isinstance(widget, (QLabel, QAbstractButton)):
+        parts.append(widget.text())
+    return ' '.join(parts)
+
+
 class IOSSettingsPage(QWidget):
     def __init__(self, window, parent=None):
         super().__init__(parent)
@@ -38,6 +51,10 @@ class IOSSettingsPage(QWidget):
         self.lang_indexes = []
         self.preset_manager = PresetManager()
         self._tm = ColorThemeManager.instance()
+        from src.gui.ios.visibility_batch import VisibilityBatch
+        # Search filters hundreds of rows at once; the batch keeps the page
+        # from relaying out and repainting after every setVisible.
+        self._visibility_batch = VisibilityBatch(self)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -193,6 +210,7 @@ class IOSSettingsPage(QWidget):
 
         self.content_layout = standard_layout
         self._make_backup_location_row()
+        self._make_data_migration_row()
 
         restore_btn = IOSSettingsAction(
             QCoreApplication.translate("Nugget", "Restore Data From Backup"))
@@ -252,7 +270,7 @@ class IOSSettingsPage(QWidget):
 
         self._sync_setting_dependencies()
         self._index_search_rows()
-        self.search.textChanged.connect(self._filter_settings)
+        self.search.connect_filter(self._filter_settings)
 
         self._retheme()
 
@@ -298,24 +316,16 @@ class IOSSettingsPage(QWidget):
                         advanced_group = (child, [])
                         self._advanced_search_groups.append(advanced_group)
                     elif child is not None and advanced_group is not None:
-                        labels = child.findChildren(QLabel) + child.findChildren(QAbstractButton)
-                        if isinstance(child, (QLabel, QAbstractButton)):
-                            labels.append(child)
-                        advanced_group[1].append((child, ' '.join(label.text() for label in labels)))
-                text = ' '.join(label.text() for label in widget.body.findChildren(QLabel)
-                                + widget.body.findChildren(QAbstractButton))
-                self._search_groups.append((widget, [(widget.body, text)]))
+                        advanced_group[1].append((child, _searchable_text(child)))
+                self._search_groups.append((widget, [(widget.body, _searchable_text(widget.body))]))
                 section = None
             elif widget is not None and section is not None:
-                labels = widget.findChildren(QLabel) + widget.findChildren(QAbstractButton)
-                if isinstance(widget, (QLabel, QAbstractButton)):
-                    labels.append(widget)
-                text = ' '.join(label.text() for label in labels)
-                section[1].append((widget, text))
+                section[1].append((widget, _searchable_text(widget)))
 
     def _filter_settings(self, *_args):
         searching = bool(self.search.text().strip())
         matches = 0
+        operations = []
         for header, rows in self._search_groups:
             section_matches = self.search.matches(header._title if isinstance(header, IOSCollapsibleSection)
                                                   else header.text())
@@ -326,16 +336,16 @@ class IOSSettingsPage(QWidget):
                     inner_count = 0
                     for widget, text in inner_rows:
                         visible = not searching or inner_matches or self.search.matches(text)
-                        widget.setVisible(visible)
+                        operations.append((widget, visible))
                         inner_count += visible
-                    inner_header.setVisible(not searching or inner_count > 0)
+                    operations.append((inner_header, not searching or inner_count > 0))
                     visible_rows += inner_count
                 rows = []
             for widget, text in rows:
                 visible = not searching or section_matches or self.search.matches(text)
-                widget.setVisible(visible)
+                operations.append((widget, visible))
                 visible_rows += visible
-            header.setVisible(not searching or visible_rows > 0)
+            operations.append((header, not searching or visible_rows > 0))
             if isinstance(header, IOSCollapsibleSection):
                 if searching and self._advanced_search_state is None:
                     self._advanced_search_state = header.expanded
@@ -349,6 +359,18 @@ class IOSSettingsPage(QWidget):
                 header.header.setEnabled(not searching)
             matches += visible_rows
         self.search_empty.setVisible(searching and matches == 0)
+        # Apply every visibility change in one batched pass: the layout stays
+        # disabled and the page is not repainted between rows. The batch is
+        # created lazily so a page built without ``__init__`` (the search
+        # regressions build a bare QWidget) still filters synchronously.
+        scroll = getattr(self, "_scroll", None)
+        target = scroll.widget() if scroll is not None else self
+        batch = getattr(self, "_visibility_batch", None)
+        if batch is None:
+            from src.gui.ios.visibility_batch import VisibilityBatch
+            batch = VisibilityBatch(target)
+            self._visibility_batch = batch
+        batch.apply(target, operations)
 
     def _style_label(self, label, key):
         label.setProperty('theme_style_key', key)
@@ -689,6 +711,64 @@ class IOSSettingsPage(QWidget):
         if hasattr(self, "backup_location_lbl"):
             self.backup_location_lbl.setText(
                 custom if custom else self._default_backup_dir_text())
+
+    # -- user data migration ------------------------------------------------ #
+
+    def _make_data_migration_row(self):
+        """Offer the one-time move when an old data folder is still around."""
+        from src.gui.dialogs.data_migration import migration_pending
+        if not migration_pending():
+            return
+        card = IOSCard()
+        row = QVBoxLayout(card)
+        row.setContentsMargins(16, 12, 16, 12)
+        row.setSpacing(8)
+
+        title = QLabel(QCoreApplication.translate("Nugget", "Move User Data"))
+        self._style_label(title, 'row_title')
+        row.addWidget(title)
+
+        hint = QLabel(QCoreApplication.translate(
+            "Nugget",
+            "Presets, wallpapers, backups and history are still in the old "
+            "GoldenNugget folder. Move them into the new one."))
+        hint.setWordWrap(True)
+        self._style_label(hint, 'small_hint')
+        row.addWidget(hint)
+
+        btns = QHBoxLayout()
+        migrate_btn = self._make_mini_button(
+            QCoreApplication.translate("Nugget", "Move Now"))
+        migrate_btn.clicked.connect(self._on_migrate_data_clicked)
+        btns.addWidget(migrate_btn)
+        btns.addStretch()
+        row.addLayout(btns)
+
+        self._migration_card = card
+        self.content_layout.addWidget(card)
+
+    def _on_migrate_data_clicked(self):
+        from src.gui.dialogs.data_migration import migrate_now, restart_application
+        if not migrate_now(self.window):
+            return
+        self.window._sync_settings()
+        # The card only describes a pending move; drop it once there is none.
+        card = getattr(self, "_migration_card", None)
+        if card is not None:
+            self.content_layout.removeWidget(card)
+            card.setParent(None)
+            card.deleteLater()
+            self._migration_card = None
+        # Every path in this process was resolved against the old folder, so
+        # continue in a fresh process rather than half-switched.
+        if not restart_application():
+            QMessageBox.warning(
+                self,
+                QCoreApplication.translate("Nugget", "Restart GoldenNugget"),
+                QCoreApplication.translate(
+                    "Nugget",
+                    "Your data was moved. Restart GoldenNugget to use the new "
+                    "folder."))
 
     def _make_text_row(self, title: str, current: str, on_submit):
         c = self._tm.colors

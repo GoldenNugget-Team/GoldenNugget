@@ -5,7 +5,7 @@ import logging
 import os
 import tempfile
 
-from PySide6.QtCore import QCoreApplication, QT_TRANSLATE_NOOP
+from src.utils.i18n import QCoreApplication, QT_TRANSLATE_NOOP
 
 from src.restore.lastapply import lastapply_path
 

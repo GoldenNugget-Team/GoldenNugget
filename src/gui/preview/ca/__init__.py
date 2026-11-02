@@ -2,7 +2,7 @@
 
 Right now GoldenNugget uses this to reconstruct richer lock-screen previews
 from the ``.tendies`` CAML scenes (vs. the bitmap fallback in
-:mod:`src.controllers.tendie_preview`) with animations played back from a
+:mod:`src.gui.preview.tendie_preview`) with animations played back from a
 timeline. The heavy lifting lives in:
 
 * :mod:`.caml`      -- XML -> layer tree + states/overrides/transitions/parallax

@@ -165,19 +165,30 @@ def install_contents():
         data = {}
         path = self.root_path / cast(str, message[1])
         if path.is_dir():
-            for file in path.iterdir():
-                ftype = "DLFileTypeUnknown"
-                if file.is_dir():
-                    ftype = "DLFileTypeDirectory"
-                if file.is_file():
-                    ftype = "DLFileTypeRegular"
-                modifications_data = _datetime.datetime.fromtimestamp(file.stat().st_mtime - APPLE_EPOCH)
-                modifications_data = modifications_data.replace(tzinfo=None)
-                data[file.name] = {
-                    "DLFileType": ftype,
-                    "DLFileSize": file.stat().st_size,
-                    "DLFileModificationDate": modifications_data,
-                }
+            # os.scandir + one entry.stat() per file. The iterdir() loop this
+            # replaces called is_dir(), is_file() and stat() twice — four
+            # syscalls per entry — on the backup diff enumeration, which walks
+            # hundreds of thousands of files.
+            with os.scandir(path) as entries:
+                for entry in entries:
+                    try:
+                        stat_result = entry.stat(follow_symlinks=False)
+                    except OSError:
+                        continue
+                    if entry.is_dir(follow_symlinks=False):
+                        ftype = "DLFileTypeDirectory"
+                    elif entry.is_file(follow_symlinks=False):
+                        ftype = "DLFileTypeRegular"
+                    else:
+                        ftype = "DLFileTypeUnknown"
+                    modifications_data = _datetime.datetime.fromtimestamp(
+                        stat_result.st_mtime - APPLE_EPOCH)
+                    modifications_data = modifications_data.replace(tzinfo=None)
+                    data[entry.name] = {
+                        "DLFileType": ftype,
+                        "DLFileSize": stat_result.st_size,
+                        "DLFileModificationDate": modifications_data,
+                    }
         else:
             log_debug(f"DeviceLink contents-of-directory: \"{message[1]}\" absent "
                       f"under {self.root_path} — answering with an empty listing")

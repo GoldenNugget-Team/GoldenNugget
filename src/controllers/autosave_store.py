@@ -4,7 +4,7 @@ import tempfile
 from copy import deepcopy
 from pathlib import Path
 
-from PySide6.QtCore import QLockFile
+from src.utils.file_lock import FileLock
 from .retired_feature_flags import is_retired_feature_flag
 
 
@@ -22,7 +22,7 @@ def _merge_local_changes(local, baseline, latest):
 
 def write_autosave(path, data, baseline=None):
     path = Path(path)
-    lock = QLockFile(str(path) + '.lock')
+    lock = FileLock(str(path) + '.lock')
     if not lock.tryLock(200):
         raise OSError('Another GoldenNugget instance is saving this configuration.')
     temporary = None

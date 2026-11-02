@@ -1,7 +1,7 @@
 import os
 import uuid
 
-from PySide6.QtCore import QCoreApplication
+from src.utils.i18n import QCoreApplication
 
 from ...tweak_classes import Tweak
 from ..template_file import TemplateFile

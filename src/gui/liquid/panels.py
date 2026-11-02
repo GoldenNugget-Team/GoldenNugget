@@ -302,11 +302,18 @@ class WorkspaceSettings(GlassPanel):
             self._setting_tiles.append(tile)
         self.language=QComboBox()
         self.language.setProperty('liveTranslateItems',True)
-        source=window.ios_settings.lang_drp
-        for i in range(source.count()):
-            self.language.addItem(source.itemText(i))
-        self.language.setCurrentIndex(source.currentIndex())
-        self.language.activated.connect(window.ios_settings._on_lang_selected)
+        # Filled from the same table the Settings page uses. Reading the combo
+        # off window.ios_settings built that whole page (the most expensive one)
+        # just to open this panel.
+        from PySide6.QtCore import QCoreApplication
+        from src.gui.pages.main.settings import available_languages
+        self._language_codes=list(available_languages.values())
+        for language in available_languages:
+            self.language.addItem(QCoreApplication.translate("Nugget", language))
+        saved=window.settings.value('locale_code','',type=str) or ''
+        self.language.setCurrentIndex(
+            self._language_codes.index(saved) if saved in self._language_codes else 0)
+        self.language.activated.connect(self._on_language_selected)
         field('Language',self.language,0,0)
         density=GlassChoice([('compact','Compact'),('comfortable','Comfortable')],
                             window.settings.value('liquid/card_density','comfortable'))
@@ -353,6 +360,18 @@ class WorkspaceSettings(GlassPanel):
         ColorThemeManager.instance().theme_changed.connect(retheme)
         retheme()
         self.hide()
+
+    def _on_language_selected(self,index):
+        page=self.window.built_page('ios_settings')
+        if page is not None:
+            # The Settings page owns the switch and mirrors both combos.
+            page._on_lang_selected(index)
+            return
+        try:
+            code=self._language_codes[index]
+        except IndexError:
+            return
+        self.window.translator.set_new_language(code)
 
     def set_idle_collapse(self,value):
         self.window.settings.setValue('liquid/collapse_idle',value)

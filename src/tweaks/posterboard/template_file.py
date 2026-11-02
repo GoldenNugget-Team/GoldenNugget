@@ -6,7 +6,7 @@ from typing import Optional
 from tempfile import TemporaryDirectory
 from shutil import rmtree
 
-from PySide6 import QtCore
+from src.utils.i18n import QCoreApplication
 
 from .tendie_file import TendieFile
 from .template_definition import TemplateDefinition
@@ -57,16 +57,16 @@ class TemplateFile(TendieFile):
                 # load the options; a template with only community tweaks
                 # needs neither options nor a domain
                 if not 'options' in data and not 'tweaks' in data:
-                    raise PBTemplateException(path, QtCore.QCoreApplication.tr("No options were found in the config. Make sure that it is in the correct format."))
+                    raise PBTemplateException(path, QCoreApplication.tr("No options were found in the config. Make sure that it is in the correct format."))
                 if not 'domain' in data and not 'tweaks' in data:
-                    raise PBTemplateException(path, QtCore.QCoreApplication.tr("This config does not have a valid domain!"))
+                    raise PBTemplateException(path, QCoreApplication.tr("This config does not have a valid domain!"))
                 self.domain = data.get('domain', "")
                 # add backwards compatibility for my mistake in the v5.2 betas
                 if self.domain == "com.apple.PosterBoard":
                     self.domain = "AppDomain-com.apple.PosterBoard"
                 self.format_version = int(data['format_version'])
                 if self.format_version > CURRENT_FORMAT:
-                    raise PBTemplateException(path, QtCore.QCoreApplication.tr("This config requires a newer version of Nugget."))
+                    raise PBTemplateException(path, QCoreApplication.tr("This config requires a newer version of Nugget."))
                 self.name = data['title']
                 self.author = data['author']
                 if 'description' in data:
@@ -77,11 +77,11 @@ class TemplateFile(TendieFile):
                     # check the device version
                     # TODO: need to make this check also happen when connected device is updated
                     if device_version and Version(self.min_version) > Version(device_version):
-                        raise PBTemplateException(path, QtCore.QCoreApplication.tr("This template requires iOS {0}.\nYour iOS version (iOS {1}) is too outdated!").format(self.min_version, device_version))
+                        raise PBTemplateException(path, QCoreApplication.tr("This template requires iOS {0}.\nYour iOS version (iOS {1}) is too outdated!").format(self.min_version, device_version))
                 if 'max_version' in data:
                     self.max_version = data['max_version']
                     if device_version and Version(self.max_version) < Version(device_version):
-                        raise PBTemplateException(path, QtCore.QCoreApplication.tr("This template requires iOS {0}.\nYour iOS version (iOS {1}) is too new!").format(self.max_version, device_version))
+                        raise PBTemplateException(path, QCoreApplication.tr("This template requires iOS {0}.\nYour iOS version (iOS {1}) is too new!").format(self.max_version, device_version))
 
                 # load the previews
                 prevs = []
@@ -116,10 +116,10 @@ class TemplateFile(TendieFile):
 
                 if 'tweaks' in data:
                     if self.format_version < 3:
-                        raise PBTemplateException(path, QtCore.QCoreApplication.tr("Templates with tweaks need \"format_version\": \"3\"."))
+                        raise PBTemplateException(path, QCoreApplication.tr("Templates with tweaks need \"format_version\": \"3\"."))
                     self.tweaks = parse_tweaks(data['tweaks'], self._source_reader(archive))
                     if not self.domain and self.has_container(archive):
-                        raise PBTemplateException(path, QtCore.QCoreApplication.tr("This config does not have a valid domain!"))
+                        raise PBTemplateException(path, QCoreApplication.tr("This config does not have a valid domain!"))
 
                 for option in data.get('options', []):
                     opt_type = OptionType[option['type']]
@@ -135,9 +135,9 @@ class TemplateFile(TendieFile):
                         self.change_bundle_id = True
                         self.bundle_id = self.domain.removeprefix("AppDomain-") # set default value to the bundle id in the domain
                     else:
-                        raise PBTemplateException(path, QtCore.QCoreApplication.tr("Invalid option type in template"))
+                        raise PBTemplateException(path, QCoreApplication.tr("Invalid option type in template"))
             else:
-                raise PBTemplateException(path, QtCore.QCoreApplication.tr("No config.json found in file!"))
+                raise PBTemplateException(path, QCoreApplication.tr("No config.json found in file!"))
     
     def _source_reader(self, archive: zipfile.ZipFile):
         base = self.json_path.removesuffix("config.json")
@@ -147,11 +147,11 @@ class TemplateFile(TendieFile):
         def read(relative: str) -> bytes:
             name = base + relative
             if name not in names:
-                raise PBTemplateException(self.path, QtCore.QCoreApplication.tr("Missing file in template: {0}").format(relative))
+                raise PBTemplateException(self.path, QCoreApplication.tr("Missing file in template: {0}").format(relative))
             size = archive.getinfo(name).file_size
             total[0] += size
             if size > MAX_SOURCE_BYTES or total[0] > MAX_TOTAL_SOURCE_BYTES:
-                raise PBTemplateException(self.path, QtCore.QCoreApplication.tr("Template files are too large."))
+                raise PBTemplateException(self.path, QCoreApplication.tr("Template files are too large."))
             return archive.read(name)
         return read
 
@@ -193,6 +193,8 @@ class TemplateFile(TendieFile):
         self.bundle_id = new_id
 
     def create_ui(self, window, tweak, widgets, templateLayout):
+        # UI seam: the Qt editor lives in ``src.gui`` and is imported lazily so
+        # this model module stays importable without Qt (backend/CLI).
         from src.gui.template_editor import TemplateEditor
         return TemplateEditor(self).create_ui(window, tweak, widgets, templateLayout)
 

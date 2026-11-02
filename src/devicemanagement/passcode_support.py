@@ -1,7 +1,7 @@
 """Passcode Themes on iOS 26 and 27; 27.2 builds distinguish betas."""
 import re
 
-from PySide6.QtCore import QCoreApplication
+from src.utils.i18n import QCoreApplication
 
 _IOS_27_2_SUPPORTED_BUILDS = frozenset({"24B5084k", "24B5089g", "24B5099f"})
 

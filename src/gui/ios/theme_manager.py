@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QStackedWidget, QWidget
-from PySide6.QtCore import QSettings
+
+from src.utils.settings import Settings
 
 
 class ThemeManager:
@@ -8,7 +9,7 @@ class ThemeManager:
 
     def __init__(self, parent: QWidget):
         self.parent = parent
-        self.settings = QSettings("GoldenNugget", "GoldenNugget")
+        self.settings = Settings("GoldenNugget")
         self.stack = QStackedWidget(parent)
         # Classic container will be inserted by integration
         # IOS container will be added by screens

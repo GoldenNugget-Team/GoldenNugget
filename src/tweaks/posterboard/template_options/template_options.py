@@ -1,8 +1,16 @@
-from src.controllers.archive_safety import safe_member
+"""Template option model (Qt-free).
+
+The option classes hold *data* and know how to apply it to a template
+container. Everything that renders them (widgets, file pickers, colour
+dialogs) lives in ``src.gui.template_option_editors`` so presets, the CLI and
+the apply path never need a GUI toolkit.
+"""
+
 from enum import Enum
-from dataclasses import dataclass
 from typing import Optional
-from PySide6.QtWidgets import QVBoxLayout, QWidget, QLabel
+
+from src.controllers.archive_safety import safe_member
+
 
 class OptionType(Enum):
     replace = "replace"
@@ -11,13 +19,15 @@ class OptionType(Enum):
     picker = "picker"
     bundle_id = "bundle_id"
 
-@dataclass
+
 class TemplateOption:
     type: OptionType
     label: str
     files: list[str]
     associated_preview: Optional[str]
-    preview_lbl: Optional[QLabel]
+    # Filled in by the GUI editor (``src.gui.template_option_editors``); the
+    # backend never touches it and it stays None on headless runs.
+    preview_lbl: object = None
 
     def __init__(self, data: dict):
         self.type = OptionType[data['type']]
@@ -35,15 +45,6 @@ class TemplateOption:
         else:
             self.associated_preview = None
         self.preview_lbl = None
-
-    def add_potential_preview_lbls(self, lbls: dict[str, QLabel]):
-        if self.associated_preview != None and self.associated_preview in lbls:
-            self.preview_lbl = lbls[self.associated_preview]
-    def update_preview(self):
-        pass
-
-    def create_interface(self, options_widget: QWidget, options_layout: QVBoxLayout):
-        raise NotImplementedError
 
     def apply(self, container_path: str):
         raise NotImplementedError

@@ -15,7 +15,7 @@ wrong, and an unlisted tweak is "low" only in the sense that nothing is known.
 from dataclasses import dataclass, field
 from enum import IntEnum
 
-from PySide6.QtCore import QCoreApplication, QT_TRANSLATE_NOOP
+from src.utils.i18n import QCoreApplication, QT_TRANSLATE_NOOP
 
 from src.tweaks.registry import SPECS_BY_ID, Section
 from src.tweaks.tweak_names import TweakID
@@ -141,7 +141,7 @@ def _daemon_factors(keys):
 
 def assess(tweaks_data, device_version="", device_model="", *, hotload=None, extra=()):
     """Assess preset-shaped ``tweaks_data``; ``extra`` adds apply-time factors."""
-    from src.gui.ios.compat import compatibility_reasons
+    from src.tweaks.compatibility import device_compatibility_reasons as compatibility_reasons
     report = RiskReport()
     selected = {name: entry for name, entry in (tweaks_data or {}).items()
                 if is_selected(name, entry)}

@@ -11,12 +11,13 @@ Decoded data is untrusted: the code is size-capped before and after
 decompression and the result goes through the same validation as an
 imported preset file. Importing stores a preset; it never applies anything.
 """
+from __future__ import annotations
+
 import base64
 import json
 import zlib
 
-import numpy as np
-from PySide6.QtCore import QT_TRANSLATE_NOOP
+from src.utils.i18n import QT_TRANSLATE_NOOP
 
 PREFIX = "GN1."
 FORMAT_VERSION = 1
@@ -132,6 +133,7 @@ def qr_image(code: str, module: int = 8, margin: int = 4) -> np.ndarray:
 def read_qr(path: str) -> str:
     """Return the share code found in a QR image file (a screenshot or photo)."""
     import cv2
+    import numpy as np  # deferred: QR support must not load numpy at startup
     data = np.fromfile(path, dtype=np.uint8)   # cv2.imread breaks on non-ASCII paths on Windows
     image = cv2.imdecode(data, cv2.IMREAD_GRAYSCALE) if data.size else None
     if image is None:

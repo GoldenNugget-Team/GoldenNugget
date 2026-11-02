@@ -21,7 +21,7 @@ class LanguageRestartTests(unittest.TestCase):
             code = f'''import sys
 from PySide6.QtWidgets import QApplication
 from src.controllers.settings import Settings
-from src.controllers.translator import Translator
+from src.gui.translator import Translator
 app=QApplication([])
 settings=Settings()
 settings.setValue('locale_code','en')

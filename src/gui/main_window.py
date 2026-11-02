@@ -32,7 +32,7 @@ def _still_running(worker) -> bool:
 from src.qt.mainwindow_ui import Ui_Nugget
 import src.gui.pages as Pages
 
-from src.controllers.translator import Translator
+from src.gui.translator import Translator
 from src.controllers.preset_manager import PresetManager
 
 from src.gui.pages.pages_list import Page
@@ -183,36 +183,37 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         # 14 = tweak templates
         self.ios_pages = QtWidgets.QStackedWidget(self)
         self.ios_pages.setStyleSheet(t("page_bg"))
+        # Apply the window-wide stylesheet while the stack is still empty. Qt
+        # re-polishes every descendant on setStyleSheet, so applying it after
+        # the 15 pages exist walked the whole tree a second time (~0.5 s).
+        # Pages built below inherit it when they are polished.
+        self._apply_global_stylesheet()
+        # Only the home page is on screen at startup. Building the other
+        # fourteen pages costs ~0.5 s together (settings and status bar alone
+        # ~0.18 s each) and most sessions never open more than a few of them,
+        # so each one reserves its stack slot now and is constructed on first
+        # access (``self.ios_settings`` etc. triggers it, see __getattr__).
+        # The slots are what keeps the numeric page indices in the title/action
+        # tables below stable.
+        self._lazy_pages = {}
+        self._pending_page_calls = {}
+        self._page_names = {0: "ios_home"}
         self.ios_home = IOSHomePage(self)
-        self.ios_tweaks = IOSTweaksPage(self)
-        self.ios_posterboard = IOSPosterboardPage(self)
-        self.ios_daemons = IOSDaemonsPage(self)
-        self.ios_settings = IOSSettingsPage(self)
-        self.ios_presets = IOSPresetsPage(self)
-        self.ios_statusbar = IOSStatusBarPage(self)
-        self.ios_apply = IOSApplyPage(self)
-        self.ios_springboard = IOSSectionPage(self, Section.SPRINGBOARD)
-        self.ios_internal = IOSSectionPage(self, Section.INTERNAL)
-        self.ios_liquidglass = IOSSectionPage(self, Section.LIQUID_GLASS)
-        self.ios_iconthemes = IOSIconThemesPage(self)
-        self.ios_passthemes = IOSPasscodeThemePage(self)
-        self.ios_catalog = IOSCatalogPage(self)
-        self.ios_templates = IOSTemplatesPage(self)
         self.ios_pages.addWidget(self.ios_home)
-        self.ios_pages.addWidget(self.ios_tweaks)
-        self.ios_pages.addWidget(self.ios_posterboard)
-        self.ios_pages.addWidget(self.ios_daemons)
-        self.ios_pages.addWidget(self.ios_settings)
-        self.ios_pages.addWidget(self.ios_statusbar)
-        self.ios_pages.addWidget(self.ios_apply)
-        self.ios_pages.addWidget(self.ios_springboard)
-        self.ios_pages.addWidget(self.ios_internal)
-        self.ios_pages.addWidget(self.ios_liquidglass)
-        self.ios_pages.addWidget(self.ios_iconthemes)
-        self.ios_pages.addWidget(self.ios_passthemes)
-        self.ios_pages.addWidget(self.ios_presets)
-        self.ios_pages.addWidget(self.ios_catalog)
-        self.ios_pages.addWidget(self.ios_templates)
+        self._reserve_page("ios_tweaks", lambda: IOSTweaksPage(self))
+        self._reserve_page("ios_posterboard", lambda: IOSPosterboardPage(self))
+        self._reserve_page("ios_daemons", lambda: IOSDaemonsPage(self))
+        self._reserve_page("ios_settings", lambda: IOSSettingsPage(self))
+        self._reserve_page("ios_statusbar", lambda: IOSStatusBarPage(self))
+        self._reserve_page("ios_apply", lambda: IOSApplyPage(self))
+        self._reserve_page("ios_springboard", lambda: IOSSectionPage(self, Section.SPRINGBOARD))
+        self._reserve_page("ios_internal", lambda: IOSSectionPage(self, Section.INTERNAL))
+        self._reserve_page("ios_liquidglass", lambda: IOSSectionPage(self, Section.LIQUID_GLASS))
+        self._reserve_page("ios_iconthemes", lambda: IOSIconThemesPage(self))
+        self._reserve_page("ios_passthemes", lambda: IOSPasscodeThemePage(self))
+        self._reserve_page("ios_presets", lambda: IOSPresetsPage(self))
+        self._reserve_page("ios_catalog", lambda: IOSCatalogPage(self))
+        self._reserve_page("ios_templates", lambda: IOSTemplatesPage(self))
 
         # Shared reusable header: one instance for every iOS subpage,
         # reconfigured on page change (title / back / right action).
@@ -236,10 +237,14 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
             14: QCoreApplication.translate("Nugget", "Templates"),
         }
         self._nav_right_actions = {
-            2: (QCoreApplication.translate("Nugget", "+ Add Tendies"), self.ios_posterboard.show_add_tendies_dialog),
-            14: (QCoreApplication.translate("Nugget", "+ Import Templates"), self.ios_templates.show_add_templates_dialog),
+            # Resolved lazily: the action belongs to a page that may not be
+            # built yet (see _reserve_page).
+            2: (QCoreApplication.translate("Nugget", "+ Add Tendies"),
+                lambda: self.ios_posterboard.show_add_tendies_dialog),
+            14: (QCoreApplication.translate("Nugget", "+ Import Templates"),
+                 lambda: self.ios_templates.show_add_templates_dialog),
             11: (QCoreApplication.translate("Nugget", "+ Theme"),
-                 self.ios_passthemes.choose_theme_dialog),
+                 lambda: self.ios_passthemes.choose_theme_dialog),
         }
         self.ios_pages.currentChanged.connect(self._update_shared_nav)
 
@@ -258,13 +263,14 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         ios_root_layout = QtWidgets.QVBoxLayout(ios_column)
         ios_root_layout.setContentsMargins(0, 0, 0, 0)
         ios_root_layout.setSpacing(0)
-        # Keep the shared navigation bar visually distinct from the page:
-        # the inset wrapper gives its rounded corners room to show against
-        # the surrounding dark surface.
+        # The header is one surface with the window (LiquidNavBar paints the
+        # page background itself), so the wrapper carries no inset: the old
+        # 8px margin existed only to give a floating glass panel room for its
+        # rounded corners.
         nav_wrap = QtWidgets.QWidget(ios_column)
         nav_wrap.setObjectName("iosNavWrap")
         nav_wrap_layout = QtWidgets.QVBoxLayout(nav_wrap)
-        nav_wrap_layout.setContentsMargins(8, 8, 8, 0)
+        nav_wrap_layout.setContentsMargins(0, 0, 0, 0)
         nav_wrap_layout.setSpacing(0)
         nav_wrap_layout.addWidget(self.ios_nav)
         ios_root_layout.addWidget(nav_wrap)
@@ -347,11 +353,98 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
 
         self.ui.presetsPageBtn.clicked.connect(self.on_presetsPageBtn_clicked)
 
-        # Apply the initial themed global stylesheet
-        self._apply_global_stylesheet()
+        # The initial themed global stylesheet is applied earlier (before the
+        # pages are built) so the tree is polished once, not twice.
         from src.gui.liquid.experience import LiquidExperience
         self.liquid = LiquidExperience(self)
-        QtCore.QTimer.singleShot(0, self._prewarm_control_pages)
+        # Pre-build the two control pages once the window has painted, so
+        # opening Tweaks/Daemons is instant without that work landing on the
+        # startup path (both pages are constructed lazily now). The timer is a
+        # child of the window, so closing before it fires cannot call into a
+        # deleted window (a bare singleShot with a bound method would).
+        self._prewarm_timer = QtCore.QTimer(self)
+        self._prewarm_timer.setSingleShot(True)
+        self._prewarm_timer.timeout.connect(self._prewarm_control_pages)
+        self._prewarm_timer.start(1200)
+
+    def _reserve_page(self, name: str, factory):
+        """Reserve a stack slot for a page that is built on first access.
+
+        The placeholder keeps every page index stable (the title/action tables
+        and navigation code address pages by number), while deferring the
+        widget construction until something actually asks for it.
+        """
+        index = self.ios_pages.addWidget(QtWidgets.QWidget())
+        self._lazy_pages[name] = (index, factory)
+        self._page_names[index] = name
+
+    def page_at(self, index: int):
+        """Return the page in a stack slot, building it if still reserved.
+
+        Page navigation goes through the index (``set_ios_page``), so the slot
+        has to resolve to the real widget before the stack shows it.
+        """
+        name = getattr(self, "_page_names", {}).get(index)
+        if name is not None and name in self._lazy_pages:
+            return self._build_lazy_page(name)
+        return self.ios_pages.widget(index)
+
+    def _build_lazy_page(self, name: str):
+        """Construct a reserved page in place and return it."""
+        index, factory = self._lazy_pages.pop(name)
+        stack = self.ios_pages
+        current = stack.currentIndex()
+        page = factory()
+        placeholder = stack.widget(index)
+        stack.insertWidget(index, page)
+        if placeholder is not None:
+            stack.removeWidget(placeholder)
+            placeholder.deleteLater()
+        # The slot is reused, so restoring the selection is only defensive.
+        if stack.currentIndex() != current:
+            stack.setCurrentIndex(current)
+        setattr(self, name, page)
+        if name == "ios_apply" and hasattr(page, "set_busy"):
+            # The apply page mirrors live apply state, which may have changed
+            # while it did not exist yet (gate updates skip missing pages).
+            page.set_busy(self.apply_in_progress
+                          or getattr(self, '_cache_restore_in_progress', False))
+        for method, args, kwargs in self._pending_page_calls.pop(name, ()):
+            try:
+                getattr(page, method)(*args, **kwargs)
+            except Exception:  # a missing hook must never break navigation
+                pass
+        return page
+
+    def call_on_page(self, name: str, method: str, *args, **kwargs):
+        """Call a page method now if the page exists, else when it is built.
+
+        Startup code configures pages that are no longer constructed up front
+        (``LiquidExperience._clean_home`` sets the Apply page's status-only
+        mode); the call is replayed on construction instead of forcing it.
+        """
+        page = self.__dict__.get(name)
+        if page is not None:
+            return getattr(page, method)(*args, **kwargs)
+        self._pending_page_calls.setdefault(name, []).append((method, args, kwargs))
+        return None
+
+    def built_page(self, name: str):
+        """Return a reserved page only if it was already constructed.
+
+        Use this for probes: plain ``getattr`` on a reserved name builds the
+        page, which is the point for navigation but pure cost for a check.
+        """
+        return self.__dict__.get(name)
+
+    def __getattr__(self, name: str):
+        # QWidget raises AttributeError for unknown attributes; the reserved
+        # page names resolve by building the page on first access.
+        lazy = self.__dict__.get("_lazy_pages")
+        if lazy and name in lazy:
+            return self._build_lazy_page(name)
+        raise AttributeError(
+            f"{type(self).__name__!r} object has no attribute {name!r}")
 
     def _prewarm_control_pages(self):
         self.ios_tweaks.prepare_content(finish=False)
@@ -398,7 +491,12 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
 
     def _apply_global_stylesheet(self):
         """Re-apply the global stylesheet using the current color theme."""
-        self.setStyleSheet(t("global"))
+        from src.gui.liquid.overlay import liquid_overlay_css
+        # One stylesheet for the whole window: the base template plus the
+        # liquid overlay (inputs/scrollbars/sliders). Composing them here keeps
+        # the tree polished once — a second setStyleSheet after startup would
+        # walk every widget again (~0.3 s).
+        self.setStyleSheet(t("global") + liquid_overlay_css())
         # Also update the QPalette so native widgets pick up the colors
         self._color_theme.apply_to_app()
         # Re-style the ios_pages stack
@@ -457,11 +555,11 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
             terminating.append(QCoreApplication.translate("Nugget", "apply/reset"))
         if getattr(self, "_cache_restore_in_progress", False):
             terminating.append(QCoreApplication.translate("Nugget", "data restore"))
-        pt_worker = getattr(getattr(self, "ios_passthemes", None), "_worker", None)
+        pt_worker = getattr(self.built_page("ios_passthemes"), "_worker", None)
         if _still_running(pt_worker):
             terminating.append(QCoreApplication.translate("Nugget", "passcode theme write"))
         pairing_worker = getattr(
-            getattr(self, "ios_settings", None), "_reset_pairing_thread", None)
+            self.built_page("ios_settings"), "_reset_pairing_thread", None)
         if _still_running(pairing_worker):
             terminating.append(QCoreApplication.translate("Nugget", "pairing reset"))
         if terminating:
@@ -510,6 +608,14 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         if _still_running(scan_worker):
             try:
                 scan_worker.wait(8000)
+            except RuntimeError:
+                pass
+        # Cosmetic, but still a QThread: it is parented to the window, so it
+        # must not be destroyed while it is counting.
+        badge_worker = getattr(self.ios_home, "_catalog_badge_worker", None)
+        if _still_running(badge_worker):
+            try:
+                badge_worker.wait(5000)
             except RuntimeError:
                 pass
         monitor_worker = getattr(self, "_device_monitor_thread", None)

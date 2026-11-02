@@ -8,7 +8,7 @@ from tempfile import TemporaryDirectory
 from typing import Callable, Mapping
 
 from packaging.version import Version
-from PySide6.QtCore import QCoreApplication
+from src.utils.i18n import QCoreApplication
 
 from src.controllers.path_handler import fix_windows_path
 from src.exceptions.nugget_exception import NuggetException

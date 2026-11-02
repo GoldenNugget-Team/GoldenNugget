@@ -320,6 +320,33 @@ STYLES = {
             QPushButton#supportName:hover {{ color: {accent}; }}
             """,
 
+    "migration_dialog": """
+        QDialog#dataMigration {{ background: {bg_primary}; }}
+        QLabel#migrationTitle {{ color: {text_primary}; font-size: 20px; font-weight: 700; background: transparent; }}
+        QLabel#migrationSubtitle {{ color: {text_secondary}; font-size: 12px; background: transparent; }}
+        QLabel#migrationStatus {{ color: {text_secondary}; font-size: 12px; background: transparent; }}
+        QLabel#migrationIcon {{ background: transparent; }}
+        QProgressBar#migrationProgress {{ background: {bg_input}; border: 1px solid {border}; border-radius: 9px; min-height: 16px; max-height: 16px; text-align: center; color: transparent; }}
+        QProgressBar#migrationProgress::chunk {{ background-color: {accent}; border-radius: 8px; }}
+    """,
+
+    "migration_button": """
+        QPushButton {{
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                        stop:0 {accent}, stop:1 {accent_pressed});
+            border-radius: 10px;
+            color: {text_inverse};
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            padding: 9px 34px;
+        }}
+        QPushButton:hover {{ background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                        stop:0 {accent_hover}, stop:1 {accent}); }}
+        QPushButton:pressed {{ background-color: {accent_pressed}; }}
+        QPushButton:disabled {{ background-color: {border}; color: {text_disabled}; }}
+    """,
+
     "restore_progress": """
         QWidget#restoreConnection {{ background: {bg_tertiary}; border: none; border-left: 3px solid {warning}; border-radius: 8px; }}
         QLabel#restoreConnectionIcon {{ background: transparent; }}

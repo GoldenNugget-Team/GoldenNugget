@@ -34,7 +34,8 @@ from src.gui.widgets import (
     _auto_retheme,
 )
 from src.controllers.preset_manager import PresetManager
-from src.controllers.hotload import HotLoad, confirm_flagged
+from src.controllers.hotload import HotLoad
+from src.gui.dialogs.hotload_warning import confirm_flagged
 
 # _ = translate
 _T = QCoreApplication.translate

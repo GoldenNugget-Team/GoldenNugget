@@ -33,6 +33,8 @@ FIELDS = {
 class PosterArchive:
     def __init__(self, path):
         self.path = Path(path)
+        stat_result = self.path.stat()
+        self.original_stat = (stat_result.st_size, stat_result.st_mtime_ns)
         self.original = self.path.read_bytes()
         self.data = plistlib.loads(self.original)
         if self.data.get("$archiver") != "NSKeyedArchiver":
@@ -118,8 +120,17 @@ class PosterArchive:
 def save_archives(edits):
     prepared = [(archive, archive.serialize(changes)) for archive, changes in edits if changes]
     for archive, _ in prepared:
-        if archive.path.read_bytes() != archive.original:
-            raise ValueError(f"File changed since opening: {archive.path}")
+        # Metadata first: these archives are large, and the previous version
+        # re-read every byte of every file just to prove it had not changed.
+        # The byte comparison stays as the fallback for a file whose stat moved
+        # but whose content did not (a rewrite with the same bytes).
+        try:
+            stat_result = archive.path.stat()
+        except OSError:
+            raise ValueError(f"File changed since opening: {archive.path}") from None
+        if (stat_result.st_size, stat_result.st_mtime_ns) != archive.original_stat:
+            if archive.path.read_bytes() != archive.original:
+                raise ValueError(f"File changed since opening: {archive.path}")
     written = []
     try:
         for archive, output in prepared:

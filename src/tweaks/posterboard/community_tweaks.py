@@ -38,7 +38,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication
+from src.utils.i18n import QCoreApplication, QT_TRANSLATE_NOOP
 
 from src.restore.path_mapping import split_path_into_domain
 

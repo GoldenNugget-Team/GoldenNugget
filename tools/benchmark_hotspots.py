@@ -106,8 +106,8 @@ def icon_probe():
 
 
 def state_probe():
-    from src.controllers.ca.models import Layer
-    from src.controllers.ca.render import apply_state_overrides, interpolated_state_root, _layer_index
+    from src.gui.preview.ca.models import Layer
+    from src.gui.preview.ca.render import apply_state_overrides, interpolated_state_root, _layer_index
     import copy
 
     results = []
@@ -132,7 +132,7 @@ def blend_probe():
     import io
     from PySide6.QtCore import QBuffer
     from PySide6.QtGui import QImage
-    from src.controllers.ca.render import _hsl_blend
+    from src.gui.preview.ca.render import _hsl_blend
     # Import optional dependencies outside the timer; fail visibly if absent.
     import numpy  # noqa: F401
     from PIL import Image  # noqa: F401

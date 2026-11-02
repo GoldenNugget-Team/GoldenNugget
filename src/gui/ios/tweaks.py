@@ -169,8 +169,10 @@ class IOSSectionContent(QWidget):
             self.tr("Enable incompatible tweaks"))
         dialog.cancel_btn.setText(self.tr("No"))
         enabled = dialog.exec() == QDialog.Accepted
-        self.window.settings.setValue("enable_incompatible_tweaks", enabled)
-        self.window.settings.setValue("incompatible_tweaks_choice_done", True)
+        self.window.settings.set_many({
+            "enable_incompatible_tweaks": enabled,
+            "incompatible_tweaks_choice_done": True,
+        })
         self.window.settings.sync()
         if enabled:
             for content in self.window.findChildren(IOSSectionContent):

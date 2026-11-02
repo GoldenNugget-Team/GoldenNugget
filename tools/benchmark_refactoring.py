@@ -17,8 +17,8 @@ BASELINE = "HEAD"
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.controllers.ca import animate, caml
-from src.controllers.ca.models import Animation
+from src.gui.preview.ca import animate, caml
+from src.gui.preview.ca.models import Animation
 from src.restore.afc_transport import MediaEntry
 from src.tweaks.posterboard.template_options import templates_tweak
 
@@ -68,8 +68,8 @@ def main():
         f'<CALayer id="layer-{i}" opacity="0.5"/>' for i in range(1500)) + '</sublayers></CALayer></caml>'
     assert legacy_caml(xml) == caml.parse_ca_document(xml)
 
-    legacy_animate = types.ModuleType("src.controllers.ca._baseline_animation_probe")
-    legacy_animate.__package__ = "src.controllers.ca"
+    legacy_animate = types.ModuleType("src.gui.preview.ca._baseline_animation_probe")
+    legacy_animate.__package__ = "src.gui.preview.ca"
     sys.modules[legacy_animate.__name__] = legacy_animate
     exec(compile(baseline_source("src/controllers/ca/animate.py"), "baseline_animate.py", "exec"),
          vars(legacy_animate))

@@ -1,9 +1,9 @@
 """UI bookmarks, stored independently of tweak selections and presets."""
-from PySide6.QtCore import QObject, Signal
 from src.controllers.settings import Settings
+from src.utils.observer import Signal
 
 
-class TweakFavorites(QObject):
+class TweakFavorites:
     changed = Signal()
     _instance = None
 

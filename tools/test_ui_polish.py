@@ -13,13 +13,15 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / 'src' / 'qt'))
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
-from PySide6.QtCore import QSettings, Qt
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QApplication, QDialog, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 from src.gui.ios import settings as settings_module
 from src.gui.ios.settings import IOSSettingsPage
 from src.gui.theme import ColorThemeManager, t
 from src.gui.widgets import IOSCollapsibleSection, IOSSearchField
+
+from settings_sandbox import SettingsSandbox
 
 APP = QApplication.instance() or QApplication([])
 APP.setStyle('Fusion')
@@ -40,11 +42,12 @@ class UIPolish(unittest.TestCase):
     def setUp(self):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
-        store = QSettings(str(Path(directory.name) / 'theme.ini'), QSettings.IniFormat)
+        sandbox = SettingsSandbox(Path(directory.name))
+        sandbox.__enter__()
+        self.addCleanup(sandbox.__exit__, None, None, None)
         old_manager = ColorThemeManager._inst
         self.addCleanup(setattr, ColorThemeManager, '_inst', old_manager)
-        with patch('src.gui.theme.theme_manager.QSettings', return_value=store):
-            self.manager = ColorThemeManager()
+        self.manager = ColorThemeManager()
         ColorThemeManager._inst = self.manager
         self.page = SettingsHarness()
         self.addCleanup(self.page.deleteLater)
@@ -115,12 +118,23 @@ class UIPolish(unittest.TestCase):
 
     def test_home_title_init_and_retheme_use_palette_without_overrides(self):
         tree = ast.parse((ROOT / 'src/gui/ios/home.py').read_text())
-        calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
-                 and ast.unparse(node.func) == 'self._title.setStyleSheet']
+        calls = []
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            # Both shapes are accepted: the direct call and the ``_restyle``
+            # helper that skips the re-polish when the sheet is unchanged.
+            if (ast.unparse(node.func) == 'self._title.setStyleSheet'
+                    and len(node.args) == 1):
+                calls.append(node)
+            elif (ast.unparse(node.func) == '_restyle' and node.args
+                  and ast.unparse(node.args[0]) == 'self._title'):
+                calls.append(node)
         self.assertEqual(len(calls), 2)
         title = QLabel()
         self.addCleanup(title.deleteLater)
-        scope = dict(self=SimpleNamespace(_title=title), t=t)
+        scope = dict(self=SimpleNamespace(_title=title), t=t,
+                     _restyle=lambda widget, sheet: widget.setStyleSheet(sheet))
         for call in calls:
             exec(compile(ast.fix_missing_locations(ast.Module(
                 body=[ast.Expr(value=call)], type_ignores=[])),

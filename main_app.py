@@ -25,7 +25,7 @@ os.environ.setdefault("QT_LOGGING_RULES", "qt.qpa.wayland.textinput=false")
 from PySide6.QtCore import QCoreApplication
 
 from src.gui.logger import setup_logging, get_logger
-from src.exceptions.crash_handler import install_crash_handler, CrashHandlerApp
+from src.gui.crash_ui import install_crash_handler, CrashHandlerApp
 
 # Install the global crash handler as early as possible so any uncaught
 # exception during startup is also captured instead of silently killing the app.
@@ -134,6 +134,15 @@ def main() -> int:
     from src.gui.bootstrap import configure_appearance
     configure_appearance(app, os.path.dirname(__file__))
 
+    # One-time move of the pre-rename data folder into ``gnugget``. Runs
+    # before the settings store is opened, so nothing has written to the new
+    # location yet and the moved files cannot collide with fresh ones.
+    if "--test-mode" not in sys.argv and \
+            os.environ.get("GOLDENNUGGET_NO_DATA_MIGRATION") != "1":
+        from src.gui.dialogs.data_migration import maybe_prompt_migration
+        if maybe_prompt_migration(app.activeWindow()):
+            print("[init] User data moved into the new folder")
+
     QCoreApplication.setOrganizationDomain("com.leemin")
     QCoreApplication.setApplicationName("GoldenNugget")
     from src.controllers.settings import Settings
@@ -143,10 +152,20 @@ def main() -> int:
     hotload = HotLoad(settings)
     print("[init] HotLoad: checking safety rules...")
 
-    from src.controllers.translator import Translator
+    from src.gui.translator import Translator
     translator = Translator(app, settings)
     translator.set_default_locale(translator.get_saved_locale_code())
     translator.load_translations()
+
+    # Backend strings go through the Qt-free i18n seam; hand it the real
+    # translator now that the catalogs are installed.
+    from PySide6.QtCore import QCoreApplication as _QtCoreApplication
+    from src.utils import i18n
+    i18n.install_translate(_QtCoreApplication.translate)
+
+    # PosterBoard import dialogs live in the GUI; wire them into the model.
+    from src.gui.dialogs.posterboard_prompts import install as install_posterboard_prompts
+    install_posterboard_prompts()
 
     from PySide6.QtGui import QIcon
     icon_path = os.path.join(getattr(sys, "_MEIPASS", os.path.dirname(__file__)), "nugget.ico")
@@ -267,6 +286,11 @@ def main() -> int:
     _gc_timer.setInterval(120_000)
     _gc_timer.timeout.connect(gc.collect)
     _gc_timer.start()
+
+    # The startup UI is built: from here on route Qt event-handler exceptions
+    # to the crash dialog (see install_notify_guard for why this is deferred).
+    from src.gui.crash_ui import install_notify_guard
+    install_notify_guard(app)
 
     sys.exit(app.exec())
 

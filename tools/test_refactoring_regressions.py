@@ -48,15 +48,17 @@ class RewriteTests(unittest.TestCase):
         self.assertEqual(manager.staged_items, [])
 
     def test_pairing_service_never_opens_a_dialog(self):
+        # The backend has no Qt at all any more, so it cannot raise a dialog
+        # even by accident (tools/test_backend_qt_free.py enforces this).
         from src.devicemanagement import device_manager as dm
+        self.assertFalse(hasattr(dm, "QMessageBox"))
         client = SimpleNamespace(unpair=AsyncMock(), pair=AsyncMock())
         @asynccontextmanager
         async def connection(udid):
             yield client
         manager = SimpleNamespace(data_singleton=SimpleNamespace(
             current_device=SimpleNamespace(udid="device")))
-        with patch.object(dm, "lockdown_session", connection), \
-                patch.object(dm.QMessageBox, "information", side_effect=AssertionError("GUI in worker")):
+        with patch.object(dm, "lockdown_session", connection):
             asyncio.run(dm.DeviceManager._reset_device_pairing(manager))
         client.unpair.assert_awaited_once()
         client.pair.assert_awaited_once()
@@ -185,7 +187,7 @@ class RewriteTests(unittest.TestCase):
         self.assertEqual(reader.poll().offset, 0)
 
     def test_caml_document_uses_one_xml_parse(self):
-        from src.controllers.ca import caml
+        from src.gui.preview.ca import caml
         xml = '<caml><CALayer id="root" bounds="0 0 10 10"/></caml>'
         with patch.object(caml.ET, "fromstring", wraps=caml.ET.fromstring) as parse:
             self.assertIsNotNone(caml.parse_ca_document(xml))
@@ -232,8 +234,8 @@ class RewriteTests(unittest.TestCase):
         self.assertEqual(path.read_text(), original)
 
     def test_key_times_are_prepared_once_per_animation(self):
-        from src.controllers.ca import animate
-        from src.controllers.ca.models import Animation
+        from src.gui.preview.ca import animate
+        from src.gui.preview.ca.models import Animation
         animation = Animation(keyPath="opacity", values=[0, 1], durationSeconds=1, infinite=True)
         with patch.object(animate, "_build_key_times", wraps=animate._build_key_times) as build:
             self.assertEqual(animate.layer_animation_overrides([animation], 250)["opacity"], .25)
@@ -367,8 +369,8 @@ class GuiRewriteTests(unittest.TestCase):
 
     def test_decoded_images_have_a_byte_budget(self):
         from PySide6.QtGui import QImage
-        from src.controllers.ca import render
-        from src.controllers.ca.models import CADocument, Layer
+        from src.gui.preview.ca import render
+        from src.gui.preview.ca.models import CADocument, Layer
         doc = CADocument(root=Layer(), assets={str(i): b"image" for i in range(3)})
         renderer = render.CAMLRenderer(doc)
         image = QImage(8, 8, QImage.Format.Format_RGBA8888)
@@ -381,8 +383,8 @@ class GuiRewriteTests(unittest.TestCase):
         self.assertEqual(renderer._image_bytes, image.sizeInBytes() * 2)
 
     def test_document_edit_invalidates_render_and_animation_caches(self):
-        from src.controllers.ca.render import CAMLRenderer
-        from src.controllers.ca.models import CADocument, Layer, Size
+        from src.gui.preview.ca.render import CAMLRenderer
+        from src.gui.preview.ca.models import CADocument, Layer, Size
         root = Layer(size=Size(4, 4), backgroundColor="#ff0000")
         doc = CADocument(root=root)
         renderer = CAMLRenderer(doc)

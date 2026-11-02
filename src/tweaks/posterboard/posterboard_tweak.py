@@ -6,14 +6,14 @@ __lazy_modules__ = (
     "src.tweaks.posterboard",
 )
 
+import logging
 import os
 import uuid
 import traceback
 import plistlib
 from random import randint
 from shutil import copytree, rmtree
-from PySide6 import QtWidgets
-from PySide6.QtCore import QCoreApplication
+from src.utils.i18n import QCoreApplication
 
 from ..tweak_classes import Tweak
 from . import posterboard_converter
@@ -37,36 +37,61 @@ VIDEO_DEPTH_SCALE = 1.3
 VIDEO_DEPTH_OFFSET_Y = 40
 
 
+# --------------------------------------------------------------------------- #
+# GUI interaction ports
+#
+# The import/verify paths used to pop Qt dialogs from the backend model. The
+# GUI installs handlers here at startup (``src.gui.dialogs.posterboard_prompts``);
+# headless runs (CLI, preset loading) fall back to safe defaults instead of
+# requiring a toolkit.
+# --------------------------------------------------------------------------- #
+_prompt_convert = None   # (tendie_name, families) -> bool
+_show_warning = None     # (title, text) -> None
+_show_error = None       # (title, text) -> None
+
+
+def install_ui(prompt_convert=None, warning=None, error=None) -> None:
+    """Install (or clear) the GUI handlers used by the import flows."""
+    global _prompt_convert, _show_warning, _show_error
+    if prompt_convert is not None:
+        _prompt_convert = prompt_convert
+    if warning is not None:
+        _show_warning = warning
+    if error is not None:
+        _show_error = error
+
+
 def prompt_legacy_convert(tendie_name: str, families: "list[str]") -> bool:
     """Ask how a legacy (pre-iOS 27) wallpaper should be imported.
 
     Returns True to convert, False to install the original files untouched.
-    Dismissing the dialog (Escape) resolves to "Install as is", so the import is
-    never silently converted and never dropped.
+    Headless runs (no GUI handler installed) convert, which matches the
+    dialog's default button, so an import is never silently dropped.
     """
-    app = QtWidgets.QApplication.instance()
-    parent = app.activeWindow() if app is not None else None
-    box = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Icon.Question,
-                                QCoreApplication.translate("Nugget", "Legacy Wallpaper Format"),
-                                QCoreApplication.translate(
-                                    "Nugget",
-                                    "<b>{0}</b> uses the legacy {1} format.").format(
-                                        tendie_name, ", ".join(sorted(set(families)))),
-                                parent=parent)
-    box.setInformativeText(QCoreApplication.translate(
-        "Nugget",
-        "iOS 27 only applies the depth effect to wallpapers in the modern format, "
-        "so a legacy wallpaper is rewritten on import. Pick "
-        "“Install as is” to push the original files untouched instead."))
-    convert = box.addButton(
-        QCoreApplication.translate("Nugget", "Convert (may break the wallpaper)"),
-        QtWidgets.QMessageBox.ButtonRole.AcceptRole)
-    box.addButton(
-        QCoreApplication.translate("Nugget", "Install as is"),
-        QtWidgets.QMessageBox.ButtonRole.RejectRole)
-    box.setDefaultButton(convert)
-    box.exec()
-    return box.clickedButton() is convert
+    if _prompt_convert is None:
+        return True
+    try:
+        return bool(_prompt_convert(tendie_name, families))
+    except Exception:
+        return True
+
+
+_log = logging.getLogger("GoldenNugget.posterboard")
+
+
+def _warn(title: str, text: str) -> None:
+    if _show_warning is not None:
+        _show_warning(title, text)
+        return
+    # Headless (CLI, preset loading): the session log still has to show it.
+    _log.warning("%s: %s", title, text)
+
+
+def _error(title: str, text: str) -> None:
+    if _show_error is not None:
+        _show_error(title, text)
+        return
+    _log.error("%s: %s", title, text)
 
 
 class PosterboardTweak(Tweak):
@@ -109,11 +134,8 @@ class PosterboardTweak(Tweak):
                 self.tendies.append(new_tendie)
             # alert if prb reset is needed
             if new_tendie.unsafe_container:
-                detailsBox = QtWidgets.QMessageBox()
-                detailsBox.setIcon(QtWidgets.QMessageBox.Critical)
-                detailsBox.setWindowTitle(QCoreApplication.tr("Warning"))
-                detailsBox.setText(QCoreApplication.tr("NOTE: You may need to reset all wallpapers and then re-apply for this file to work."))
-                detailsBox.exec()
+                _warn(QCoreApplication.tr("Warning"),
+                      QCoreApplication.tr("NOTE: You may need to reset all wallpapers and then re-apply for this file to work."))
             return True
         return False
 
@@ -186,11 +208,8 @@ class PosterboardTweak(Tweak):
                 raise PBTemplateException(file=file, message="This is not a PosterBoard template. Please import it on the Templates page.")
         except Exception as e:
             print(traceback.format_exc())
-            detailsBox = QtWidgets.QMessageBox()
-            detailsBox.setIcon(QtWidgets.QMessageBox.Critical)
-            detailsBox.setWindowTitle(QCoreApplication.tr("Error"))
-            detailsBox.setText(QCoreApplication.tr("Failed to load template") + f" {file}\n\n{str(e)}")
-            detailsBox.exec()
+            _error(QCoreApplication.tr("Error"),
+                   QCoreApplication.tr("Failed to load template") + f" {file}\n\n{str(e)}")
             return True
         return self.verify_tendie(new_template, is_template=True)
 

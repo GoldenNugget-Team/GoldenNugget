@@ -36,7 +36,7 @@ from PySide6.QtGui import (
     QRadialGradient,
 )
 
-from src.controllers.tendie_preview import decode_image_bytes
+from src.gui.preview.tendie_preview import decode_image_bytes
 from .animate import layer_animation_overrides, scene_loop_duration
 from .models import CADocument, GradientColor, Layer, Vec2
 

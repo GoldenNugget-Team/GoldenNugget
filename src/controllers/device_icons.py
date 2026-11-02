@@ -8,7 +8,7 @@ drawn stand-ins.
 import os
 import re
 
-from PySide6.QtCore import QStandardPaths
+from src.utils.paths import app_data_dir, brand_dir
 
 # preview app name -> bundle id. Calendar and Clock are left out: the preview
 # draws them live (today's date, the current time), a snapshot would go stale.
@@ -38,9 +38,7 @@ def _safe(part: str) -> str:
 
 
 def cache_dir(udid: str, version: str) -> str:
-    base = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
-    if not base.rstrip("/").endswith("GoldenNugget"):
-        base = os.path.join(base, "GoldenNugget")
+    base = str(brand_dir(app_data_dir()))
     return os.path.join(base, "DeviceIcons", _safe(udid), _safe(version))
 
 

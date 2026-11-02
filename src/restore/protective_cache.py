@@ -16,6 +16,7 @@ and Phase 3 (restore), so it must survive reboots and crashes.
 import json
 import logging
 import os
+import stat as _stat
 import tempfile
 import time
 from pathlib import Path
@@ -29,6 +30,18 @@ from src.restore.storage import cache_base as _cache_base
 _logger = logging.getLogger("GoldenNugget.cache")
 
 CACHE_FILTER_REVISION = 7
+
+
+def _non_empty_file(path: Path) -> bool:
+    """True when ``path`` is a regular file with at least one byte.
+
+    One ``stat`` instead of the ``is_file()`` + ``stat()`` pair this replaces.
+    """
+    try:
+        result = path.stat()
+    except OSError:
+        return False
+    return _stat.S_ISREG(result.st_mode) and result.st_size > 0
 
 
 def _usable_manifest(master: Path) -> bool:
@@ -159,9 +172,9 @@ class ProtectiveBackupCache:
             # Non-empty, exactly like ``_has_incremental_backup_metadata``:
             # a full run drops Manifest.plist to a 0-byte placeholder before
             # the device re-sends it, so an interrupted rebuild must not look
-            # like a usable master.
-            if not all((master / n).is_file() and (master / n).stat().st_size > 0
-                       for n in required):
+            # like a usable master. One stat per file (the old check did
+            # is_file() and then stat()).
+            if not all(_non_empty_file(master / n) for n in required):
                 continue
             # An ENCRYPTED backup's Manifest.db is AES-encrypted, so it never
             # reads as SQLite. Requiring a readable sqlite here made an

@@ -510,7 +510,7 @@ class RenderAndCacheTests(unittest.TestCase):
 
     def test_hsl_approximation_preserves_rgb_and_source_alpha(self):
         from PySide6.QtGui import QColor, QImage
-        from src.controllers.ca.render import _hsl_blend
+        from src.gui.preview.ca.render import _hsl_blend
         for mode in (QImage.Format.Format_RGBA8888, QImage.Format.Format_ARGB32_Premultiplied):
             image = QImage(5, 3, mode)
             image.fill(QColor(170, 80, 43, 128))
@@ -521,8 +521,8 @@ class RenderAndCacheTests(unittest.TestCase):
                 self.assertEqual(image.pixelColor(0, 0).alpha(), 128)
 
     def test_transition_matches_fresh_tree_at_both_directions(self):
-        from src.controllers.ca.models import CADocument, Layer, Size
-        from src.controllers.ca.render import CAMLRenderer, interpolated_state_root
+        from src.gui.preview.ca.models import CADocument, Layer, Size
+        from src.gui.preview.ca.render import CAMLRenderer, interpolated_state_root
         child = Layer(id='child', size=Size(10, 10), backgroundColor='#ff0000')
         document = CADocument(root=Layer(id='root', size=Size(20, 20), children=[child]),
             stateOverrides={'Locked': [{'targetId': 'child', 'keyPath': 'opacity', 'value': 0.2}],
@@ -539,9 +539,9 @@ class RenderAndCacheTests(unittest.TestCase):
         self.assertEqual(child.opacity, 1.0)
 
     def test_static_filter_cache_does_not_change_rendered_result(self):
-        from src.controllers.ca.models import CADocument, Filter, Layer, Size
+        from src.gui.preview.ca.models import CADocument, Filter, Layer, Size
         import importlib
-        module = importlib.import_module('src.controllers.ca.render')
+        module = importlib.import_module('src.gui.preview.ca.render')
         child = Layer(id='child', size=Size(12, 12), backgroundColor='#e07030',
                       filters=[Filter(type='colorContrast', value=1.4)])
         renderer = module.CAMLRenderer(CADocument(root=Layer(size=Size(20, 20), children=[child])))
@@ -552,7 +552,7 @@ class RenderAndCacheTests(unittest.TestCase):
         self.assertEqual(apply.call_count, 1)
 
     def test_tendie_assets_are_lazy_and_survive_index_archive_close(self):
-        from src.controllers.ca.tendie import load_tendie
+        from src.gui.preview.ca.tendie import load_tendie
         with tempfile.TemporaryDirectory() as directory:
             archive = Path(directory) / 'scene.tendies'
             caml = '<caml xmlns="http://www.apple.com/CoreAnimation/1.0"><CALayer bounds="0 0 20 20"/></caml>'

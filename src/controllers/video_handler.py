@@ -31,7 +31,7 @@ def _ensure_video_libs() -> bool:
 from src.exceptions.posterboard_exceptions import VideoLengthException
 from src.controllers.files_handler import get_bundle_files
 
-from PySide6.QtCore import QCoreApplication
+from src.utils.i18n import QCoreApplication
 
 ignore_pb_frame_limit = False
 

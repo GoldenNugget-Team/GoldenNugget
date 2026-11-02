@@ -16,6 +16,12 @@ GITHUB_NAME = re.compile(r'[A-Za-z0-9_-]+\Z')
 TRANSLATIONS_REPOSITORY = 'GoldenNugget-Team/gNugget-i18n'
 _CACHE_SECONDS = 24 * 60 * 60
 _MAX_BYTES = 2 * 1024 * 1024
+# Avatars and the contributor list are decorative. Starting the first fetch at
+# build time put the whole QtNetwork stack (CFNetwork init on macOS: ~0.4 s) and
+# the on-disk cache reads on the startup path, before the window was painted.
+# Deferring by one short tick keeps that off startup; the images still land
+# before the credits panel can be scrolled into view.
+_DEFER_MS = 150
 
 
 def github_owner(link):
@@ -42,6 +48,10 @@ class ContributorMedia(QObject):
         self.pending = {}
 
     def fetch(self, url, callback):
+        """Schedule a fetch after the first frame (see ``_DEFER_MS``)."""
+        QTimer.singleShot(_DEFER_MS, lambda: self._fetch_now(url, callback))
+
+    def _fetch_now(self, url, callback):
         key = hashlib.sha256(url.encode()).hexdigest()
         path = self.cache / key
         cached = None

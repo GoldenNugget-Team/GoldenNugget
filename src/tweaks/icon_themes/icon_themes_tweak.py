@@ -19,7 +19,8 @@ import tempfile
 import zipfile
 from shutil import copyfile
 
-from PySide6.QtCore import QCoreApplication, QStandardPaths
+from src.utils.i18n import QCoreApplication
+from src.utils.paths import app_data_dir
 
 from ..tweak_classes import Tweak
 from .icon_theme import IconTheme
@@ -30,8 +31,8 @@ from src.utils.file_to_restore import FileToRestore
 def persistent_themes_dir() -> str:
     """Stable folder holding the icon PNGs so applies/presets never depend on
     the original picker location (which could move or disappear)."""
-    base = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
-    folder = os.path.join(base, "GoldenNugget", "IconThemes")
+    base = str(app_data_dir())
+    folder = os.path.join(base, "IconThemes")
     os.makedirs(folder, exist_ok=True)
     return folder
 

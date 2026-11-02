@@ -30,12 +30,18 @@ def _interface_preview(window, mode: str, dpr: float = 1.0) -> QPixmap:
 
     def settle_layout():
         # Visibility and responsive header changes invalidate nested layouts.
-        # Flush geometry only: processEvents would also run device/background work.
-        for _ in range(4):
-            for widget in (root, *root.findChildren(QWidget)):
+        # Flush geometry only: processEvents would also run device/background
+        # work. The widget list is built once (it used to be rebuilt by
+        # findChildren on every pass) and two passes are enough: the second one
+        # settles what _fit_header()/reflow() just resized. Four passes walked
+        # the whole tree twice as often for the same result.
+        tree_widgets = [root, *root.findChildren(QWidget)]
+        for _ in range(2):
+            for widget in tree_widgets:
                 widget.ensurePolished()
-                if widget.layout() is not None:
-                    widget.layout().activate()
+                layout = widget.layout()
+                if layout is not None:
+                    layout.activate()
             QCoreApplication.sendEvent(home._scroll, QEvent(QEvent.LayoutRequest))
             home._fit_header()
             home.cards_grid.reflow()
@@ -56,6 +62,8 @@ def _interface_preview(window, mode: str, dpr: float = 1.0) -> QPixmap:
     finally:
         for widget, visible in previous:
             widget.setVisible(visible)
+        # Resolve first: the restored slot may still be a reserved page.
+        window.page_at(page)
         with QSignalBlocker(window.ios_pages):
             window.ios_pages.setCurrentIndex(page)
         root.resize(original_size)

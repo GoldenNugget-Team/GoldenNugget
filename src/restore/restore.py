@@ -16,7 +16,7 @@ import tempfile
 import time
 from pathlib import Path
 
-from PySide6.QtCore import QCoreApplication
+from src.utils.i18n import QCoreApplication
 from src.devicemanagement.progress_status import OperationStatus
 
 from . import backup, perform_restore, reboot_device
@@ -1022,9 +1022,13 @@ async def _restore_ios27(back: backup.Backup, reboot: bool,
                 rel = f.restore_path.lstrip("/")
                 data = f.contents
                 if data is None and f.contents_path:
-                    with open(f.contents_path, "rb") as fh:
-                        data = fh.read()
-                if isinstance(data, str):
+                    # Hand the PATH to the injector, never its bytes. Reading
+                    # every payload here put the whole tweak set in RAM at
+                    # once (a wallpaper bundle is .MOV/.ca/.aar files, easily
+                    # hundreds of MB) while inject_files_into_backup streams a
+                    # Path through install_payload in 1 MiB buffers.
+                    data = Path(f.contents_path)
+                elif isinstance(data, str):
                     data = data.encode("utf-8")
                 batch.append((f.domain, rel, data,
                               _FileMode.S_IFREG | 0o644, f.owner, f.group))

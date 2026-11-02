@@ -1,26 +1,27 @@
-"""Global crash handler for the GoldenNugget GUI.
+"""Global crash handling — parsing and reporting, deliberately Qt-free.
 
-Catches uncaught Python exceptions and surfaces them in a non-fatal dialog so
-the user can either copy the details (with the recent session log) for a bug
-report, open the log file, or dismiss it and keep working without losing the
-current session.
+This module owns everything about an uncaught exception that does not need a
+widget: the classification used for the friendly text, the GitHub issue body /
+clipboard report builders, the startup banner, the native-crash dump and the
+``sys.excepthook`` / ``sys.unraisablehook`` installation.
 
-Two entry points are hooked:
+The presentation lives in :mod:`src.gui.crash_ui`, which installs itself as the
+**presenter** through :func:`set_presenter` at startup. Until that happens (a
+CLI run, or an exception before the window exists) the handler degrades to
+printing on stderr, so an error is never silently lost.
+
+Two entry points are hooked at runtime:
 
 * ``sys.excepthook`` — for exceptions that escape the interpreter (outside the
   Qt event loop).
-* ``QApplication.notify`` (via :class:`CrashHandlerApp`) — for exceptions
-  raised inside Qt event handlers / slots, which PySide6 otherwise lets die
-  silently after a printed traceback.
+* ``QApplication.notify`` — installed by the GUI presenter
+  (:class:`src.gui.crash_ui.CrashHandlerApp`) for exceptions raised inside Qt
+  event handlers / slots, which PySide6 otherwise lets die silently.
 
-Apply/reset failures are routed through the same dialog: the worker threads
-report them via :class:`ApplyAlertMessage`, and the main window opens
-:func:`show_error_dialog` so the error is *parsed* exactly like a crash
-(severity + likely cause + friendly text) and the same Copy/Report buttons are
-available.
-
-Use :func:`install_crash_handler` once at startup and
-:class:`CrashHandlerApp` instead of a bare ``QApplication``.
+Apply/reset failures are routed through the same presenter: the worker threads
+report them via :class:`ApplyAlertMessage`, and the main window asks
+:func:`show_error_dialog` (GUI module) to present them with the same
+Copy/Report buttons.
 """
 
 import sys
@@ -30,12 +31,7 @@ import os
 from typing import Callable, Optional
 from urllib.parse import quote
 
-from shiboken6 import isValid
-
-from PySide6.QtCore import QCoreApplication, QObject, QEvent, QUrl, QT_TRANSLATE_NOOP
-from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import QApplication, QDialog, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QPlainTextEdit
-
+from src.utils.i18n import QT_TRANSLATE_NOOP
 from src.controllers.nugget_logger import get_log_path, get_log_tail
 from src.exceptions.device_errors import is_connection_error, is_device_locked_error
 from src.exceptions.nugget_exception import BackupDiskSpaceError
@@ -46,8 +42,28 @@ logger = logging.getLogger("GoldenNugget.crash")
 ISSUES_URL = "https://github.com/awesomenull-dev/GoldenNugget/issues/new"
 
 
+# --------------------------------------------------------------------------- #
+# Presenter hook (the GUI registers itself here)
+# --------------------------------------------------------------------------- #
+
+# ``presenter(summary, traceback_text, info, backup_path, on_restore)``.
+# Kept as a module global so the GUI can plug in without this module importing
+# Qt. ``None`` means "no user interface available" (CLI / very early startup).
+_presenter: Optional[Callable[..., None]] = None
+
+
+def set_presenter(presenter: Optional[Callable[..., None]]) -> None:
+    """Install (or clear) the function that shows errors to the user."""
+    global _presenter
+    _presenter = presenter
+
+
+def has_presenter() -> bool:
+    return _presenter is not None
+
+
 def _app_name() -> str:
-    return QCoreApplication.applicationName() or "GoldenNugget"
+    return "GoldenNugget"
 
 
 def _format_error(exc_type, exc_value, exc_tb) -> str:
@@ -191,195 +207,6 @@ def _full_report(info: dict, summary: str, traceback_text: str) -> str:
                           "").rstrip()
 
 
-class CrashDialog(QDialog):
-    """Modal dialog showing a friendly error summary with 'Report on GitHub',
-    'Copy Error', 'Open Log' and 'Continue' buttons.
-
-    ``backup_path`` / ``on_restore`` make the dialog usable for apply failures
-    where a protective backup is still on disk and can be restored.
-    """
-
-    def __init__(self, parent: Optional[QObject] = None,
-                 summary: str = "", traceback_text: str = "", info: Optional[dict] = None,
-                 backup_path: Optional[str] = None,
-                 on_restore: Optional[Callable[[], None]] = None):
-        super().__init__(parent)
-        self.setWindowTitle(QCoreApplication.translate("Nugget", "{0} - Detected an Error").format(_app_name()))
-        self.setModal(True)
-        self.resize(640, 480)
-
-        self._traceback_text = traceback_text
-        self._backup_path = backup_path
-        self._on_restore = on_restore
-        info = info or _classify(Exception, Exception())
-        self._info = info
-
-        layout = QVBoxLayout(self)
-
-        heading = QLabel(QCoreApplication.translate("Nugget", 
-            "GoldenNugget detected an error. Here's what we know - report it to "
-            "us or copy the details (with the session log) before restarting."))
-        heading.setWordWrap(True)
-        heading.setStyleSheet("font-size: 16px; font-weight: 600;")
-        layout.addWidget(heading)
-
-        severity_label = QLabel(QCoreApplication.translate("Nugget", "Severity: {0}").format(
-            QCoreApplication.translate("Nugget", info['severity'])))
-        severity_label.setWordWrap(True)
-        layout.addWidget(severity_label)
-
-        fault_label = QLabel(QCoreApplication.translate("Nugget", "Likely cause: {0}").format(
-            QCoreApplication.translate("Nugget", info['fault'])))
-        fault_label.setWordWrap(True)
-        layout.addWidget(fault_label)
-
-        friendly_label = QLabel(QCoreApplication.translate("Nugget", info['friendly']))
-        friendly_label.setWordWrap(True)
-        friendly_label.setStyleSheet("color: #007AFF; font-style: italic;")
-        layout.addWidget(friendly_label)
-
-        self._searchable = QPlainTextEdit()
-        self._searchable.setReadOnly(True)
-        self._searchable.setPlainText(summary)
-        self._searchable.setMaximumHeight(64)
-        layout.addWidget(self._searchable)
-
-        self._details = QPlainTextEdit()
-        self._details.setReadOnly(True)
-        self._details.setPlainText(traceback_text)
-        self._details.setPlaceholderText(QCoreApplication.translate("Nugget", "No technical details available."))
-        layout.addWidget(self._details, 1)
-
-        log_path_label = QLabel(QCoreApplication.translate("Nugget", "Log: {0}").format(get_log_path()))
-        log_path_label.setWordWrap(True)
-        log_path_label.setStyleSheet("color: #888; font-size: 10px;")
-        layout.addWidget(log_path_label)
-
-        buttons = QHBoxLayout()
-        buttons.addStretch(1)
-
-        if self._backup_path:
-            restore_btn = QPushButton(QCoreApplication.translate("Nugget", "Restore data from backup"))
-            restore_btn.setToolTip(QCoreApplication.translate("Nugget", 
-                "Restore the protective backup from the failed apply to avoid "
-                "data loss."))
-            restore_btn.clicked.connect(self._restore)
-            buttons.addWidget(restore_btn)
-
-        report_btn = QPushButton(QCoreApplication.translate("Nugget", "Report on GitHub"))
-        report_btn.setToolTip(QCoreApplication.translate("Nugget", 
-            "Copies the error details + session log and opens the issue "
-            "tracker in your browser with a pre-filled report."))
-        report_btn.clicked.connect(lambda: self._report(info, summary, traceback_text))
-        buttons.addWidget(report_btn)
-
-        copy_btn = QPushButton(QCoreApplication.translate("Nugget", "Copy Error"))
-        copy_btn.setToolTip(QCoreApplication.translate("Nugget", "Copies the full error report + session log to the clipboard."))
-        copy_btn.clicked.connect(self._copy)
-        buttons.addWidget(copy_btn)
-
-        open_log_btn = QPushButton(QCoreApplication.translate("Nugget", "Open Log"))
-        open_log_btn.setToolTip(QCoreApplication.translate("Nugget", "Opens the session log file in your preferred text editor."))
-        open_log_btn.clicked.connect(self._open_log)
-        buttons.addWidget(open_log_btn)
-
-        continue_btn = QPushButton(QCoreApplication.translate("Nugget", "Restart App"))
-        continue_btn.setToolTip(QCoreApplication.translate("Nugget", "Close the error report and relaunch GoldenNugget."))
-        continue_btn.setDefault(True)
-        continue_btn.clicked.connect(self.accept)
-        buttons.addWidget(continue_btn)
-
-        layout.addLayout(buttons)
-
-    def _copy(self):
-        QApplication.clipboard().setText(_full_report(self._info, self._searchable.toPlainText(),
-                                                       self._traceback_text))
-
-    def _open_log(self):
-        path = get_log_path()
-        if path and os.path.exists(path):
-            QDesktopServices.openUrl(QUrl.fromLocalFile(path))
-
-    def _report(self, info: dict, summary: str, traceback_text: str):
-        QApplication.clipboard().setText(_full_report(info, summary, traceback_text))
-        url = _build_issues_url(info, summary, traceback_text)
-        QDesktopServices.openUrl(QUrl(url))
-
-    def _restore(self):
-        cb = self._on_restore
-        self.accept()
-        if cb is not None:
-            cb()
-
-    def exec(self) -> int:
-        return super().exec()
-
-
-# Dialogs currently on screen. Keeping a strong reference here means the cyclic
-# collector can never be the one that frees the wrapper while the C++ widget is
-# still alive (see ``_exec_dialog_on_gui_thread``).
-_live_dialogs: list = []
-
-
-def _exec_dialog_on_gui_thread(dialog: CrashDialog) -> None:
-    """``exec()`` a crash dialog and destroy its C++ object on the GUI thread.
-
-    Every button in :class:`CrashDialog` is connected to a lambda/bound method
-    that captures ``self``, so the Python wrapper sits in a reference cycle. If
-    that cycle is left to the cyclic GC, it is collected by whichever thread
-    happens to trigger a collection — and during an apply that is ApplyThread.
-    Shiboken then destroys the QDialog off the GUI thread, which tears down its
-    children and delivers their events while the main thread is still
-    dispatching for the same widget; the result is a SIGSEGV inside
-    ``PySide::getWrapperForQObject``.
-
-    So: pin the wrapper for the lifetime of the modal loop, then delete the C++
-    side here (``deleteLater`` is processed by the GUI thread) and drop the pin.
-    Whatever GC does with the leftover cycle afterwards is harmless because the
-    wrapper is already invalidated.
-    """
-    _live_dialogs.append(dialog)
-    try:
-        dialog.exec()
-    finally:
-        try:
-            dialog.deleteLater()
-        finally:
-            try:
-                _live_dialogs.remove(dialog)
-            except ValueError:
-                pass
-
-
-def show_error_dialog(summary: str, traceback_text: str, info: Optional[dict] = None,
-                      backup_path: Optional[str] = None,
-                      on_restore: Optional[Callable[[], None]] = None):
-    """Show the crash/error dialog on the main thread, if a QApplication exists.
-
-    Also used for apply/reset failures so they get parsed and reported exactly
-    like uncaught exceptions.
-    """
-    app = QApplication.instance()
-    if app is None:
-        print(f"ERROR: {summary}\n{traceback_text}", file=sys.stderr)
-        return
-    dialog = CrashDialog(summary=summary, traceback_text=traceback_text,
-                         info=info, backup_path=backup_path, on_restore=on_restore)
-    _exec_dialog_on_gui_thread(dialog)
-
-
-def _show_crash_dialog(summary: str, traceback_text: str, exc_type=None, exc_value=None):
-    """Show the crash dialog on the main thread, if a QApplication exists."""
-    app = QApplication.instance()
-    info = _classify(exc_type, exc_value) if exc_type is not None else None
-    if app is None:
-        # No application yet — fall back to printing so nothing is lost.
-        print(f"CRASH: {summary}\n{traceback_text}", file=sys.stderr)
-        return
-    dialog = CrashDialog(summary=summary, traceback_text=traceback_text, info=info)
-    _exec_dialog_on_gui_thread(dialog)
-
-
 def _restart_app():
     """Relaunch GoldenNugget from the crash handler so the session keeps
     working after an unexpected error. Uses the same args the process was
@@ -396,6 +223,16 @@ def _restart_app():
             os.execl(sys.executable, sys.executable, *sys.argv)
         except Exception:
             pass
+
+
+def _show_crash_dialog(summary: str, traceback_text: str, exc_type=None, exc_value=None):
+    """Hand a crash to the GUI presenter, or print it when there is none."""
+    info = _classify(exc_type, exc_value) if exc_type is not None else None
+    if _presenter is None:
+        # No user interface yet — fall back to printing so nothing is lost.
+        print(f"CRASH: {summary}\n{traceback_text}", file=sys.stderr)
+        return
+    _presenter(summary, traceback_text, info)
 
 
 def _handle_crash(exc_type, exc_value, exc_tb):
@@ -417,6 +254,13 @@ def _excepthook(exc_type, exc_value, exc_tb):
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_tb)
         return
+    # Qt raises this while converting an already-deleted receiver for a Python
+    # event filter; there is no handler frame, so nothing can act on it. The
+    # guarded notify() drops it per event — this covers the window before
+    # install_notify_guard() runs (startup) where PySide reports it here.
+    if _is_dead_object_event(exc_value, exc_tb):
+        logger.debug("Dropped event for a deleted Qt object: %s", exc_value)
+        return
     _handle_crash(exc_type, exc_value, exc_tb)
 
 
@@ -429,32 +273,6 @@ def _is_dead_object_event(exc_value, exc_tb) -> bool:
     frames and still reach the crash dialog."""
     return ("already deleted" in str(exc_value)
             and exc_tb is not None and exc_tb.tb_next is None)
-
-
-class CrashHandlerApp(QApplication):
-    """QApplication subclass that routes Qt event-handler exceptions to the
-    crash handler instead of silently printing and dropping them."""
-
-    def notify(self, receiver: QObject, event: QEvent) -> bool:
-        if receiver is not None and not isValid(receiver):
-            logger.debug("Discarding queued event for a deleted Qt receiver")
-            return False
-        try:
-            return super().notify(receiver, event)
-        except RuntimeError:
-            exc_type, exc_value, exc_tb = sys.exc_info()
-            if _is_dead_object_event(exc_value, exc_tb):
-                logger.warning("Dropped %s event: %s", event.type(), exc_value)
-                return False
-            _handle_crash(exc_type, exc_value, exc_tb)
-            return False
-        except Exception:
-            if receiver is not None and not isValid(receiver):
-                logger.warning("Qt receiver was deleted during event delivery; discarding its event", exc_info=True)
-                return False
-            exc_type, exc_value, exc_tb = sys.exc_info()
-            _handle_crash(exc_type, exc_value, exc_tb)
-            return False
 
 
 def _detect_desktop() -> str:
@@ -523,56 +341,16 @@ def _install_faulthandler():
         pass
 
 
-_qt_last_message = ["", 0]
-
-
-def _qt_message_handler(msg_type, context, message):
-    """Forward Qt framework messages (qWarning/qCritical/qFatal, including the
-    QFont diagnostics and any crash forewarning) into the session log and, for
-    warnings+, duplicate them on stderr exactly like Qt's default handler."""
-    try:
-        from PySide6.QtCore import QtMsgType
-        level = {
-            QtMsgType.QtDebugMsg: logging.DEBUG,
-            QtMsgType.QtInfoMsg: logging.INFO,
-            QtMsgType.QtWarningMsg: logging.WARNING,
-            QtMsgType.QtCriticalMsg: logging.ERROR,
-            QtMsgType.QtFatalMsg: logging.CRITICAL,
-        }.get(msg_type, logging.WARNING)
-        if message == _qt_last_message[0]:
-            _qt_last_message[1] += 1
-            return
-        last, count = _qt_last_message
-        if count > 1:
-            logger.log(level, "[Qt] %s (x%d)", last, count)
-        _qt_last_message[0] = message
-        _qt_last_message[1] = 1
-        logger.log(level, "[Qt] %s", message)
-        if level >= logging.WARNING:
-            print(message, file=sys.stderr)
-    except Exception:
-        pass
-
-
-def _install_qt_message_handler():
-    try:
-        from PySide6.QtCore import qInstallMessageHandler
-        qInstallMessageHandler(_qt_message_handler)
-    except Exception:
-        pass
-
-
 def install_crash_handler():
-    """Install the global uncaught-exception handler.
+    """Install the global uncaught-exception handler (Qt-free part).
 
-    Call once before ``QApplication`` is created. The dialog is only shown once
-    an application instance exists; exceptions raised before then are logged
-    and printed. Native crashes (which never raise a Python exception) are
-    captured into a dedicated backtrace dump instead.
+    Call once before the window is created. Errors are printed until a GUI
+    presenter is registered through :func:`set_presenter`. Native crashes
+    (which never raise a Python exception) are captured into a dedicated
+    backtrace dump instead.
     """
     print_startup_banner()
     _install_faulthandler()
-    _install_qt_message_handler()
     sys.excepthook = _excepthook
     # Sys.unraisablehook catches errors in __del__ / finalizers, which would
     # otherwise be reported to stderr and might quietly abort cleanup.

@@ -5,10 +5,22 @@
 working; the backend apply/reset path imports it here instead of from the GUI
 package.
 
-``icon`` is an opaque renderer tag: GUI callers pass a ``QMessageBox.Icon``,
-the backend leaves it ``None`` (meaning "default"/error, which the GUI renders
-as ``QMessageBox.Critical``).
+``icon`` is an opaque renderer tag. The backend passes an :class:`AlertIcon`
+member (it cannot import ``QMessageBox``); the GUI also accepts a
+``QMessageBox.Icon`` for its own messages and maps both to the real icon.
 """
+
+from __future__ import annotations
+
+from enum import Enum
+
+
+class AlertIcon(Enum):
+    """Renderer-independent alert severity."""
+
+    CRITICAL = "critical"
+    WARNING = "warning"
+    INFORMATION = "information"
 
 
 class ApplyAlertMessage:

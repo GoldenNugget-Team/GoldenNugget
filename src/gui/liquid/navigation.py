@@ -1,13 +1,25 @@
 import time
 from PySide6.QtCore import Qt, QEvent, QSize, QVariantAnimation, QEasingCurve
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QColor, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea, QApplication
+from src.gui.theme import ColorThemeManager
 from .controls import GlassPanel, LiquidButton
 
 
 class LiquidNavBar(GlassPanel):
+    """Shared page header, painted as one surface with the window.
+
+    It used to be a floating glass card: rounded, translucent, and inset from
+    the page edge by the ``iosNavWrap`` margins. The header now fills with the
+    same background the pages use and only marks its lower edge with a hairline
+    divider, so the title bar reads as part of the window instead of a panel
+    sitting on top of it. The glass panel base is kept for the rest of the
+    widget tree (``GlassPanel`` supplies the transparent-background setup).
+    """
+
     def __init__(self,title='',parent=None,on_back=None):
         super().__init__(parent)
+        ColorThemeManager.instance().theme_changed.connect(self.update)
         self._category_buttons=[]
         self._right_btn=None
         root=QVBoxLayout(self)
@@ -49,6 +61,20 @@ class LiquidNavBar(GlassPanel):
         self._scroll_animation.setEasingCurve(QEasingCurve.OutCubic)
         self._scroll_animation.valueChanged.connect(lambda value:self._categories.horizontalScrollBar().setValue(round(value)))
         self.setFixedHeight(62)
+
+    def paintEvent(self,event):
+        # One surface with the window: same background as the pages, no glass,
+        # no rounded box. A single hairline marks where the header ends.
+        p=QPainter(self)
+        c=ColorThemeManager.instance().colors
+        p.fillRect(self.rect(),QColor(c.bg_primary))
+        p.setPen(QPen(QColor(c.divider),1))
+        y=self.height()-1
+        p.drawLine(0,y,self.width(),y)
+
+    def _retheme(self):
+        # Colours are read live in paintEvent; a repaint is all that is needed.
+        self.update()
 
     def set_title(self,title):
         self.title_lbl.setText(title)

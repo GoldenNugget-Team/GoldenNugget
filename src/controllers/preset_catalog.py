@@ -27,7 +27,8 @@ import zipfile
 from dataclasses import dataclass, field
 from urllib.parse import quote
 
-from PySide6.QtCore import QStandardPaths, QT_TRANSLATE_NOOP
+from src.utils.i18n import QT_TRANSLATE_NOOP
+from src.utils.paths import app_data_dir, cache_dir
 
 from src.controllers import share_code
 
@@ -343,6 +344,35 @@ def catalog_mark(entry: CatalogEntry) -> dict:
     return {"id": entry.id, "sha256": code_digest(entry.code)}
 
 
+_template_digests: dict[tuple[str, int, int], str] = {}
+
+
+def _template_digest(path: str) -> str | None:
+    """SHA-256 of a ``.batter`` file, memoized by ``(path, mtime_ns, size)``.
+
+    ``installed_items`` runs on the GUI thread (the home page's catalog badge)
+    and used to re-read and re-hash every installed template on each call.
+    """
+    try:
+        stat_result = os.stat(path)
+    except OSError:
+        return None
+    key = (path, stat_result.st_mtime_ns, stat_result.st_size)
+    cached = _template_digests.get(key)
+    if cached is not None:
+        return cached
+    try:
+        with open(path, "rb") as stream:
+            digest = hashlib.sha256(stream.read(MAX_TEMPLATE_BYTES + 1)).hexdigest()
+    except OSError:
+        return None
+    # Keep the memo from growing across a long session.
+    if len(_template_digests) > 512:
+        _template_digests.clear()
+    _template_digests[key] = digest
+    return digest
+
+
 def installed_items(pm, folder=None) -> dict:
     """{("preset" | "template", id): (sha256, preset name or file path)}."""
     result = {}
@@ -356,8 +386,9 @@ def installed_items(pm, folder=None) -> dict:
         for file in os.listdir(folder):
             if file.endswith(".batter") and ID_PATTERN.match(file[:-len(".batter")]):
                 path = os.path.join(folder, file)
-                with open(path, "rb") as stream:
-                    digest = hashlib.sha256(stream.read(MAX_TEMPLATE_BYTES + 1)).hexdigest()
+                digest = _template_digest(path)
+                if digest is None:
+                    continue
                 result[("template", file[:-len(".batter")])] = (digest, path)
     except OSError:
         pass
@@ -384,7 +415,7 @@ def count_updates(entries, installed: dict) -> int:
 # --- downloaded templates -------------------------------------------------
 
 def templates_dir() -> str:
-    base = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
+    base = str(app_data_dir())
     path = os.path.join(base, TEMPLATES_DIR_NAME)
     os.makedirs(path, exist_ok=True)
     return path
@@ -406,8 +437,8 @@ def save_template(entry: TemplateEntry, data: bytes) -> str:
 # --- local cache ----------------------------------------------------------
 
 def cache_path() -> str:
-    base = QStandardPaths.writableLocation(QStandardPaths.CacheLocation) \
-        or QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
+    base = str(cache_dir()) \
+        or str(app_data_dir())
     os.makedirs(base, exist_ok=True)
     return os.path.join(base, CACHE_FILENAME)
 

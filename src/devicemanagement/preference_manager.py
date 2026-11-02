@@ -1,4 +1,5 @@
-from PySide6.QtCore import QSettings, QStandardPaths
+from src.utils.paths import app_data_dir
+from src.utils.settings import Settings
 from os import path, makedirs
 from os import remove as rmfile
 from shutil import copyfile
@@ -8,7 +9,7 @@ from src.tweaks.posterboard.pb_config_item import PBConfigItem
 from src.controllers.settings import Settings
 
 class PreferenceManager:
-    def __init__(self, settings: QSettings):
+    def __init__(self, settings: Settings):
         self.settings = settings
         self.auto_reboot = True
         self.disable_tendies_limit = False
@@ -25,10 +26,10 @@ class PreferenceManager:
         self.tweak_autosave = True
 
     # PosterBoard Configuration Database Saving
-    def get_pbconfigs_prefs() -> QSettings:
+    def get_pbconfigs_prefs() -> Settings:
         return Settings("PB Configs")
     def get_pbconfigs_db_save_path(udid: Optional[str]=None) -> str:
-        app_data_path = path.join(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation), "PB_Saved_Databases")
+        app_data_path = path.join(str(app_data_dir()), "PB_Saved_Databases")
         if not path.exists(app_data_path):
             makedirs(app_data_path)
         if udid is not None:

@@ -10,11 +10,13 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
-from PySide6.QtCore import QSettings, QCoreApplication, QEvent
+from PySide6.QtCore import QCoreApplication, QEvent
 from PySide6.QtGui import QFontDatabase, QFont
 from PySide6.QtWidgets import QApplication, QDialog
 from src.gui.theme import ColorThemeManager
 from src.gui.interface_picker import InterfacePickerDialog, _interface_preview
+
+from settings_sandbox import SettingsSandbox
 
 APP = QApplication.instance() or QApplication([])
 QFontDatabase.addApplicationFont(str(ROOT / 'src/qt/fonts/InterVariable.ttf'))
@@ -23,14 +25,14 @@ APP.setFont(QFont('Inter Variable'))
 
 class FirstRunTests(unittest.TestCase):
     def test_actual_home_previews_selection_and_state_restoration(self):
-        from src.controllers.translator import Translator
+        from src.gui.translator import Translator
         from src.devicemanagement.device_manager import DeviceManager
         from src.gui.main_window import MainWindow
-        with tempfile.TemporaryDirectory() as directory:
-            settings = QSettings(str(Path(directory) / 'settings.ini'), QSettings.IniFormat)
+        with tempfile.TemporaryDirectory() as directory, \
+                SettingsSandbox(Path(directory)) as make_settings:
+            settings = make_settings('settings')
             previous = ColorThemeManager._inst
-            with patch('src.gui.theme.theme_manager.QSettings', return_value=settings):
-                ColorThemeManager._inst = ColorThemeManager()
+            ColorThemeManager._inst = ColorThemeManager()
             manager = DeviceManager()
             manager.pref_manager.settings = settings
             try:
@@ -38,7 +40,6 @@ class FirstRunTests(unittest.TestCase):
                      patch.object(MainWindow, '_load_last_preset'), \
                      patch.object(MainWindow, '_register_tweak_autosave'), \
                      patch('src.gui.main_window.DeviceMonitorThread.start'), \
-                     patch('src.gui.ios.theme_manager.QSettings', return_value=settings), \
                      patch('PySide6.QtCore.QStandardPaths.writableLocation', return_value=directory):
                     window = MainWindow(manager, Translator(APP, settings))
                 try:

@@ -14,7 +14,8 @@ import tempfile
 import time
 from typing import Optional
 
-from PySide6.QtCore import QStandardPaths, QCoreApplication, QT_TRANSLATE_NOOP
+from src.utils.i18n import QCoreApplication, QT_TRANSLATE_NOOP
+from src.utils.paths import app_data_dir, brand_dir
 
 from src.tweaks.tweak_names import TweakID
 from src.tweaks import tweak_loader
@@ -50,10 +51,7 @@ class PresetManager:
             raise TypeError("tweak_store must be a mapping")
         self._selected_store = tweak_store
         self.last_transfer_error = ""
-        base_dir = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
-        # Ensure GoldenNugget-specific folder
-        if not base_dir.endswith("GoldenNugget") and not base_dir.endswith("GoldenNugget/"):
-            base_dir = os.path.join(base_dir, "GoldenNugget")
+        base_dir = str(brand_dir(app_data_dir()))
         self.presets_dir = os.path.join(base_dir, PRESETS_DIR_NAME)
         os.makedirs(self.presets_dir, exist_ok=True)
 

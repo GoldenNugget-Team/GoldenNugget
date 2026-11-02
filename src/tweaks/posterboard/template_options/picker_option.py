@@ -4,15 +4,14 @@ from . import TemplateOption
 import os
 from typing import Optional
 from shutil import rmtree, move
-from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout
 
-from src.qt.custom_elements.multicombobox import MultiComboBox
 
 class PickerElement:
-    label: str # label to show for the picker
-    files: list[str] # list of files to include with the picker
+    label: str  # label to show for the picker
+    files: list[str]  # list of files to include with the picker
     associated_preview: Optional[str] = None
-    preview_lbl: Optional[QLabel] = None
+    # Attached by the GUI editor when the element maps to a preview label.
+    preview_lbl: object = None
 
     def __init__(self, option_data: dict):
         self.files = []
@@ -24,15 +23,17 @@ class PickerElement:
                 raise ValueError('Unsafe picker file paths')
         if 'associated_preview' in option_data:
             self.associated_preview = option_data['associated_preview']
+        self.preview_lbl = None
+
 
 class PickerOption(TemplateOption):
-    options: list[PickerElement] # list of elements inside the picker
-    allow_multiple_selection: bool = False # allow choosing multiple options
-    rename: bool = False # whether or not to rename the chosen files (allow_multiple_selection must be False)
-    names: list[str] # list of names to rename to
+    options: list[PickerElement]  # list of elements inside the picker
+    allow_multiple_selection: bool = False  # allow choosing multiple options
+    rename: bool = False  # whether or not to rename the chosen files (allow_multiple_selection must be False)
+    names: list[str]  # list of names to rename to
 
-    selection: int | list[str] # chosen user selection
-    default_val: int | list[int] # default index or indices
+    selection: int | list[str]  # chosen user selection
+    default_val: int | list[int]  # default index or indices
 
     def __init__(self, data: dict):
         super().__init__(data=data)
@@ -42,7 +43,7 @@ class PickerOption(TemplateOption):
         opts = data['options']
         for opt in opts:
             self.options.append(PickerElement(opt))
-        
+
         # add the other options
         if 'allow_multiple_selection' in data:
             self.allow_multiple_selection = data['allow_multiple_selection']
@@ -51,7 +52,7 @@ class PickerOption(TemplateOption):
             if 'rename' in data:
                 self.rename = data['rename']
                 if self.rename:
-                    self.names = data['names'] # only require if rename is true
+                    self.names = data['names']  # only require if rename is true
                     if not isinstance(self.names, list) or any(
                             not isinstance(name, str) or not safe_member(name) for name in self.names):
                         raise ValueError('Unsafe picker destination paths')
@@ -70,53 +71,9 @@ class PickerOption(TemplateOption):
         self.selection = ([self.options[index].label for index in indices]
                           if self.allow_multiple_selection else self.default_val)
 
-    def create_interface(self, options_widget: QWidget, options_layout: QVBoxLayout):
-        # picker option
-        picker_widget = QWidget(options_widget)
-        picker_layout = QHBoxLayout(picker_widget)
-        # add label first
-        picker_label = QLabel(picker_widget)
-        picker_label.setText(self.label)
-        picker_layout.addWidget(picker_label)
-        if self.allow_multiple_selection:
-            pickerDrp = MultiComboBox(picker_widget, updateAction=self.onPickerUpdate)
-            for opt in self.options:
-                pickerDrp.addItem(opt.label, opt.label)
-            selected = list(self.selection)
-            pickerDrp.selectIndices([i for i, opt in enumerate(self.options)
-                                     if opt.label in selected])
-            pickerDrp.updateText()
-            pickerDrp.setStyleSheet("QWidget { background-color: #3b3b3b; border: 2px solid #3b3b3b; border-radius: 5px; }")
-        else:
-            from src.gui.liquid.choice_editor import GlassComboBox
-            pickerDrp = GlassComboBox(picker_widget)
-            for opt in self.options:
-                pickerDrp.addItem(opt.label)
-            pickerDrp.setCurrentIndex(self.selection)
-            pickerDrp.currentIndexChanged.connect(self.onPickerUpdate)
-        picker_layout.addWidget(pickerDrp)
-        picker_widget.setLayout(picker_layout)
-        options_layout.addWidget(picker_widget)
-
-    def add_potential_preview_lbls(self, lbls: dict[str, QLabel]):
-        for opt in self.options:
-            if opt.associated_preview in lbls:
-                opt.preview_lbl = lbls[opt.associated_preview]
-
-    def update_preview(self):
-        if self.allow_multiple_selection:
-            for opt in self.options:
-                # hide if not in selection or show if it is
-                if opt.preview_lbl != None:
-                    opt.preview_lbl.setVisible(opt.label in self.selection)
-        else:
-            for i in range(len(self.options)):
-                if self.options[i].preview_lbl != None:
-                    self.options[i].preview_lbl.setVisible(self.selection == i)
-
     def onPickerUpdate(self, selection):
+        """Record a selection coming from the GUI (index or list of labels)."""
         self.selection = selection
-        self.update_preview()
 
     def apply(self, container_path: str):
         # get the list of files

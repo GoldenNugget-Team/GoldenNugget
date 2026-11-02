@@ -18,7 +18,7 @@ from src.tweaks.daemons_tweak import Daemon, NOTIFICATION_RECOVERY_DAEMONS
 ANALYTICS_DAEMONS = (Daemon.AnalyticsHelper, Daemon.WifiAnalytics, Daemon.UsageTrackingAgent,
                      Daemon.AppleAds, Daemon.SettingsStats, Daemon.AudioAnalytics,
                      Daemon.EcosystemAnalytics, Daemon.CallAnalytics, Daemon.Feedback, Daemon.Metrics)
-from src.controllers.hotload import HotLoad, confirm_flagged
+from src.controllers.hotload import HotLoad
 
 # QWIDGETSIZE_MAX — PySide6 does not export the C macro, this is its value.
 _NO_MAX_HEIGHT = 16777215
@@ -765,8 +765,12 @@ class IOSDaemonsContent(QWidget):
             hotload = HotLoad(settings)
             rule = hotload.rule_for(
                 "Daemons", device_version=version, device_model=model)
-            if rule is not None and not confirm_flagged(rule, self):
-                return False
+            if rule is not None:
+                # Imported here: ``src.gui.dialogs`` pulls in the pages, which
+                # import this module again (circular at import time).
+                from src.gui.dialogs.hotload_warning import confirm_flagged
+                if not confirm_flagged(rule, self):
+                    return False
             self._hotload_acked = True
         if settings is not None and settings.value("daemon_bootloop_warned", False, type=bool):
             return True

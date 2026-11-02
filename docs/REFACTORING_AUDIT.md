@@ -84,7 +84,7 @@ recursive_add() делает in_file.read() и добавляет bytes в ка�
 
 ### R09 · P2 · XML одного CAML разбирается пять раз
 
-[src/controllers/ca/caml.py:883](/Users/awesomenull/Projects/GoldenNugget/src/controllers/ca/caml.py:883). **Счётчик вызовов: 5.**
+[src/gui/preview/ca/caml.py:883](/Users/awesomenull/Projects/GoldenNugget/src/gui/preview/ca/caml.py:883). **Счётчик вызовов: 5.**
 
 parse_ca_document() вызывает пять парсеров, каждый получает XML root заново. На минимальном валидном документе ET.fromstring вызван ровно 5 раз. _top_level_child также материализует список всех совпадений, хотя нужен первый.
 
@@ -92,7 +92,7 @@ parse_ca_document() вызывает пять парсеров, каждый п�
 
 ### R10 · P2 · Keyframe-подготовка повторяется каждый кадр
 
-[src/controllers/ca/animate.py:112](/Users/awesomenull/Projects/GoldenNugget/src/controllers/ca/animate.py:112). **Статически; влияние на кадр не замерено.**
+[src/gui/preview/ca/animate.py:112](/Users/awesomenull/Projects/GoldenNugget/src/gui/preview/ca/animate.py:112). **Статически; влияние на кадр не замерено.**
 
 interpolate_keyframe() каждый вызов создаёт/копирует key_times, затем линейно ищет сегмент. Расход растёт с числом tracks и keyframes.
 
@@ -100,7 +100,7 @@ interpolate_keyframe() каждый вызов создаёт/копирует k
 
 ### R11 · P2 · Decoded image cache renderer не ограничен
 
-[src/controllers/ca/render.py:590](/Users/awesomenull/Projects/GoldenNugget/src/controllers/ca/render.py:590). **Статически; зависит от assets.**
+[src/gui/preview/ca/render.py:590](/Users/awesomenull/Projects/GoldenNugget/src/gui/preview/ca/render.py:590). **Статически; зависит от assets.**
 
 _images удерживает каждый декодированный QImage до уничтожения renderer. Бюджеты ZIP bytes, video и offscreen-cache эту память не ограничивают. Одно RGBA-изображение 4096×4096 занимает около 64 МиБ без накладных расходов.
 
@@ -244,7 +244,7 @@ saved передан как completed и failed; False от save_preset не п�
 
 ### R29 · P2 · Render cache предполагает immutable документ при mutable моделях
 
-[src/controllers/ca/render.py:298](/Users/awesomenull/Projects/GoldenNugget/src/controllers/ca/render.py:298). **Латентный контракт; пользовательский сценарий не доказан.**
+[src/gui/preview/ca/render.py:298](/Users/awesomenull/Projects/GoldenNugget/src/gui/preview/ca/render.py:298). **Латентный контракт; пользовательский сценарий не доказан.**
 
 home_state кэшируется по id(root)/id(stateOverrides); другие render структуры тоже переиспользуются. CADocument/Layer — mutable dataclasses: изменение на месте не меняет identity. На существующем immutable load-пути дефект не проявляется.
 
@@ -276,7 +276,7 @@ _PruneResult(tuple) распаковывается как rows/files, но до�
 
 ### R33 · P3 · Остались неиспользуемые private альтернативные реализации
 
-[src/controllers/ca/render.py:516](/Users/awesomenull/Projects/GoldenNugget/src/controllers/ca/render.py:516). **Поиск не обнаружил callers в Python-дереве.**
+[src/gui/preview/ca/render.py:516](/Users/awesomenull/Projects/GoldenNugget/src/gui/preview/ca/render.py:516). **Поиск не обнаружил callers в Python-дереве.**
 
 _rgb_to_hsl, _hsl_to_rgb_hsl, protective._iter_payload_files и IconPackDownloader._import_zip_bytes встречаются только как определения. Они усложняют поиск актуального пути.
 
@@ -284,7 +284,7 @@ _rgb_to_hsl, _hsl_to_rgb_hsl, protective._iter_payload_files и IconPackDownload
 
 ### R34 · P3 · Типы не отражают реальные границы данных
 
-[src/controllers/ca/models.py:212](/Users/awesomenull/Projects/GoldenNugget/src/controllers/ca/models.py:212). **Подтверждено статически.**
+[src/gui/preview/ca/models.py:212](/Users/awesomenull/Projects/GoldenNugget/src/gui/preview/ca/models.py:212). **Подтверждено статически.**
 
 CADocument.assets объявлен Dict[str, bytes], но получает lazy Mapping. Есть builtin any вместо typing.Any, большие dict/tuple results без обязательных полей. Некоторые class-level containers затенены в init: это не подтверждённая общая мутабельность экземпляров.
 

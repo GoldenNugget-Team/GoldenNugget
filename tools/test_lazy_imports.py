@@ -9,6 +9,8 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 
 class LazyImportTests(unittest.TestCase):
@@ -62,6 +64,40 @@ assert 'pymobiledevice3.ca' not in sys.modules
             [sys.executable, '-c', code], cwd=ROOT,
             capture_output=True, text=True, timeout=30)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_share_code_does_not_load_numpy(self):
+        """QR support must not drag numpy into the startup import graph."""
+        code = """
+import sys
+from src.controllers import share_code
+assert 'numpy' not in sys.modules, 'numpy loaded by share_code import'
+assert share_code.encode({'x': {'type': 'switch', 'enabled': True}}).startswith('GN1.')
+"""
+        env = os.environ.copy()
+        env['PYTHONPATH'] = os.pathsep.join(filter(None, (
+            str(ROOT), env.get('PYTHONPATH', ''))))
+        result = subprocess.run(
+            [sys.executable, '-c', code], cwd=ROOT, env=env,
+            capture_output=True, text=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_contributor_media_fetch_is_deferred(self):
+        """Credits avatars must not start the network stack during startup."""
+        os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+        from PySide6.QtCore import QEventLoop, QTimer
+        from PySide6.QtWidgets import QApplication
+        app = QApplication.instance() or QApplication([])
+        from src.gui.ios.contributor_media import ContributorMedia
+
+        media = ContributorMedia(app)
+        calls = []
+        media._fetch_now = lambda url, callback: calls.append(url)
+        media.fetch('https://github.com/example.png?size=176', lambda data: None)
+        self.assertEqual(calls, [], 'fetch ran synchronously during startup')
+        loop = QEventLoop()
+        QTimer.singleShot(600, loop.quit)
+        loop.exec()
+        self.assertEqual(len(calls), 1, 'deferred fetch never ran')
 
 
 if __name__ == '__main__':

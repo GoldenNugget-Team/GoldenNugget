@@ -17,8 +17,11 @@ from dataclasses import dataclass
 import hashlib
 import os
 import re
+import time
 
 import requests
+
+from src.utils.paths import app_data_dir, cache_dir
 
 COWABUNGA_BASE = "https://raw.githubusercontent.com/SerStars/nugget-wallpapers/main/"
 COWABUNGA_CATEGORIES = {
@@ -160,10 +163,9 @@ SOURCES = {
 
 
 def wallpaper_cache_root() -> str:
-    from PySide6.QtCore import QStandardPaths
-    base = QStandardPaths.writableLocation(QStandardPaths.CacheLocation)
+    base = str(cache_dir())
     if not base:
-        base = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
+        base = str(app_data_dir())
     root = os.path.join(base, "wallpaper_cache")
     os.makedirs(os.path.join(root, "catalog"), exist_ok=True)
     os.makedirs(os.path.join(root, "previews"), exist_ok=True)
@@ -178,6 +180,36 @@ def cached_preview_path(preview_url: str) -> str:
 
 _all_cached_wallpapers = None
 _all_cached_wallpapers_key = None
+# The catalog directory is re-stat'ed at most this often. Every tendie row on
+# the PosterBoard page asks for a name lookup, and each lookup used to re-stat
+# every catalog file (T rows x C files). The files only change when the user
+# explicitly refreshes the catalog, so a couple of seconds of staleness is
+# invisible while the stat storm is not.
+_CATALOG_SIG_TTL = 2.0
+_catalog_sig_checked_at = 0.0
+_catalog_sig_value = ""
+
+# casefolded wallpaper name -> (catalog position, Wallpaper), rebuilt whenever
+# the catalog signature changes. Lookups are dict hits instead of a scan.
+_name_index: dict[str, tuple[int, Wallpaper]] | None = None
+_name_index_key = None
+
+
+def _catalog_signature(catalog_dir: str, files: list[str]) -> str:
+    global _catalog_sig_checked_at, _catalog_sig_value
+    now = time.monotonic()
+    if _catalog_sig_value and now - _catalog_sig_checked_at < _CATALOG_SIG_TTL:
+        return _catalog_sig_value
+    parts = []
+    for f in files:
+        try:
+            st = os.stat(os.path.join(catalog_dir, f))
+            parts.append(f"{f}:{st.st_mtime}:{st.st_size}")
+        except OSError:
+            pass
+    _catalog_sig_value = "|".join(parts)
+    _catalog_sig_checked_at = now
+    return _catalog_sig_value
 
 
 def all_cached_wallpapers() -> list[Wallpaper]:
@@ -196,17 +228,7 @@ def all_cached_wallpapers() -> list[Wallpaper]:
     if not files:
         return []
 
-    def _sig():
-        parts = []
-        for f in files:
-            try:
-                st = os.stat(os.path.join(catalog_dir, f))
-                parts.append(f"{f}:{st.st_mtime}:{st.st_size}")
-            except OSError:
-                pass
-        return "|".join(parts)
-
-    key = _sig()
+    key = _catalog_signature(catalog_dir, files)
     if key == _all_cached_wallpapers_key and _all_cached_wallpapers is not None:
         return list(_all_cached_wallpapers)
 
@@ -232,19 +254,36 @@ def all_cached_wallpapers() -> list[Wallpaper]:
 _TENDIE_STEM_SUFFIX_RE = re.compile(r"_[0-9a-f]{8}$", re.IGNORECASE)
 
 
+def _wallpaper_name_index() -> dict[str, tuple[int, Wallpaper]]:
+    global _name_index, _name_index_key
+    # Refresh the cache if the catalog moved on, then index it directly (the
+    # public accessor copies its list, which a per-row lookup must not pay).
+    all_cached_wallpapers()
+    if _name_index is not None and _name_index_key == _all_cached_wallpapers_key:
+        return _name_index
+    index: dict[str, tuple[int, Wallpaper]] = {}
+    for position, wp in enumerate(_all_cached_wallpapers or ()):
+        index.setdefault(wp.name.strip().casefold(), (position, wp))
+    _name_index = index
+    _name_index_key = _all_cached_wallpapers_key
+    return index
+
+
 def find_wallpaper_by_name(file_name: str):
     """Match a ``.tendies`` file name against the cached wallpapers.
 
     The downloader saves imported tendies as ``<Name>_<8hex>.tendies``, so
     the trailing suffix is stripped before comparing. Returns the first
-    ``Wallpaper`` whose name matches (case-insensitive) or ``None``.
+    ``Wallpaper`` (in catalog order) whose name matches case-insensitively,
+    or ``None``.
     """
     stem = file_name[:-len(".tendies")] if file_name.lower().endswith(".tendies") else file_name
     candidates = {stem.strip().casefold()}
     stripped = _TENDIE_STEM_SUFFIX_RE.sub("", stem).strip().casefold()
     if stripped:
         candidates.add(stripped)
-    for wp in all_cached_wallpapers():
-        if wp.name.strip().casefold() in candidates:
-            return wp
-    return None
+    index = _wallpaper_name_index()
+    matches = [index[candidate] for candidate in candidates if candidate in index]
+    if not matches:
+        return None
+    return min(matches, key=lambda entry: entry[0])[1]

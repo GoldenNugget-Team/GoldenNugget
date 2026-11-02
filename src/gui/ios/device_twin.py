@@ -166,7 +166,7 @@ def build_state(tweaks_data, version="", model="", build="", wallpaper=None) -> 
 def current_wallpaper() -> Optional[str]:
     """Preview image of the first queued PosterBoard wallpaper, if it can be made."""
     try:
-        from src.controllers.tendie_preview import extract_tendie_preview
+        from src.gui.preview.tendie_preview import extract_tendie_preview
         from src.tweaks.tweaks import tweaks, TweakID
         board = tweaks.get(TweakID.PosterBoard)
         for item in getattr(board, "tendies", [])[:1]:

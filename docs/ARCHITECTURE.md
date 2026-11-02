@@ -86,6 +86,82 @@ that directory, so the `_rust.pyd` import resolves. If the DLL cannot be found
 while the installed cryptography needs it, the build fails loudly instead of
 shipping a broken release.
 
+## Backend / GUI boundary — the backend is Qt-free
+
+Everything outside `src/gui/` and `src/qt/` (plus `main_app.py`) runs with **no
+PySide6 at all**. `src/controllers`, `src/devicemanagement`, `src/restore`,
+`src/tweaks`, `src/utils`, `src/cli` and `src/exceptions` may not import Qt,
+directly or through a helper — the CLI, the backup/restore engine and the tweak
+compilers work on a machine where Qt is not installed. `tools/test_backend_qt_free.py`
+imports every backend module in a subprocess with `PySide6` / `shiboken6` /
+`PyQt*` blocked and fails on any hit.
+
+The pieces that used to be Qt calls have replacements in `src/utils/`:
+
+| Backend need | Old call | Qt-free replacement |
+|---|---|---|
+| data / cache location | `QStandardPaths.writableLocation(...)` | `src/utils/paths.py` (`app_data_dir`, `cache_dir`, `legacy_*_dirs`, `ensure_dir`) — the `gnugget` folder per platform |
+| preferences | `QSettings("GoldenNugget", app)` | `src/utils/settings.py` → `Settings(app)` (`src/controllers/settings.py` re-exports it) |
+| translations | `QCoreApplication.translate` / `QT_TRANSLATE_NOOP` | `src/utils/i18n.py` — same names, source string returned when no translator is installed |
+| single-instance lock | `QLockFile` | `src/utils/file_lock.py` (`FileLock`) |
+| change notification | `QObject` + `Signal` | `src/utils/observer.py` (`Signal`) |
+| colour math | `QColor` | `src/utils/color.py` (`RgbColor`) |
+| alert severity | `QMessageBox.Icon` | `src/utils/alerts.py` (`AlertIcon`; the GUI maps both) |
+
+Rules that follow from this:
+
+- **The i18n seam is literal.** `pyside6-lupdate` only sees
+  `QCoreApplication.translate("ctx", "text")` and `QT_TRANSLATE_NOOP(...)` call
+  shapes, so backend modules keep those names while importing them from
+  `src.utils.i18n`. The GUI calls `i18n.install_translate(Qt.translate)` at
+  startup; if Qt is merely *loaded* in the process (GUI, tests) its translator
+  is used automatically, so nothing regresses.
+- **The settings store is JSON, and legacy data migrates read-only.**
+  `Settings(app)` writes `<app data>/preferences/<org>/<app>.json`
+  (`GOLDENNUGGET_PREFERENCES_DIR` relocates it for the test runner). On first
+  use it reads the historical QSettings data — macOS CFPreferences
+  `~/Library/Preferences/com.<org>.<app>.plist` (keys stored with `.` are turned
+  back into `/`), Linux INI under `$XDG_CONFIG_HOME`, Windows
+  `HKCU\Software\<org>\<app>` — without rewriting or deleting it, so a
+  downgrade still sees the old values. A JSON store written by a build that
+  still used the pre-rename `GoldenNugget` folder is read as well (and wins,
+  being newer), so an app that starts before the move does not begin from
+  defaults. `Settings` reads through to the legacy `Nugget` org before
+  `GoldenNugget`.
+- **User data lives in `gnugget`, and moves there once.** `src/utils/paths.py`
+  owns the locations: `~/Library/Application Support/gnugget` (macOS),
+  `%APPDATA%/gnugget` (Windows), `$XDG_DATA_HOME/gnugget` (Linux/BSD), with the
+  cache under the matching cache root. Everything older (`GoldenNugget`,
+  `GoldenNugget Liquid UI`, the loose `PosterBoard`/`Backups`/`StatusBar`
+  folders and the nested `GoldenNugget/GoldenNugget/<tree>` layout those builds
+  produced) is listed by `legacy_app_data_dirs()` / `legacy_cache_dirs()` /
+  `legacy_generic_dirs()` and relocated by `src/utils/user_data_migration.py`,
+  which `src/gui/dialogs/data_migration.py` drives from `main_app.py` at startup
+  (before any settings read) behind an installer-style window: black-and-white
+  icon, progress bar, colour icon, Migrate button. The move is a `shutil.move`
+  per top-level entry (instant on the same volume, so the multi-GB backup cache
+  is free), never overwrites an existing entry, and remembers a dismissal in
+  `<app data>/.migration_declined`; Settings → Backup → "Move User Data" opens
+  it again. `GOLDENNUGGET_NO_DATA_MIGRATION=1` skips it.
+- **No dialogs in the backend.** User-facing questions are *ports*: the
+  PosterBoard import prompts (`src/tweaks/posterboard/posterboard_tweak.py`)
+  and the HotLoad "flagged tweak" warning are injected by the GUI
+  (`src/gui/dialogs/posterboard_prompts.py`, `src/gui/dialogs/hotload_warning.py`)
+  and `main_app.py` wires them at startup.
+- **Presentation moved out instead of being rewritten.** The CAML/tendie
+  preview renderer is `src/gui/preview/` (`ca/`, `tendie_preview.py`); template
+  option *models* stay in `src/tweaks/posterboard/template_options/` while the
+  widgets are `src/gui/template_option_editors.py`; the language switching
+  (`src/gui/translator.py`, `src/gui/live_translation.py`) is GUI-only.
+- **Crash handling is split.** `src/exceptions/crash_handler.py` classifies and
+  formats the report, installs `sys.excepthook`, the faulthandler dump and the
+  startup banner, and hands presentation to a pluggable *presenter*.
+  `src/gui/crash_ui.py` provides the dialog, the `CrashHandlerApp` notify guard
+  and registers itself as that presenter. Without a presenter (CLI, very early
+  startup) errors print to stderr.
+- The CLI never creates a `QApplication`; `src/cli/common.py::bootstrap()` only
+  builds the settings store.
+
 ## Global state — one real singleton, two process singletons
 
 | Object | File | Purpose |
@@ -398,7 +474,7 @@ was split out to `inject.py` (blob builders + `inject_file_into_backup`) and
 the `ProtectiveBackupCache` to `protective_cache.py` (both re-exported from
 `protective.py`):
 - `ProtectiveBackupCache` — per-device master copy in the persistent app-data
-  store (`<AppData>/GoldenNugget/backup_cache/master/<udid>`). The master keeps
+  store (`<app data>/backup_cache/master/<udid>`). The master keeps
   a FULL Manifest.db (rows for drained payloads stay) so mobilebackup2 can run
   true incremental refreshes; invalidated by UDID/iOS-version change or by the
   encryption state flipping. Usability is decided by `_usable_manifest()`: an
@@ -419,7 +495,7 @@ the `ProtectiveBackupCache` to `protective_cache.py` (both re-exported from
   single source of truth for `cache_base()` / `protective_base()` /
   `posterboard_dir()` / `legacy_backups_dir()`, env override
   `GOLDENNUGGET_BACKUP_DIR` wins over the setting; unset = historical
-  `<AppData>/GoldenNugget/...` defaults) so a small system drive can point
+  `<app data>/...` defaults) so a small system drive can point
   everything at another volume. During an incremental refresh the device
   probes the prior backup's `Snapshot` payload dir via `DLContentsOfDirectory`;
   `protective.py`'s `_install_device_link_contents_shim` answers a missing dir
@@ -622,9 +698,8 @@ Local transfer/inspection modules:
 
 | Module | Role |
 |---|---|
-| `settings.py` | QSettings: writes to org `GoldenNugget`, falls back to legacy `Nugget`; SIGBUS-avoiding `value()` |
+| `settings.py` | re-export of the Qt-free `src.utils.settings.Settings` store (JSON + read-only legacy migration); writes to org `GoldenNugget`, reads through to legacy `Nugget` |
 | `preset_manager.py` | export/import/apply of tweak presets (`PRESET_VERSION=2`; serializes all tweaks except PosterBoard; statusbar uses cffi base64). `export_preset(..., include=)` performs a **partial export** — filters the preset's tweaks to a given subset of `TweakID`s and marks the metadata as `partial` with the `included` list |
-| `translator.py` | language switching (`os.execl` restart), RTL fixes, `.ts/.qm` pipeline via pyside6-lupdate/lrelease |
 | `plist_handler.py` / `xml_handler.py` | plist key writes; namespace-aware XML/caml value setters matching on `nuggetId`/`id` (hardened `eval` for `nuggetOffset` equations) |
 | `video_handler.py` | ffmpeg/opencv video→CAML conversion for video wallpapers (400-frame limit) |
 | `files_handler.py` / `path_handler.py` | bundled-resource access, Windows path fixes |
@@ -649,9 +724,11 @@ Local transfer/inspection modules:
   pymobiledevice3.
 - **i18n**: registry titles use `QT_TRANSLATE_NOOP("Nugget", …)` at definition
   time and are evaluated with `QCoreApplication.translate("Nugget", …)` at
-  render time; other UI strings translate inline. Catalogs are crowdsourced in
-  the gNugget-i18n submodule and synced by CI (note: the `i18n/` submodule may
-  be unchecked out locally).
+  render time; other UI strings translate inline. Backend modules import those
+  two names from `src.utils.i18n` (same call shapes, so lupdate still extracts
+  them) — the Qt translator is installed by the GUI. Catalogs are crowdsourced
+  in the gNugget-i18n submodule and synced by CI (note: the `i18n/` submodule
+  may be unchecked out locally).
 - **Kill switches / env**: `GOLDENNUGGET_NO_BACKUP_CACHE`,
   `GOLDENNUGGET_SKIP_PB_BACKUP`, `GOLDENNUGGET_MIN_FREE_GB`,
   `GOLDENNUGGET_CACHE_REFRESH_SECS`, `GOLDENNUGGET_BACKUP_STALL_SECS`,

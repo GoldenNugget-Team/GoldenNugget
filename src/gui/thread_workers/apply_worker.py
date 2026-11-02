@@ -1,4 +1,4 @@
-from PySide6.QtCore import QCoreApplication, Signal, QThread, QSettings
+from PySide6.QtCore import QCoreApplication, Signal, QThread
 from PySide6.QtWidgets import QMessageBox
 from typing import Optional
 # Module-level on purpose: the async workers below (``RestoreCacheThread.
@@ -13,7 +13,7 @@ import threading
 
 # Qt-free shared type (kept here for backwards-compatible import paths forwards
 # to the same class the backend uses).
-from src.utils.alerts import ApplyAlertMessage
+from src.utils.alerts import AlertIcon, ApplyAlertMessage
 from src.exceptions.nugget_exception import NuggetException
 from src.restore.find_my_wait import FindMyWaitControl, ApplyCancelledError, current_find_my_wait
 from src.gui.thread_workers.gc_guard import worker_gc_guard
@@ -62,7 +62,7 @@ class ApplyThread(QThread):
     # would corrupt the device state.
     _PROMPT_TIMEOUT_SEC = 10 * 60
 
-    def __init__(self, manager, settings: QSettings, reset_pages=None):
+    def __init__(self, manager, settings, reset_pages=None):
         super().__init__()
         self.manager = manager
         self.find_my_wait = FindMyWaitControl()
@@ -181,12 +181,12 @@ class ApplyThread(QThread):
             self.progress.emit(txt)
 
     def alert_window(self, msg: ApplyAlertMessage):
-        if (msg is not None and msg.icon == QMessageBox.Information
+        if (msg is not None and msg.icon in (QMessageBox.Information, AlertIcon.INFORMATION)
                 and msg.title == QCoreApplication.tr("Success!")):
             self._log.info("completed: %s", msg.txt)
             return
         if msg is not None:
-            if msg.icon in (None, QMessageBox.Critical) or msg.exc_value is not None:
+            if msg.icon in (None, QMessageBox.Critical, AlertIcon.CRITICAL) or msg.exc_value is not None:
                 self._error_msg = msg.txt
                 self.error_alert_sent = True
             self._log.info("alert: %s | %s", getattr(msg, "title", ""), getattr(msg, "txt", ""))

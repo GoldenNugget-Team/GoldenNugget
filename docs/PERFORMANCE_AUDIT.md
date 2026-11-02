@@ -154,7 +154,7 @@ Callback завершения загрузки делает `bytes(reply.readAll
 ### 7. P1 — открытие tendie читает все assets в память синхронно
 
 Источник: [tendie_preview_dialog.py:185](/Users/awesomenull/Projects/GoldenNugget/src/gui/dialogs/tendie_preview_dialog.py:185),
-[tendie.py:164](/Users/awesomenull/Projects/GoldenNugget/src/controllers/ca/tendie.py:164).
+[tendie.py:164](/Users/awesomenull/Projects/GoldenNugget/src/gui/preview/ca/tendie.py:164).
 
 Конструктор превью вызывает `_load`, а `load_tendie` читает каждый asset из ZIP
 в `doc.assets`, включая ещё не показанные кадры. Затем запускается подготовка
@@ -169,8 +169,8 @@ Callback завершения загрузки делает `bytes(reply.readAll
 
 ### 8. P1 — HSL-композитинг кодирует и декодирует PNG при рендере
 
-Источник: [render.py:506](/Users/awesomenull/Projects/GoldenNugget/src/controllers/ca/render.py:506),
-[render.py:730](/Users/awesomenull/Projects/GoldenNugget/src/controllers/ca/render.py:730),
+Источник: [render.py:506](/Users/awesomenull/Projects/GoldenNugget/src/gui/preview/ca/render.py:506),
+[render.py:730](/Users/awesomenull/Projects/GoldenNugget/src/gui/preview/ca/render.py:730),
 [phone_frame.py:106](/Users/awesomenull/Projects/GoldenNugget/awesomeui/phone_frame.py:106).
 
 Для соответствующих blend modes путь `QImage → PNG → PIL → NumPy → QImage`
@@ -186,8 +186,8 @@ Callback завершения загрузки делает `bytes(reply.readAll
 
 ### 9. P1 — переходы состояний копируют дерево и многократно ищут ID
 
-Источник: [render.py:129](/Users/awesomenull/Projects/GoldenNugget/src/controllers/ca/render.py:129),
-[render.py:184](/Users/awesomenull/Projects/GoldenNugget/src/controllers/ca/render.py:184).
+Источник: [render.py:129](/Users/awesomenull/Projects/GoldenNugget/src/gui/preview/ca/render.py:129),
+[render.py:184](/Users/awesomenull/Projects/GoldenNugget/src/gui/preview/ca/render.py:184).
 
 `interpolated_state_root` каждый раз вызывает `apply_state_overrides`.
 Тот делает `deepcopy` всего дерева и рекурсивный поиск по дереву для каждого
@@ -317,7 +317,7 @@ MOV читается в `video_contents`, записывается отдель�
 
 ### 18. P2 — выбор home-state дважды рендерит исходное разрешение
 
-Источник: [render.py:271](/Users/awesomenull/Projects/GoldenNugget/src/controllers/ca/render.py:271),
+Источник: [render.py:271](/Users/awesomenull/Projects/GoldenNugget/src/gui/preview/ca/render.py:271),
 [tendie_preview_dialog.py:158](/Users/awesomenull/Projects/GoldenNugget/src/gui/dialogs/tendie_preview_dialog.py:158).
 
 `home_state` создаёт два renderer без переданного preview-size, рендерит locked
@@ -329,8 +329,8 @@ MOV читается в `video_contents`, записывается отдель�
 
 ### 19. P2 — фильтры заново создают массивы и offscreen-картинки
 
-Источник: [render.py:350](/Users/awesomenull/Projects/GoldenNugget/src/controllers/ca/render.py:350),
-[render.py:711](/Users/awesomenull/Projects/GoldenNugget/src/controllers/ca/render.py:711).
+Источник: [render.py:350](/Users/awesomenull/Projects/GoldenNugget/src/gui/preview/ca/render.py:350),
+[render.py:711](/Users/awesomenull/Projects/GoldenNugget/src/gui/preview/ca/render.py:711).
 
 Offscreen QImage выделяется для слоя заново. Несколько активных фильтров
 последовательно делают `arr.copy`, PIL conversion и новые массивы. Нагрузка

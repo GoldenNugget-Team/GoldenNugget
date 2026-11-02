@@ -20,7 +20,7 @@ import os
 import sys
 from datetime import datetime
 
-from PySide6.QtCore import QStandardPaths
+from src.utils.paths import app_data_dir
 
 from logging.handlers import RotatingFileHandler
 
@@ -34,7 +34,7 @@ _BACKUP_COUNT = 6
 
 
 def get_log_dir() -> str:
-    app_data_path = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
+    app_data_path = str(app_data_dir())
     log_dir = os.path.join(app_data_path, "Logs")
     try:
         os.makedirs(log_dir, exist_ok=True)

@@ -54,7 +54,7 @@ from pymobiledevice3.services.mobilebackup2 import (
     Mobilebackup2Service, NP_LOCAL_AUTH_PRESENTED, NP_LOCAL_AUTH_DISMISSED,
 )
 
-from PySide6.QtCore import QCoreApplication
+from src.utils.i18n import QCoreApplication
 
 from src.exceptions.nugget_exception import NuggetException, BackupStorageError, BackupDiskSpaceError
 from src.restore.preference_scope import is_preference_file, is_preference_parent, is_preference_upload

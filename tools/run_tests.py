@@ -24,6 +24,7 @@ def run_suite(script, log_path, timeout):
             "XDG_DATA_HOME": str(sandbox / "data"),
             "XDG_CACHE_HOME": str(sandbox / "cache"),
             "GOLDENNUGGET_BACKUP_DIR": str(sandbox / "backups"),
+            "GOLDENNUGGET_PREFERENCES_DIR": str(sandbox / "preferences"),
             "GOLDENNUGGET_LOG_FILE": str(sandbox / "session.log"),
         })
         env["PYTHONPATH"] = os.pathsep.join(filter(None, (

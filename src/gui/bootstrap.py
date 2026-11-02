@@ -28,12 +28,12 @@ def preload_backend():
 
     def _preload_device_manager():
         try:
-            # Import ONLY the pure-Python pymobiledevice3 backend here. The
-            # device-manager module also imports PySide6.QtWidgets at the top,
-            # and a Qt import on a non-main thread would leak QThreadStorage
-            # entries that Qt complains about at exit. The main-thread import
-            # later still has to load that Qt surface, but the pmd3 services
-            # (the single most expensive part) are already in sys.modules.
+            # Import ONLY the pure-Python pymobiledevice3 backend here. A Qt
+            # import on a non-main thread would leak QThreadStorage entries
+            # that Qt complains about at exit, so nothing here may pull in
+            # widgets — ``src.devicemanagement`` is Qt-free by rule (see
+            # tools/test_backend_qt_free.py), and the pmd3 services (the
+            # single most expensive part) are already in sys.modules.
             from pymobiledevice3 import usbmux, ca  # noqa: F401
             from pymobiledevice3.lockdown import create_using_usbmux  # noqa: F401
             from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service  # noqa: F401

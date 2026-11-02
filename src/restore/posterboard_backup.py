@@ -11,12 +11,13 @@ Kept GUI-independent so the backend apply path
 """
 
 import errno
+import logging
 import os
 import sqlite3
 import tempfile
 from contextlib import contextmanager
 
-from PySide6.QtCore import QCoreApplication
+from src.utils.i18n import QCoreApplication
 from pymobiledevice3.exceptions import NotEnoughDiskSpaceError
 
 from src.devicemanagement.session import lockdown_session
@@ -25,11 +26,10 @@ from src.restore.protective import (
 )
 from src.restore.storage import posterboard_dir as _posterboard_dir
 from src.exceptions.nugget_exception import BackupDiskSpaceError, NuggetException, PosterBoardBackupEncryptionError
-from src.gui.logger import get_logger
 from src.devicemanagement.constants import is_supported_by_fork
 from src.utils.async_retry import async_retry
 
-_log = get_logger('posterboard_backup')
+_log = logging.getLogger("GoldenNugget.posterboard_backup")
 
 
 async def _require_readable_backup(backup_client):

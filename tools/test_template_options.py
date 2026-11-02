@@ -12,6 +12,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QComboBox, QVBoxLayout, QWidget
+from src.gui.template_option_editors import create_interface
 from src.tweaks.posterboard.template_options.picker_option import PickerOption
 from src.tweaks.posterboard.template_options.replace_option import ReplaceOption
 from src.tweaks.posterboard.template_options.set_option import SetOption
@@ -29,7 +30,7 @@ class TemplateControls(unittest.TestCase):
     def build(self, option):
         widget = QWidget()
         layout = QVBoxLayout(widget)
-        option.create_interface(widget, layout)
+        create_interface(option, widget, layout)
         self.assertIs(widget.layout(), layout)
         row = layout.itemAt(0).widget()
         self.assertIsNotNone(row.layout())

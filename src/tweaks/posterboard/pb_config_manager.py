@@ -5,7 +5,8 @@ import json
 import time
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from PySide6.QtCore import QCoreApplication, QStandardPaths
+from src.utils.i18n import QCoreApplication
+from src.utils.paths import app_data_dir
 from typing import Optional
 
 from src.exceptions.nugget_exception import NuggetException

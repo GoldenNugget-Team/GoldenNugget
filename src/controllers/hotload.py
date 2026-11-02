@@ -17,7 +17,8 @@ from typing import Optional
 
 import urllib.request
 
-from PySide6.QtCore import QCoreApplication, QStandardPaths
+from src.utils.i18n import QCoreApplication
+from src.utils.paths import app_data_dir, brand_dir
 
 from src.version import App_Version as _APP_VERSION
 from src.tweaks.registry import SPECS_BY_SECTION, SECTION_FEATURES
@@ -76,9 +77,7 @@ FEATURE_TWEAKS.update({
 
 
 def _settings_dir() -> str:
-    base = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
-    if not base.endswith("GoldenNugget") and not base.endswith("GoldenNugget/"):
-        base = os.path.join(base, "GoldenNugget")
+    base = str(brand_dir(app_data_dir()))
     os.makedirs(base, exist_ok=True)
     return base
 
@@ -383,31 +382,3 @@ class HotLoad:
             return False
         model = str(device_model)
         return any(model.startswith(p) for p in only)
-
-
-def confirm_flagged(rule: dict, parent=None) -> bool:
-    """Show the warning for a flagged tweak. Returns True (Continue Anyway)
-    to allow, or False (Cancel) to block."""
-    from PySide6.QtWidgets import QMessageBox
-
-    tweak = rule.get("tweak", "this tweak")
-    reason = rule.get("reason")
-    if reason:
-        reason_txt = str(reason)
-    else:
-        reason_txt = QCoreApplication.translate(
-            "Nugget", "This feature is currently flagged as dangerous or broken.")
-    text = (QCoreApplication.translate(
-                "Nugget", "GoldenNugget safety rules have flagged \"{0}\" as currently dangerous or broken.").format(tweak)
-            + f"\n\n{reason_txt}\n\n"
-            + QCoreApplication.translate(
-                "Nugget", "It is recommended not to enable it. Do you still want to enable it?"))
-    box = QMessageBox(parent)
-    box.setIcon(QMessageBox.Icon.Warning)
-    box.setWindowTitle(QCoreApplication.translate("Nugget", "Disabled Feature Warning"))
-    box.setText(text)
-    continue_btn = box.addButton(QCoreApplication.translate("Nugget", "Continue Anyway"), QMessageBox.ButtonRole.AcceptRole)
-    cancel_btn = box.addButton(QCoreApplication.translate("Nugget", "Cancel"), QMessageBox.ButtonRole.RejectRole)
-    box.setDefaultButton(cancel_btn)
-    box.exec()
-    return box.clickedButton() is continue_btn

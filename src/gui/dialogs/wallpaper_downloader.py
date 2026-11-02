@@ -10,6 +10,7 @@ through ``QNetworkAccessManager`` so the UI stays responsive and there are
 no background ``QThread`` lifetime issues.
 """
 
+import collections
 import hashlib
 from src.gui.liquid.choice_editor import GlassComboBox as QComboBox
 import os
@@ -275,7 +276,9 @@ class WallpaperDownloaderDialog(QDialog):
         self._catalog_failed = {}
         self._fetch_gen = 0
         self._preview_replies = []
-        self._preview_queue = []
+        # deque: the queue is drained from the front while the user scrolls a
+        # list that can hold hundreds of cards; list.pop(0) was O(n) per item.
+        self._preview_queue = collections.deque()
         self._download_reply = None
         self._download_wallpaper = None
         self._busy = False
@@ -516,7 +519,7 @@ class WallpaperDownloaderDialog(QDialog):
         for reply, card, path in self._preview_replies:
             reply.abort()
         self._preview_replies = []
-        self._preview_queue = []
+        self._preview_queue = collections.deque()
         for card in self._cards.values():
             self.grid.removeWidget(card)
             card.deleteLater()
@@ -706,7 +709,7 @@ class WallpaperDownloaderDialog(QDialog):
     def _kick_preview_queue(self):
         """Start queued preview downloads as soon as a slot frees up."""
         while self._preview_queue and len(self._preview_replies) < PREVIEW_CONCURRENCY:
-            card = self._preview_queue.pop(0)
+            card = self._preview_queue.popleft()
             if not self._card_is_valid(card):
                 continue
             if card.preview_state != "queued":
@@ -722,7 +725,7 @@ class WallpaperDownloaderDialog(QDialog):
                 lambda r=reply, c=card, p=path: self._on_preview_reply(r, c, p))
 
     def _on_preview_reply(self, reply, card, path):
-        if reply in [r for r, _, _ in self._preview_replies]:
+        if any(r is reply for r, _, _ in self._preview_replies):
             self._preview_replies = [
                 (r, c, p) for (r, c, p) in self._preview_replies if r is not reply]
         data = bytes(reply.readAll())

@@ -11,6 +11,23 @@ from .motion import animate
 from .reveal import DevicePeek, PageReveal
 
 
+_DEVICE_NAMES: dict | None = None
+
+
+def _device_display_names() -> dict:
+    """``product_type -> display_name`` for every known iPhone/iPad.
+
+    ``LiquidExperience.refresh`` runs on a 500 ms timer and used to import the
+    model table and scan it linearly on every tick just to label the device
+    button; the table never changes during a session.
+    """
+    global _DEVICE_NAMES
+    if _DEVICE_NAMES is None:
+        from pymobiledevice3.irecv_devices import IRECV_DEVICES
+        _DEVICE_NAMES = {item.product_type: item.display_name for item in IRECV_DEVICES}
+    return _DEVICE_NAMES
+
+
 class UpdateBorder(GlassPanel):
     def __init__(self,window):
         super().__init__(window)
@@ -105,7 +122,7 @@ class LiquidExperience(QObject):
         home.apply_btn.setFocusPolicy(Qt.TabFocus)
         home.apply_btn.clicked.disconnect(home.open_apply_classic)
         home.apply_btn.clicked.connect(self.restore.activate)
-        self.window.ios_apply.set_status_only(True)
+        self.window.call_on_page("ios_apply", "set_status_only", True)
         self.restore_button=LiquidDangerButton('Restore Changes')
         self.restore_button.setProperty('homeAction',True)
         self.restore_button.setProperty('silentHoverAudio',True)
@@ -136,20 +153,10 @@ class LiquidExperience(QObject):
 
     def _style(self):
         c=ColorThemeManager.instance().colors
-        if not hasattr(self,"_base_style"):
-            self._base_style=self.window.styleSheet()
-        self.window.setStyleSheet(self._base_style+f'''
-            QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {{
-                background:{c.bg_secondary}; border:1px solid {c.border};
-                border-radius:12px; padding:9px 12px; selection-background-color:{c.accent};
-            }}
-            QLineEdit:focus, QComboBox:focus {{ border:1px solid {c.accent}; }}
-            QScrollBar:vertical {{ width:7px; background:transparent; margin:5px 0; }}
-            QScrollBar::handle:vertical {{ background:{c.border}; border-radius:3px; min-height:30px; }}
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height:0; }}
-            QSlider::groove:horizontal {{ height:5px; background:{c.border}; border-radius:2px; }}
-            QSlider::handle:horizontal {{ width:17px; margin:-6px 0; border-radius:8px; background:{c.accent}; }}
-        ''')
+        # The window-wide overlay (inputs, scrollbars, sliders) is composed into
+        # the single stylesheet MainWindow applies before the pages exist, so it
+        # is NOT re-applied here: setStyleSheet on the window re-polishes every
+        # descendant (~0.3 s at startup).
         nav=self.window.ios_nav
         nav.setStyleSheet(f'background:{c.bg_secondary};border-radius:20px;')
         for button in getattr(nav,'_category_buttons',[]):
@@ -322,9 +329,12 @@ class LiquidExperience(QObject):
         dm=self.window.device_manager
         uid=dm.get_current_device_udid() or ''
         model=dm.get_current_device_model() if uid else ''
-        from pymobiledevice3.irecv_devices import IRECV_DEVICES
-        name=next((item.display_name for item in IRECV_DEVICES if item.product_type==model),model)
-        self.device_button.setText(name or ('Device' if uid else 'Connect device'))
+        # Cached table: this used to import the model list and scan it on every
+        # 500 ms tick.
+        name=_device_display_names().get(model,model)
+        label=name or ('Device' if uid else 'Connect device')
+        if self.device_button.text()!=label:
+            self.device_button.setText(label)
         self.position_device()
         self.device.refresh()
         self.restore.refresh()

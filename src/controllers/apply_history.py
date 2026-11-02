@@ -4,13 +4,14 @@ import json
 import os
 import tempfile
 
-from PySide6.QtCore import QStandardPaths, QCoreApplication
+from src.utils.i18n import QCoreApplication
+from src.utils.paths import app_data_dir
 
 MAX_ENTRIES = 30
 
 
 def _path():
-    root = os.path.join(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation), "GoldenNugget", "History")
+    root = os.path.join(str(app_data_dir()), "History")
     os.makedirs(root, exist_ok=True)
     return os.path.join(root, "operations.json")
 

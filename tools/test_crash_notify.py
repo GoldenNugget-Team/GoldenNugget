@@ -13,8 +13,9 @@ from PySide6.QtCore import QEvent, QObject
 from PySide6.QtWidgets import QApplication, QWidget
 
 from src.exceptions import crash_handler
+from src.gui import crash_ui
 
-APP = QApplication.instance() or crash_handler.CrashHandlerApp([])
+APP = QApplication.instance() or crash_ui.CrashHandlerApp([])
 DEAD = 'Internal C++ object (PySide6.QtWidgets.QVBoxLayout) already deleted.'
 
 
@@ -40,15 +41,18 @@ def frameless_error(message):
 
 class Notify(unittest.TestCase):
     def setUp(self):
-        if not isinstance(APP, crash_handler.CrashHandlerApp):
+        if not isinstance(APP, crash_ui.CrashHandlerApp):
             self.skipTest('another QApplication is already running')
+        # main_app installs the guard right before app.exec(); tests call the
+        # event routing directly, so arm it here.
+        crash_ui.install_notify_guard(APP)
 
     def send(self, error):
         target = QWidget()
         event_filter = RaisingFilter(error)
         APP.installEventFilter(event_filter)
         try:
-            with patch.object(crash_handler, '_handle_crash') as handle:
+            with patch.object(crash_ui, '_handle_crash') as handle:
                 APP.notify(target, QEvent(QEvent.Type.User))
         finally:
             APP.removeEventFilter(event_filter)

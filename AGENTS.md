@@ -4,6 +4,174 @@
 
 This document describes the background threads, async backup/restore operations, and error handling used in GoldenNugget.
 
+## Backend is Qt-free (hard rule, `src/utils/`)
+
+Everything outside `src/gui/`, `src/qt/` and `main_app.py` — `src/controllers`,
+`src/devicemanagement`, `src/restore`, `src/tweaks`, `src/utils`, `src/cli`,
+`src/exceptions` — must import **no Qt** (`PySide6`, `shiboken6`, `PyQt*`), not
+even lazily at module import. The CLI, the backup/restore engine and the tweak
+compilers have to work on a machine without Qt. Guard:
+`python tools/test_backend_qt_free.py` imports every backend module in a
+subprocess with Qt blocked; any hit fails the test.
+
+Replacements (all under `src/utils/`, all Qt-free):
+
+- `paths.py` — `app_data_dir()` / `cache_dir()` / `generic_*_dir()` /
+  `ensure_dir()`. The app owns ONE folder per platform, named `gnugget`:
+  `~/Library/Application Support/gnugget` on macOS, `%APPDATA%/gnugget` on
+  Windows, `$XDG_DATA_HOME/gnugget` elsewhere (the cache follows the same rule
+  under `~/Library/Caches`, `%LOCALAPPDATA%`, `$XDG_CACHE_HOME`). The module is
+  the single source of truth for every path — never rebuild one by hand.
+  `brand_dir(root)` returns *root* unchanged when it already names the app's
+  folder (including the pre-rename `GoldenNugget` names), so a backup volume
+  chosen before the rename keeps its existing tree.
+  `legacy_app_data_dirs()` / `legacy_cache_dirs()` / `legacy_generic_dirs()` are
+  the historical locations, used by the migration and by the recovery tools —
+  not by normal reads. `tools/test_storage.py` pins all of it.
+- `settings.py` — `Settings(app)` store (see below). `src/controllers/settings.py`
+  is a thin re-export, so `from src.controllers.settings import Settings` keeps
+  working.
+- `i18n.py` — `QCoreApplication` stand-in with `translate()`/`tr()` plus
+  `QT_TRANSLATE_NOOP`. **Keep those exact call shapes**: `pyside6-lupdate`
+  extracts strings by name, not by origin, so backend modules import them from
+  here instead of `PySide6.QtCore`. The GUI calls
+  `i18n.install_translate(Qt.translate)` in `main_app.py`; when Qt is merely
+  loaded in the process (GUI, tests) its translator is used automatically.
+- `file_lock.py` (`FileLock` ← `QLockFile`), `observer.py` (`Signal` ←
+  `QObject`/`Signal`), `color.py` (`RgbColor` ← `QColor`),
+  `alerts.py` (`AlertIcon` ← `QMessageBox.Icon`; the GUI maps both in
+  `main_window_mixins._qt_alert_icon`).
+- `user_data_migration.py` — the one-time move of the pre-rename folder (see
+  "User data folder" below).
+
+**Settings store + migration.** `Settings(app)` writes
+`<app data>/preferences/<org>/<app>.json` (`GOLDENNUGGET_PREFERENCES_DIR`
+relocates it; `tools/run_tests.py` points it at the per-suite sandbox). On first
+use it reads the legacy QSettings data **read-only** — macOS CFPreferences
+`~/Library/Preferences/com.<org>.<app>.plist` (keys stored with `.` are mapped
+back to `/`), Linux INI in `$XDG_CONFIG_HOME`, Windows
+`HKCU\Software\<org>\<app>` — and never rewrites or deletes it, so downgrading
+keeps the old values. A JSON store written by a build that still used the
+pre-rename `GoldenNugget` folder is read too (and wins, being newer), so an
+app that starts before the move does not begin from defaults; an explicit
+`GOLDENNUGGET_PREFERENCES_DIR` disables that history. **A read never writes** —
+the merged view is persisted by the first `setValue`, which is what keeps a
+store opened before the migration (the theme manager) from creating the new
+JSON and making the move skip the old one. `Settings` reads through
+to the legacy `Nugget` org before `GoldenNugget`; `value(key, default,
+type=bool|str|int|float)` keeps QSettings' coercion rules. Do not reintroduce
+`QSettings` in backend code, and do not assume `isinstance(x, QSettings)`
+anywhere (the GUI's accent/theme managers use the same `Settings` store now).
+
+**User data folder (`gnugget`) + the migration window.** The app used to keep
+everything under `GoldenNugget`; it is `gnugget` now (both brand names are
+accepted by `brand_dir`, the old ones only as *sources*). Existing installs are
+moved once, at startup, by `src/gui/dialogs/data_migration.py`:
+`maybe_prompt_migration()` runs in `main_app.py` right after
+`configure_appearance` and **before** `Settings("settings")` is constructed, so
+nothing has written to the new folder yet. The window is deliberately shaped
+like a .dmg installer (black-and-white icon left, progress bar in the middle,
+colour icon right, Migrate button under the bar); the move itself is Qt-free
+`src/utils/user_data_migration.py`:
+- `plan_migration()` is read-only — it lists the top-level entries, their file
+  count and size, so the window can show the cost before the user commits.
+- `run_migration()` `shutil.move`s every entry (a same-volume move is an
+  instant rename, so the multi-GB backup cache costs nothing extra). It never
+  overwrites: an entry that already exists in the new folder is skipped and
+  reported ("the user's current file wins"). Duplicate destinations across the
+  two legacy trees are skipped the same way, the nested one winning.
+- The old *doubled* layout (`GoldenNugget/GoldenNugget/backup_cache`,
+  `History`, `LastTheme`, `IconThemes`) is laid **over the top** of the new root
+  instead of landing in a `gnugget/GoldenNugget/` subfolder.
+- The loose generic folders (`Application Support/PosterBoard`, `Backups`,
+  `StatusBar`) move into `gnugget/<name>`; the cache folders (`Caches/
+  GoldenNugget`) move to `Caches/gnugget`.
+- Emptied legacy roots are removed afterwards; anything that was skipped or
+  failed keeps its folder alive. A failed entry is reported per file and left
+  in place.
+- Dismissing the window is remembered for that exact plan in
+  `<app data>/.migration_declined` (signature = the planned
+  source→destination pairs), so it does not nag, and Settings → Backup →
+  "Move User Data" re-opens it (`migrate_now()`). A changed plan (new files in
+  the old folder) asks again. `GOLDENNUGGET_NO_DATA_MIGRATION=1` skips the
+  window entirely (headless/CI) and `--test-mode` never shows it.
+- Everything the user could still need is copied/moved, never deleted, and the
+  old `~/Library/Preferences/com.goldennugget*.plist` files stay untouched.
+  Offline suites: `tools/test_user_data_migration.py`,
+  `tools/test_data_migration_dialog.py`.
+
+
+**No dialogs in the backend — use ports.** Questions are injected by the GUI:
+`src/gui/dialogs/posterboard_prompts.py` (`install()` wires the PosterBoard
+import prompts into `posterboard_tweak`) and
+`src/gui/dialogs/hotload_warning.py` (`confirm_flagged`) — `hotload.py` only
+returns the rule. Adding a backend prompt means adding a port here, never
+`from PySide6... import QMessageBox` in `src/`.
+
+**Presentation lives in the GUI.** The CAML/tendie preview renderer is
+`src/gui/preview/` (`ca/`, `tendie_preview.py`); language switching is
+`src/gui/translator.py` + `src/gui/live_translation.py`; the template-option
+*models* stay in `src/tweaks/posterboard/template_options/` while their widgets
+are `src/gui/template_option_editors.py` (`create_interface`, `bind_previews`,
+`update_preview`). Keep model logic out of the editors and widget code out of
+the models.
+
+**Crash handling is split.** `src/exceptions/crash_handler.py` owns
+classification (`_classify`), the report/issue-body builders, the startup
+banner, the faulthandler dump and `sys.excepthook`; it presents through a
+pluggable presenter (`set_presenter`) and prints to stderr when there is none
+(CLI). `src/gui/crash_ui.py` holds `CrashDialog`, `CrashHandlerApp`,
+`install_notify_guard`, the Qt message handler and `show_error_dialog`, and
+`install_crash_handler()` there installs both halves. GUI code that needs the
+dialog imports it from `src.gui.crash_ui`.
+
+**CLI is headless.** `src/cli/common.py::bootstrap()` only builds `Settings`;
+there is no `QApplication` and no offscreen-platform juggling.
+
+## Startup & Lazy Pages (src/gui/main_window.py)
+
+Startup is measured until `QApplication.exec` is entered; the window must be
+on screen as early as possible. Three rules keep it that way — each of them
+used to cost 0.3-0.5 s on its own:
+
+- **The window stylesheet is applied ONCE, before the pages exist.**
+  `QWidget.setStyleSheet` re-polishes every descendant, so a second application
+  after the tree is built walked thousands of widgets again. `_apply_global_stylesheet`
+  therefore runs right after `self.ios_pages` is created and composes the base
+  template (`t("global")`) with the liquid overlay
+  (`src/gui/liquid/overlay.py:liquid_overlay_css()` — inputs, scrollbars,
+  sliders). `LiquidExperience._style` must NOT touch the window stylesheet;
+  it only restyles the nav bar. Same reason `ios_pages.setStyleSheet(t("page_bg"))`
+  lives before the pages.
+- **Only the home page is constructed up front.** `_reserve_page(name, factory)`
+  adds a placeholder widget to `ios_pages` (keeping the numeric page indices
+  used by `_ios_page_titles`, `_nav_right_actions` and `set_ios_page` stable)
+  and records the factory in `_lazy_pages`. The first access builds the page
+  into its reserved slot:
+  - `self.ios_settings` / `getattr(window, "ios_presets", …)` etc. build on
+    access through `MainWindow.__getattr__` → `_build_lazy_page`;
+  - `set_ios_page(index)` resolves the slot through `page_at(index)`, so
+    navigation always shows the real page, never the placeholder;
+  - `built_page(name)` is the *probe* form — it returns None instead of
+    building. Use it wherever code only wants to know whether a page exists
+    (device gate, close/exit worker checks, `refresh_catalog_badge`);
+  - `call_on_page(name, method, *args)` applies a startup call to a page that
+    may not exist yet (it is replayed when the page is built) —
+    `LiquidExperience._clean_home` uses it for `ios_apply.set_status_only`.
+  - `_nav_right_actions` stores **callables**, never bound methods, or
+    registering the action would build PosterBoard/Templates/Passcode Theme.
+  - The Apply page's live busy state is re-applied when it is built
+    (`_build_lazy_page`), because `_update_device_gate` skips missing pages.
+  - `_prewarm_control_pages` (Tweaks + Daemons content) runs from a
+    1200 ms single-shot **child QTimer** so that work lands after the window
+    has painted (a bare `QTimer.singleShot` with a bound method would call into
+    a deleted window when the app is closed within that second).
+- **Nothing on the startup path may construct a page just to read a widget.**
+  The liquid workspace panel used to copy its language list from
+  `window.ios_settings.lang_drp`; it now fills the combo from
+  `available_languages` (the same table) and only delegates to the Settings
+  page when that page already exists.
+
 ## Color Theme System (src/gui/theme/)
 
 **The app has one dark palette; only the accent is a user choice.**
@@ -334,14 +502,15 @@ Main entry point for applying tweaks. Order:
    - **iOS 27+:** the sqlite normally rides the Phase 0 backup; when it could
      not be read out of it (device rejected container inclusion / encrypted
      backup), the same targeted backup runs as the fallback and stores the
-     extracted DB at `<AppData>/PosterBoard/<udid>.sqlite3`.
+     extracted DB at `<app data>/PosterBoard/<udid>.sqlite3`.
    - Both are skipped if `GOLDENNUGGET_SKIP_PB_BACKUP=1`.
 4. `_apply_tweak_pass()` — generate all tweak files, handle backup encryption, then `start_restore(prepared_backup_root=...)`
 
 ### Protective Backup Cache (src/restore/protective_cache.py)
 `ProtectiveBackupCache` keeps a per-device master copy of the protective
 backup in the persistent app-data store
-(`<AppData>/GoldenNugget/backup_cache/master/<udid>`):
+(`<app data>/backup_cache/master/<udid>`; `<app data>` is the `gnugget` folder
+from `src.utils.paths`):
 - **Storage location is configurable** — Settings → Backup →
   "Backup/Cache Location" (`backup_storage_dir` in the `Settings("settings")`
   QSettings store; env override `GOLDENNUGGET_BACKUP_DIR` for headless tools
@@ -349,12 +518,12 @@ backup in the persistent app-data store
   truth: `cache_base()` (backup_cache), `protective_base()` (live backup
   runs), `posterboard_dir()` and `legacy_backups_dir()` all derive from the
   same root so a small system drive (e.g. a 28 GB `C:`) can be relieved by
-  pointing them at e.g. `D:\GoldenNugget\`. Unset → the historical
-  `<AppData>/GoldenNugget/...` (backup_cache/protective) and
-  `<AppData>/PosterBoard|Backups` locations, byte-for-byte. The recovery
-  tools (`apply_worker.py`, `restore_cache.py`) also search the legacy
-  AppData `backup_cache` as a read-only fallback when a custom location is
-  set (migration/recovery of pre-existing caches).
+  pointing them at e.g. `D:\GoldenNugget\` (the app folder is appended there
+  only if the root does not already end in a brand name, see
+  `src.utils.paths.brand_dir`). Unset → `<app data>/{backup_cache,protective,
+  PosterBoard,Backups}`. The recovery tools (`apply_worker.py`,
+  `restore_cache.py`) also search the pre-rename `GoldenNugget` trees as a
+  read-only fallback (recovery of caches that were never migrated).
 - **EXPERIMENTAL, ON BY DEFAULT** — the cache engages unless the user turns
   off "Use Fast Backup Cache (Experimental)" in Settings
   (`pref.use_backup_cache`). Cache off → the classic live
@@ -362,7 +531,7 @@ backup in the persistent app-data store
   Kill switch still hard-disables it:
   `GOLDENNUGGET_NO_BACKUP_CACHE=1`.
 - **AFC media store** — the bulk photo trees (DCIM, PhotoStreamsData) ride a
-  persistent per-device mirror at `<AppData>/GoldenNugget/backup_cache/media/<udid>`
+  persistent per-device mirror at `<app data>/backup_cache/media/<udid>`
   (`ProtectiveBackupCache.media_dir`, OUTSIDE `master_root` so working copies
   and the manifest prune never touch it), pulled over AFC by
   `backup_media_via_afc(diff=True)` — only objects that are new/changed on the
@@ -728,7 +897,7 @@ backup in the persistent app-data store
   PosterBoard container via `targeted_posterboard_database_backup` in
   `src/restore/posterboard_backup.py` — no full-device backup, nothing extra
   written to disk (mid-stream drain), result is a WAL-merged sqlite at
-  `<AppData>/PosterBoard/<udid>.sqlite3`, identical to the apply path.
+  `<app data>/PosterBoard/<udid>.sqlite3`, identical to the apply path.
 - Retry logic: 3 attempts, backoff `min(2**attempt, 15)`s (2s, 4s) for connection errors
 - Validates the extracted database before handing it to `update_database_file`
 
@@ -822,7 +991,7 @@ _apply_changes()
     |     |_ wallpapers applied? -> include PosterBoard container in the backup + extract fresh DB after
     |_ targeted_posterboard_database_backup()        [iOS 26: the delivery channel, no Phase 0]
     |     |_ only the AppDomain-com.apple.PosterBoard container; everything else drained mid-stream
-    |     |_ extract WAL-merged sqlite -> <AppData>/PosterBoard/<udid>.sqlite3
+    |     |_ extract WAL-merged sqlite -> <app data>/PosterBoard/<udid>.sqlite3
     |     |_ iOS 27+: run only when the Phase 0 backup could not yield the DB
     |_ _apply_tweak_pass(prepared_backup_root)
          |_ generate tweak files

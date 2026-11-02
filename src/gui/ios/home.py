@@ -21,6 +21,18 @@ from src.devicemanagement.storage_info import format_device_capacity
 from src.devicemanagement.passcode_support import current_passcode_theme_reason
 
 
+def _restyle(widget, sheet):
+    """``setStyleSheet`` only when the sheet actually changes.
+
+    Qt unpolishes and re-polishes the whole widget subtree on every
+    ``setStyleSheet`` call, even when the string is identical. ``_retheme``
+    re-applies dozens of them (the seven feature tiles alone repeat the same
+    two templates), and it runs on every theme notification.
+    """
+    if widget.styleSheet() != sheet:
+        widget.setStyleSheet(sheet)
+
+
 class _StorageThread(QThread):
     result = Signal(object, object, object)
     capacity_ready = Signal(object)
@@ -574,31 +586,33 @@ class IOSHomePage(QWidget):
     def _retheme(self):
         self._c = ColorThemeManager.instance().colors
         c = self._c
-        self._scroll.setStyleSheet(f"background-color: {c.bg_primary}; border: none;")
+        _restyle(self._scroll, f"background-color: {c.bg_primary}; border: none;")
         if self._logo.pixmap() is None or self._logo.pixmap().isNull():
-            self._logo.setStyleSheet(f"background-color: {c.bg_secondary}; border-radius: 14px;")
-        self._title.setStyleSheet(t("home_title"))
-        self.subtitle.setStyleSheet(t("home_subtitle"))
+            _restyle(self._logo, f"background-color: {c.bg_secondary}; border-radius: 14px;")
+        _restyle(self._title, t("home_title"))
+        _restyle(self.subtitle, t("home_subtitle"))
         self.community_links._retheme()
         self._style_control_tabs()
         self._style_device_combo()
         self._update_control_icons()
-        self.presets_title.setStyleSheet(t("home_tile_title"))
-        self.presets_lbl.setStyleSheet(t("home_tile_subtitle"))
+        _restyle(self.presets_title, t("home_tile_title"))
+        _restyle(self.presets_lbl, t("home_tile_subtitle"))
         self.presets_icon.setPixmap(theme_pixmap(":/icon/folder.svg", c.accent, 26))
         self._style_manage_presets_button()
-        self.process_status_lbl.setStyleSheet(t("process_status_green"))
+        _restyle(self.process_status_lbl, t("process_status_green"))
         self.update_status()
         # Feature tiles: recolor the icon and restyle the two labels
         for icon_lbl, icon_res, title_lbl, sub_lbl in self._tiles:
             self._paint_tile_icon(icon_lbl, icon_res)
-            title_lbl.setStyleSheet(t("home_tile_title"))
-            sub_lbl.setStyleSheet(t("home_tile_subtitle"))
-        self.device_name.setStyleSheet(f"color:{c.text_primary}; font-size:16px; font-weight:600; background:transparent;")
-        self.device_software.setStyleSheet(f"color:{c.text_secondary}; font-size:12px; background:transparent;")
-        self.device_connection.setStyleSheet(self.device_software.styleSheet())
-        self.picker_software.setStyleSheet(self.device_software.styleSheet())
-        self.picker_combo.setStyleSheet(self.device_combo.styleSheet())
+            _restyle(title_lbl, t("home_tile_title"))
+            _restyle(sub_lbl, t("home_tile_subtitle"))
+        _restyle(self.device_name,
+                 f"color:{c.text_primary}; font-size:16px; font-weight:600; background:transparent;")
+        _restyle(self.device_software,
+                 f"color:{c.text_secondary}; font-size:12px; background:transparent;")
+        _restyle(self.device_connection, self.device_software.styleSheet())
+        _restyle(self.picker_software, self.device_software.styleSheet())
+        _restyle(self.picker_combo, self.device_combo.styleSheet())
         self._paint_catalog_row()
         self._paint_mobile_row()
         self.update_passcode_support()
@@ -791,8 +805,10 @@ class IOSHomePage(QWidget):
     def update_status(self):
         c = self._c
         update_color = c.success if self._update_available is False else c.error
-        self.outdated_lbl.setStyleSheet(f"color: {update_color}; font-size: 13px; font-weight: 600;")
-        self.update_info_btn.setStyleSheet(f"QPushButton {{ color: {c.error}; background: transparent; border: none; font-size: 17px; }} QPushButton:hover {{ background: {c.bg_tertiary}; border-radius: 6px; }}")
+        _restyle(self.outdated_lbl,
+                 f"color: {update_color}; font-size: 13px; font-weight: 600;")
+        _restyle(self.update_info_btn,
+                 f"QPushButton {{ color: {c.error}; background: transparent; border: none; font-size: 17px; }} QPushButton:hover {{ background: {c.bg_tertiary}; border-radius: 6px; }}")
         try:
             if self.window.device_manager.get_current_device_udid():
                 if not self.window.device_manager.get_current_device_is_supported_by_fork():
@@ -821,8 +837,8 @@ class IOSHomePage(QWidget):
         else:
             self.status_lbl.setText(f"<span style='color:{color};'>{status_text}</span>")
             self.status_lbl.setToolTip("")
-        self.status_lbl.setStyleSheet(
-            f"font-size: 13px; font-weight: 600; padding-left: 2px; color: {color};")
+        _restyle(self.status_lbl,
+                 f"font-size: 13px; font-weight: 600; padding-left: 2px; color: {color};")
 
     def _show_device_support(self, _link=None):
         if not self.window.device_manager.get_current_device_udid():
@@ -926,9 +942,9 @@ class IOSHomePage(QWidget):
             caption.setText(QCoreApplication.translate("Nugget", "Custom keypad theme (.passthm)"))
         self.passcode_theme_card.setAccessibleDescription(reason or "")
         color = self._c.text_disabled if reason else self._c.text_secondary
-        caption.setStyleSheet(t("home_tile_subtitle") + f"color: {color};")
-        title.setStyleSheet(t("home_tile_title") +
-                           f"color: {self._c.text_disabled if reason else self._c.text_primary};")
+        _restyle(caption, t("home_tile_subtitle") + f"color: {color};")
+        _restyle(title, t("home_tile_title") +
+                 f"color: {self._c.text_disabled if reason else self._c.text_primary};")
         self._paint_tile_icon(icon, resource)
 
     def _refresh_storage(self):
@@ -1171,21 +1187,43 @@ class IOSHomePage(QWidget):
 
     def refresh_catalog_badge(self):
         """Mention catalog updates for imported presets and added templates,
-        counted against the cached catalog (no download)."""
-        text = QCoreApplication.translate("Nugget", "Presets & templates from the community")
-        try:
-            from src.controllers import preset_catalog
-            from src.controllers.preset_manager import PresetManager
-            data, _saved_at = preset_catalog.read_cache()
-            if data is not None:
-                pm = getattr(getattr(self.window, "ios_presets", None), "preset_manager", None) or PresetManager()
-                entries, templates, _ = preset_catalog.parse_catalog(data, pm._valid_import_structure)
-                updates = preset_catalog.count_updates(entries + templates, preset_catalog.installed_items(pm))
-                if updates:
-                    text = QCoreApplication.translate("Nugget", "{0} update(s) available").format(updates)
-        except Exception:
-            pass
+        counted against the cached catalog (no download).
+
+        The count reads every preset's metadata and reads + hashes every
+        installed template, so it runs on a worker thread instead of blocking
+        the GUI right after the window is shown. ``_apply_catalog_badge`` fills
+        the caption when the answer arrives.
+        """
+        worker = getattr(self, "_catalog_badge_worker", None)
+        if worker is not None and worker.isRunning():
+            # A newer answer is wanted; re-run when the current one lands.
+            self._catalog_badge_pending = True
+            return
+        self._catalog_badge_pending = False
+        from src.gui.thread_workers.catalog_badge import CatalogBadgeThread
+        # Parented to the window, not to this page: a running QThread must not
+        # be destroyed with a page that is being rebuilt.
+        worker = CatalogBadgeThread(self.window)
+        worker.counted.connect(self._apply_catalog_badge)
+        worker.finished.connect(self._catalog_badge_finished)
+        worker.finished.connect(worker.deleteLater)
+        self._catalog_badge_worker = worker
+        worker.start()
+
+    def _apply_catalog_badge(self, updates):
+        if not hasattr(self, "_catalog_caption"):
+            return
+        if updates:
+            text = QCoreApplication.translate("Nugget", "{0} update(s) available").format(updates)
+        else:
+            text = QCoreApplication.translate("Nugget", "Presets & templates from the community")
         self._catalog_caption.setText(text)
+
+    def _catalog_badge_finished(self):
+        self._catalog_badge_worker = None
+        if getattr(self, "_catalog_badge_pending", False):
+            self._catalog_badge_pending = False
+            self.refresh_catalog_badge()
 
     def _paint_catalog_row(self):
         if not hasattr(self, "_catalog_icon"):

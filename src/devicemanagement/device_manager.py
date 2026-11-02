@@ -19,8 +19,8 @@ import traceback
 from tempfile import TemporaryDirectory
 from typing import Optional
 
-from PySide6.QtWidgets import QMessageBox
-from PySide6.QtCore import QSettings, QCoreApplication
+from src.utils.i18n import QCoreApplication
+from src.utils.settings import Settings
 
 from pymobiledevice3 import usbmux
 from pymobiledevice3.services.mobile_config import MobileConfigService
@@ -52,7 +52,7 @@ from src.devicemanagement.data_singleton import DataSingleton
 from src.devicemanagement.eta import ProgressEta
 from .preference_manager import PreferenceManager
 
-from src.utils.alerts import ApplyAlertMessage
+from src.utils.alerts import AlertIcon, ApplyAlertMessage
 from src.utils.pages import Page
 from src.controllers.path_handler import fix_windows_path
 
@@ -104,7 +104,7 @@ def show_apply_error(e: Exception, update_label=lambda x: None, files_list: list
             QCoreApplication.tr('The iPhone reports that an iCloud restore is still in progress. Wait for it to finish before applying or restoring changes.'),
             title=QCoreApplication.tr('iCloud restore in progress'),
             detailed_txt=QCoreApplication.tr('Keep the iPhone connected to Wi-Fi and power. Do not cancel the iCloud restore or erase the device to bypass this error. No automatic retry was started.') + '\n\n' + traceback_text,
-            icon=QMessageBox.Warning)
+            icon=AlertIcon.WARNING)
     elif is_find_my_error(e):
         return ApplyAlertMessage(QCoreApplication.tr("Find My must be disabled in order to use this tool."),
                        detailed_txt=QCoreApplication.tr("Disable Find My from Settings (Settings -> [Your Name] -> Find My) and then try again."))
@@ -215,7 +215,7 @@ class DeviceManager:
                 return pwd
         return ""
     
-    def get_devices(self, settings: QSettings, show_alert=lambda x: None):
+    def get_devices(self, settings: Settings, show_alert=lambda x: None):
         # Guard against an unresponsive usbmuxd/lockdown hang blocking startup
         # forever. Enumeration of a handful of devices is normally near-instant,
         # so 60s is a generous ceiling.
@@ -229,7 +229,7 @@ class DeviceManager:
                 detailed_txt=QCoreApplication.tr(
                     "Device enumeration took too long. Check your USB connection and try again.")
             ))
-    async def _get_devices(self, settings: QSettings, show_alert=lambda x: None):
+    async def _get_devices(self, settings: Settings, show_alert=lambda x: None):
         # Test mode: use mock device already set up in main_app.py
         if self._test_mode:
             self.pref_manager.settings = settings
@@ -297,21 +297,24 @@ class DeviceManager:
                         product_type = settings.value(device.serial + "_model", "", type=str)
                         hardware_type = settings.value(device.serial + "_hardware", "", type=str)
                         cpu_type = settings.value(device.serial + "_cpu", "", type=str)
+                        pending = {}
                         if product_type == "":
                             # save the new product type
-                            settings.setValue(device.serial + "_model", model)
+                            pending[device.serial + "_model"] = model
                         else:
                             model = product_type
                         if hardware_type == "":
                             # save the new hardware model
-                            settings.setValue(device.serial + "_hardware", hardware)
+                            pending[device.serial + "_hardware"] = hardware
                         else:
                             hardware = hardware_type
                         if cpu_type == "":
                             # save the new cpu model
-                            settings.setValue(device.serial + "_cpu", cpu)
+                            pending[device.serial + "_cpu"] = cpu
                         else:
                             cpu = cpu_type
+                        # One flush for the three keys instead of three.
+                        settings.set_many(pending)
                     except Exception:
                         show_alert(ApplyAlertMessage(txt=QCoreApplication.tr("Click \"Show Details\" for the traceback."), detailed_txt=str(traceback.format_exc())))
                     locale = await ld.get_locale()
@@ -575,7 +578,7 @@ class DeviceManager:
                     "It was created new with only the selected tweaks' settings, "
                     "like on a device that never had that file.").format(
                         ', '.join(sorted(set(baseline_creates))))
-            return ApplyAlertMessage(txt=QCoreApplication.tr("All done! ") + msg, title=QCoreApplication.tr("Success!"), icon=QMessageBox.Information)
+            return ApplyAlertMessage(txt=QCoreApplication.tr("All done! ") + msg, title=QCoreApplication.tr("Success!"), icon=AlertIcon.INFORMATION)
 
     def _report_operation_stage(self, stage, category=""):
         if stage != getattr(self, "_progress_stage", None):
@@ -678,7 +681,7 @@ class DeviceManager:
         return _cb
     def _disable_unavailable_controls(self, update_label):
         tweaks = _selection_store(self)
-        from src.gui.ios.compat import compatibility_reasons
+        from src.tweaks.compatibility import device_compatibility_reasons as compatibility_reasons
         from src.tweaks.registry import SPECS_BY_ID
 
         version = self.get_current_device_version()
@@ -818,7 +821,7 @@ class DeviceManager:
                     from pymobiledevice3.exceptions import NotEnoughDiskSpaceError
                     if isinstance(e, (BackupStorageError, NotEnoughDiskSpaceError)):
                         # The Yes/No decision must be asked on the main thread
-                        # (this runs on ApplyThread — a QMessageBox here is a
+                        # (this runs on ApplyThread — showing a dialog here is a
                         # cross-thread-widget bug). Relay via ``prompt_choice``;
                         # "resume" == continue without protection, "abort" ==
                         # refuse. Without a callback (headless) default to abort.
@@ -1364,9 +1367,9 @@ Returns (PreparedBackup, posterboard_db_ok). When the PosterBoard
                                  files_to_restore=files_to_restore, owner=501, group=501)
 
     ## RESETTING TWEAKS
-    def reset_tweaks(self, reset_pages: list[Page], settings: QSettings, update_label=lambda x: None, show_alert=lambda x: None, prompt_choice=None):
+    def reset_tweaks(self, reset_pages: list[Page], settings: Settings, update_label=lambda x: None, show_alert=lambda x: None, prompt_choice=None):
         return asyncio.run(self._reset_tweaks(reset_pages, settings, update_label, show_alert, prompt_choice))
-    async def _reset_tweaks(self, reset_pages: list[Page], settings: QSettings, update_label=lambda x: None, show_alert=lambda x: None, prompt_choice=None):
+    async def _reset_tweaks(self, reset_pages: list[Page], settings: Settings, update_label=lambda x: None, show_alert=lambda x: None, prompt_choice=None):
         final_alert = None
         files_to_restore = []
         try:
@@ -1484,7 +1487,7 @@ Returns (PreparedBackup, posterboard_db_ok). When the PosterBoard
             if Page.InternalOptions in reset_pages and 'SiriAI' in recorded:
                 final_alert = ApplyAlertMessage(
                     'Recorded preference and daemon overrides were reset. Siri AI eligibility overrides were not changed; use Reset Siri AI Overrides separately. PosterKit and imported wallpaper changes are not included in this reset.',
-                    title='Defaults restored', icon=QMessageBox.Information)
+                    title='Defaults restored', icon=AlertIcon.INFORMATION)
             return True
         except ApplyCancelledError:
             raise

@@ -4,7 +4,7 @@
 A real startup crash on Python 3.13:
 
   NameError: name 'Ui_Nugget' is not defined
-    main_app -> src.controllers.translator
+    main_app -> src.gui.translator
 
 ``translator.py`` imported ``Ui_Nugget`` under ``if TYPE_CHECKING:`` and then
 used it as a parameter annotation. On Python 3.14+ PEP 649 makes annotations
@@ -116,7 +116,7 @@ def test_no_type_checking_hazards():
 
 def test_translator_regression():
     print("\nthe exact startup crash stays fixed")
-    from src.controllers.translator import Translator
+    from src.gui.translator import Translator
 
     check("translator imports", Translator is not None)
     ann = Translator.fix_ui_for_rtl.__annotations__.get("ui")
@@ -125,7 +125,7 @@ def test_translator_regression():
     check("and it still names the UI type", ann == "Ui_Nugget", f"{ann!r}")
 
     # the name really is absent at runtime -- that is what used to raise
-    import src.controllers.translator as mod
+    import src.gui.translator as mod
     try:
         eval("Ui_Nugget", vars(mod))
         resolvable = True

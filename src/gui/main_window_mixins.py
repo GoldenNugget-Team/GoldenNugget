@@ -20,6 +20,9 @@ from src.gui.logger import get_logger
 from src.gui.autosave import AutosaveMixin
 from src.devicemanagement.device_capabilities import device_text, device_os_name
 from src.gui.theme import ColorThemeManager, theme_icon
+from src.utils.alerts import AlertIcon
+
+
 from src.gui.thread_workers.apply_worker import (
     ApplyAlertMessage,
     ApplyThread,
@@ -33,6 +36,24 @@ from src.gui.ios.tweaks import _hidden_feature_names
 from src.gui.pages.pages_list import Page
 from src.tweaks.tweak_classes import set_tweak_change_callback
 from src.tweaks.tweaks import tweaks, TweakID
+
+
+def _qt_alert_icon(icon):
+    """Map a backend ``AlertIcon`` (or a Qt icon) to a ``QMessageBox.Icon``.
+
+    Backend alerts carry :class:`src.utils.alerts.AlertIcon` because they may
+    not import Qt; the GUI's own messages still pass a
+    ``QMessageBox.Icon``, which is returned unchanged.
+    """
+    if icon is None:
+        return QtWidgets.QMessageBox.Critical
+    if isinstance(icon, AlertIcon):
+        return {
+            AlertIcon.CRITICAL: QtWidgets.QMessageBox.Critical,
+            AlertIcon.WARNING: QtWidgets.QMessageBox.Warning,
+            AlertIcon.INFORMATION: QtWidgets.QMessageBox.Information,
+        }.get(icon, QtWidgets.QMessageBox.Critical)
+    return icon
 
 
 class DeviceBarMixin:
@@ -72,8 +93,9 @@ class DeviceBarMixin:
         stack = getattr(self, "content_stack", None)
         if placeholder is None or stack is None:
             return
-        if hasattr(self, "ios_apply"):
-            self.ios_apply.set_busy(self.apply_in_progress or getattr(self, '_cache_restore_in_progress', False))
+        apply_page = self.built_page("ios_apply")
+        if apply_page is not None:
+            apply_page.set_busy(self.apply_in_progress or getattr(self, '_cache_restore_in_progress', False))
         no_device = (len(self.device_manager.devices) == 0
                      and not getattr(self, "_browse_without_device", False))
         keep_operation_visible = (self.apply_in_progress or getattr(self, '_cache_restore_in_progress', False)
@@ -805,10 +827,10 @@ class NavigationMixin:
         icon = icons.get(index)
         path = FEATURE_PAGE_ICONS.get(index, f":/icon/{icon}.svg" if icon else None)
         self.ios_nav.set_icon(path)
-        page = self.ios_pages.widget(index)
+        page = self.page_at(index)
         categories = []
         seen = set()
-        for label, _ in self._page_section_targets(page):
+        for label, _ in self._page_section_targets(page) if page is not None else ():
             if label in seen:
                 continue
             seen.add(label)
@@ -960,7 +982,11 @@ class NavigationMixin:
         if index in (2, 4) and self._defer_until_posterboard_ready(
                 "navigation", lambda: self.set_ios_page(index, animate)):
             return
-        target = stack.widget(index)
+        # Reserved pages are constructed on first navigation (see
+        # MainWindow._reserve_page); this also puts them in the slot itself.
+        target = self.page_at(index)
+        if target is None:
+            return
         if getattr(target, "_device_rebuild_pending", False):
             device = self.device_manager.data_singleton.current_device
             signature = tuple(getattr(device, key, None)
@@ -973,7 +999,7 @@ class NavigationMixin:
             return
         self._stop_page_slide()
         stack.setCurrentIndex(index)
-        page = stack.widget(index)
+        page = target
         if (hasattr(page, "_retheme")
                 and getattr(page, "_applied_theme_revision", -1)
                 != self._color_theme.revision):
@@ -1612,13 +1638,13 @@ class ApplyMixin:
             print(alert.txt)
         # Backend messages that did not pick an explicit icon default to
         # the error renderer (QMessageBox.Critical).
-        icon = alert.icon if alert.icon is not None else QtWidgets.QMessageBox.Critical
+        icon = _qt_alert_icon(alert.icon)
         # Apply/reset failures carry a traceback: route them through the same
         # parsed crash dialog (severity/likely cause + Copy Error + Report on
         # GitHub + Open Log), instead of a raw QMessageBox.
         if (icon == QtWidgets.QMessageBox.Critical
                 and alert.exc_type is not None and alert.detailed_txt):
-            from src.exceptions.crash_handler import _classify
+            from src.gui.crash_ui import _classify
             info = _classify(alert.exc_type, alert.exc_value)
             self._embedded_alert_error(alert, info)
             return
@@ -1642,7 +1668,7 @@ class ApplyMixin:
         # Need the restore callback to survive the dialog's exec() lifetime.
         def _restore():
             self._start_cache_restore()
-        from src.exceptions.crash_handler import show_error_dialog
+        from src.gui.crash_ui import show_error_dialog
         show_error_dialog(
             summary=alert.txt,
             traceback_text=alert.detailed_txt,

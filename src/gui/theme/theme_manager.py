@@ -1,7 +1,8 @@
-from PySide6.QtCore import QObject, Signal, QSettings, QEvent, Qt
+from PySide6.QtCore import QObject, Signal, QEvent, Qt
 from PySide6.QtGui import QColor, QPalette, QGuiApplication
 
 from src.gui.theme.colors import ThemeColors, DARK, ACCENT_PRESETS
+from src.utils.settings import Settings
 
 
 class ColorThemeManager(QObject):
@@ -18,7 +19,9 @@ class ColorThemeManager(QObject):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._settings = QSettings("GoldenNugget", "GoldenNugget")
+        # Same keys the old QSettings store used, but persisted in the app's
+        # own data folder (src.utils.settings reads the legacy plist once).
+        self._settings = Settings("GoldenNugget")
         self._accent_name = self._settings.value("accent_color", "blue")
         self._custom_accent = self._settings.value('liquid/custom_accent', '#cfa55d')
         if self._accent_name not in ACCENT_PRESETS and self._accent_name != 'custom':
@@ -70,8 +73,8 @@ class ColorThemeManager(QObject):
             return
         self._custom_accent = color.name()
         self._accent_name = 'custom'
-        self._settings.setValue('liquid/custom_accent', self._custom_accent)
-        self._settings.setValue('accent_color', 'custom')
+        self._settings.set_many({'liquid/custom_accent': self._custom_accent,
+                                 'accent_color': 'custom'})
         self._publish_colors()
 
     def _publish_colors(self):

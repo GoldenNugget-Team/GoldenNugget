@@ -350,12 +350,11 @@ class IOSPasscodeThemePage(QWidget):
 
     def _save_options(self):
         settings = self.window.settings
-        settings.setValue("passcode_theme_lang",
-                          self._lang_combo.currentData())
-        settings.setValue("passcode_theme_bold",
-                          self._bold_combo.currentData())
-        settings.setValue("passcode_theme_target",
-                          self._target_combo.currentData())
+        settings.set_many({
+            "passcode_theme_lang": self._lang_combo.currentData(),
+            "passcode_theme_bold": self._bold_combo.currentData(),
+            "passcode_theme_target": self._target_combo.currentData(),
+        })
         self.window._sync_settings()
 
     def choose_theme_dialog(self):

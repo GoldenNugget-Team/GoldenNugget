@@ -87,17 +87,34 @@ class DeveloperPanel(QWidget):
             self._snapshot.clear()
 
     def _source_snapshot(self):
-        files = [self._root / 'main_app.py']
-        files.extend(path for path in (self._root / 'src').rglob('*')
-                     if path.suffix in self._SOURCE_SUFFIXES and '__pycache__' not in path.parts)
+        """``{path: (mtime_ns, size)}`` for every watched source file.
+
+        ``os.walk`` + one ``stat`` per file: the previous version globbed with
+        ``rglob('*')`` and then called ``stat()`` and ``is_file()`` on every
+        entry, i.e. two syscalls per path, every watch tick.
+        """
         snapshot = {}
-        for path in files:
-            try:
-                stat = path.stat()
-                if path.is_file():
-                    snapshot[str(path)] = (stat.st_mtime_ns, stat.st_size)
-            except OSError:
-                continue
+        root = self._root
+        try:
+            stat_result = (root / 'main_app.py').stat()
+            snapshot[str(root / 'main_app.py')] = (stat_result.st_mtime_ns, stat_result.st_size)
+        except OSError:
+            pass
+        src = root / 'src'
+        if not src.is_dir():
+            return snapshot
+        for directory, dirnames, filenames in os.walk(src):
+            if '__pycache__' in dirnames:
+                dirnames.remove('__pycache__')
+            for name in filenames:
+                if os.path.splitext(name)[1] not in self._SOURCE_SUFFIXES:
+                    continue
+                path = os.path.join(directory, name)
+                try:
+                    stat_result = os.stat(path)
+                except OSError:
+                    continue
+                snapshot[path] = (stat_result.st_mtime_ns, stat_result.st_size)
         return snapshot
 
     def _check_changes(self):
@@ -134,8 +151,8 @@ class DeveloperPanel(QWidget):
             getattr(window, '_cache_restore_thread', None),
             getattr(window, '_cache_update_thread', None),
             getattr(window, 'refresh_worker_thread', None),
-            getattr(getattr(window, 'ios_passthemes', None), '_worker', None),
-            getattr(getattr(window, 'ios_settings', None), '_reset_pairing_thread', None),
+            getattr(window.built_page('ios_passthemes'), '_worker', None),
+            getattr(window.built_page('ios_settings'), '_reset_pairing_thread', None),
         )
         for worker in workers:
             try:

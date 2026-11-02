@@ -1,7 +1,8 @@
 """Read-only recovery lookup across the original and Liquid UI data stores."""
 from pathlib import Path
+import stat as _stat
 import tempfile
-from PySide6.QtCore import QStandardPaths
+from src.utils.paths import generic_data_dir, legacy_app_data_dirs
 from .storage import cache_base, protective_base
 from .protective import _validate_sqlite_db
 from .inject import _is_encrypted_backup
@@ -10,11 +11,15 @@ from .inject import _is_encrypted_backup
 def locate_restore_source(udid):
     if not udid or Path(udid).name != udid or udid in (".", ".."):
         return None, None
-    app_data = Path(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation))
-    generic = Path(QStandardPaths.writableLocation(QStandardPaths.GenericDataLocation))
-    legacy_roots = [app_data / "GoldenNugget",
-                    generic / "GoldenNugget" / "GoldenNugget",
-                    generic / "GoldenNugget Liquid UI" / "GoldenNugget"]
+    generic = Path(str(generic_data_dir()))
+    # Folders written before the rename (``GoldenNugget``, Liquid UI) and the
+    # nested layout those builds produced (``GoldenNugget/GoldenNugget``).
+    # They only still exist if the user has not run the migration yet.
+    legacy_roots = []
+    for legacy in legacy_app_data_dirs():
+        legacy_roots += [legacy, legacy / "GoldenNugget"]
+    legacy_roots.append(generic / "GoldenNugget Liquid UI" / "GoldenNugget")
+    legacy_roots = list(dict.fromkeys(legacy_roots))
 
     def usable(root):
         device = root / udid
@@ -31,9 +36,17 @@ def locate_restore_source(udid):
         device_root = base / udid
         if device_root.is_dir():
             for run in device_root.iterdir():
+                try:
+                    # One stat for both the type test and the mtime; the old
+                    # loop called is_dir() and then stat() again.
+                    run_stat = run.stat()
+                except OSError:
+                    continue
+                if not _stat.S_ISDIR(run_stat.st_mode):
+                    continue
                 root = run / "device_backup"
-                if run.is_dir() and usable(root):
-                    runs.append((run.stat().st_mtime, root))
+                if usable(root):
+                    runs.append((run_stat.st_mtime, root))
     if runs:
         return str(max(runs, key=lambda item: item[0])[1]), None
     return None, None

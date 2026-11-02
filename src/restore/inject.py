@@ -58,9 +58,15 @@ class FeatureFlagBaselineUnavailable(ValueError):
     pass
 
 
+# A preference file is a small plist; anything bigger is a damaged manifest row.
+_MAX_PREFERENCE_PAYLOAD_BYTES = 64 * 1024 * 1024
+
+
 def _merge_preference_payload(original, patch, *, feature_flags=False):
-    if isinstance(patch,Path):
-        patch=patch.read_bytes()
+    # A tweak payload may arrive as a Path (the injector streams those); a
+    # preference plist is small, so reading it here is cheap.
+    if isinstance(patch, Path):
+        patch = patch.read_bytes()
     existing = plistlib.loads(original)
     if isinstance(patch, PreferenceKeyReset):
         if not isinstance(existing, dict) or '$archiver' in existing:
@@ -123,6 +129,12 @@ def _same_plist_value(left, right):
 
 
 def _native_patch_covers(managed, native):
+    # Payloads may arrive as a Path (streamed by the injector) instead of
+    # bytes; the comparison needs the actual plist content.
+    if isinstance(managed, Path):
+        managed = managed.read_bytes()
+    if isinstance(native, Path):
+        native = native.read_bytes()
     if isinstance(managed, PreferenceKeyReset) or isinstance(native, PreferenceKeyReset):
         return (isinstance(managed, PreferenceKeyReset)
                 and isinstance(native, PreferenceKeyReset)
@@ -219,6 +231,11 @@ def _prepare_preference_merges(conn, device_dir, files):
                 missing.append((domain, path, 'missing payload'))
                 continue
             try:
+                # Preference files are a few KB. A manifest row pointing at
+                # something enormous is a damaged backup, not a preference:
+                # refuse to load it whole instead of spiking memory.
+                if payload.stat().st_size > _MAX_PREFERENCE_PAYLOAD_BYTES:
+                    raise ValueError('preference payload is implausibly large')
                 contents = _merge_preference_payload(
                     payload.read_bytes(), contents,
                     feature_flags=domain == 'SystemPreferencesDomain' and path == 'FeatureFlags/Global.plist')

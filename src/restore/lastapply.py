@@ -16,7 +16,7 @@ import json
 import logging
 import os
 
-from PySide6.QtCore import QStandardPaths
+from src.utils.paths import app_data_dir
 
 log = logging.getLogger("GoldenNugget.lastapply")
 
@@ -86,8 +86,8 @@ def sparse_signature(files) -> dict:
 
 
 def _store_dir() -> str:
-    base = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
-    folder = os.path.join(base, "GoldenNugget", "LastApply")
+    base = str(app_data_dir())
+    folder = os.path.join(base, "LastApply")
     os.makedirs(folder, exist_ok=True)
     return folder
 

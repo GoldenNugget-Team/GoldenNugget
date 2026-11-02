@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Callable, Optional
 
-from PySide6.QtCore import QT_TRANSLATE_NOOP
+from src.utils.i18n import QT_TRANSLATE_NOOP
 
 from .basic_plist_locations import FileLocation
 from .tweak_names import TweakID

@@ -3,11 +3,11 @@ from . import TemplateOption
 
 from typing import Any, Optional
 from enum import Enum
-from PySide6.QtGui import QColor
-from PySide6 import QtWidgets, QtCore
 
+from src.utils.color import RgbColor
 from src.controllers.xml_handler import set_xml_value, set_xml_values
 from src.controllers.plist_handler import write_plist_value
+
 
 class SetterType(Enum):
     textbox = "textbox"
@@ -15,28 +15,29 @@ class SetterType(Enum):
     toggle = "toggle"
     color_picker = "color_picker"
 
+
 class SetOption(TemplateOption):
-    identifier: str # nuggetId for properties in caml
-    key: str # key of the property to change
-    setter_type: SetterType # the type of input the user sees for setting the value
-    use_ca_id: bool = False # whether or not to use the ca id over nuggetId
+    identifier: str  # nuggetId for properties in caml
+    key: str  # key of the property to change
+    setter_type: SetterType  # the type of input the user sees for setting the value
+    use_ca_id: bool = False  # whether or not to use the ca id over nuggetId
 
     # slider options
-    min_value: Optional[int] = None # minimum value allowed for input
-    max_value: Optional[int] = None # maximum value allowed for input
-    step: int = 1 # the interval between each slider value
-    value_type = int # value types
+    min_value: Optional[int] = None  # minimum value allowed for input
+    max_value: Optional[int] = None  # maximum value allowed for input
+    step: int = 1  # the interval between each slider value
+    value_type = int  # value types
 
     # toggle options
-    inverted: bool = False # if set to true, the bool value will be inverted
-    toggle_off_value: Optional[Any] = None # the value to set when the toggle is off (for non-boolean values)
-    toggle_on_value: Optional[Any] = None # the value to set when the toggle is on (for non-boolean values)
+    inverted: bool = False  # if set to true, the bool value will be inverted
+    toggle_off_value: Optional[Any] = None  # the value to set when the toggle is off (for non-boolean values)
+    toggle_on_value: Optional[Any] = None  # the value to set when the toggle is on (for non-boolean values)
 
     # color picker options
-    sets_opacity: bool = False # whether or not the color_picker sets the opacity value
+    sets_opacity: bool = False  # whether or not the color_picker sets the opacity value
 
-    value: Any = 0 # whether or not to delete the file
-    value_tag: Optional[str] = None # the value tag in the caml (ie "scale(0 0 0)")
+    value: Any = 0  # whether or not to delete the file
+    value_tag: Optional[str] = None  # the value tag in the caml (ie "scale(0 0 0)")
 
     def split_value(self, value):
         if value == None:
@@ -58,18 +59,18 @@ class SetOption(TemplateOption):
                 if len(parsed_spl) >= 4:
                     self.sets_opacity = True
                     alpha = self.convert_color(parsed_spl[3])
-                return QColor(
+                color = RgbColor(
                     self.convert_color(parsed_spl[0]),
                     self.convert_color(parsed_spl[1]),
                     self.convert_color(parsed_spl[2]),
-                    alpha
+                    alpha,
                 )
+                return color
             return parsed_spl
         return value
 
     def __init__(self, data: dict):
         super().__init__(data=data)
-        self.label_objects = None # for updating the qt label
         self.identifier = data['identifier']
         self.key = data['key']
         self.setter_type = SetterType[data['setter_type']]
@@ -121,129 +122,25 @@ class SetOption(TemplateOption):
         self.step = self.split_value(self.step)
         self.value = self.split_value(self.value)
 
-    # Creating UI
-    def get_stylesheet(self, color: QColor) -> str:
-        return f"background-color: rgba({color.red()}, {color.green()}, {color.blue()}, {color.alphaF()}); border: 2px solid #3b3b3b;"
-    
-    def create_interface(self, options_widget: QtWidgets.QWidget, options_layout: QtWidgets.QVBoxLayout):
-        if self.setter_type == SetterType.toggle:
-            # remove object/setter toggle
-            remove_chk = QtWidgets.QCheckBox(options_widget)
-            remove_chk.setText(self.label)
-            remove_chk.setChecked(self.value)
-            remove_chk.toggled.connect(self.update_bool)
-            options_layout.addWidget(remove_chk)
-        elif self.setter_type == SetterType.textbox:
-            # textbox input
-            bx_widget = QtWidgets.QWidget(options_widget)
-            bx_layout = QtWidgets.QVBoxLayout(bx_widget)
-            bx_layout.setContentsMargins(0, 2, 0, 2)
-            bx_lbl = QtWidgets.QLabel(bx_widget)
-            bx_lbl.setText(self.label)
-            bx_layout.addWidget(bx_lbl)
-            textbox = QtWidgets.QLineEdit(bx_widget)
-            textbox.setPlaceholderText("Value")
-            textbox.setText(str(self.convert_back(self.value)))
-            textbox.textEdited.connect(self.update_value)
-            bx_layout.addWidget(textbox)
-            bx_widget.setLayout(bx_layout)
-            options_layout.addWidget(bx_widget)
-        elif self.setter_type == SetterType.slider:
-            vals = self.value
-            self.label_objects = []
-            list_len = 1
-            if isinstance(vals, list):
-                list_len = len(vals)
-            else:
-                vals = [vals]
-            for i in range(list_len):
-                # slider input
-                slid_widget = QtWidgets.QWidget(options_widget)
-                slid_layout = QtWidgets.QVBoxLayout(slid_widget)
-                slid_layout.setContentsMargins(0, 2, 0, 2)
-                slid_lbl = QtWidgets.QLabel(slid_widget)
-                slid_lbl.setText(f"{self.label}: {vals[i]}")
-                slid_layout.addWidget(slid_lbl)
-                self.label_objects.append(slid_lbl)
-                # widget for min and max values with slider
-                val_widget = QtWidgets.QWidget(slid_widget)
-                val_layout = QtWidgets.QHBoxLayout(val_widget)
-                min_lbl = QtWidgets.QLabel(val_widget)
-
-                min_val_fixed = self.min_value
-                min_val = self.convert_float(self.min_value)
-                max_val_fixed = self.max_value
-                max_val = self.convert_float(self.max_value)
-                step = self.convert_float(self.step)
-                val = self.convert_float(self.value)
-                min_val_fixed, min_val, max_val_fixed, max_val, step, val = (
-                    item[i] if isinstance(item, list) else item
-                    for item in (min_val_fixed, min_val, max_val_fixed, max_val, step, val))
-                min_lbl.setText(str(min_val_fixed))
-                val_layout.addWidget(min_lbl)
-                slider = QtWidgets.QSlider(val_widget)
-                slider.setMinimum(min_val)
-                slider.setMaximum(max_val)
-                slider.setTickInterval(step)
-                slider.setSingleStep(step)
-                slider.setValue(val)
-                slider.setOrientation(QtCore.Qt.Orientation.Horizontal)
-                slider.valueChanged.connect(lambda v, idx=i: self.update_value(v, idx))
-                val_layout.addWidget(slider)
-                max_lbl = QtWidgets.QLabel(val_widget)
-                max_lbl.setText(str(max_val_fixed))
-                val_layout.addWidget(max_lbl)
-                # add to layout and widget
-                val_widget.setLayout(val_layout)
-                slid_layout.addWidget(val_widget)
-                slid_widget.setLayout(slid_layout)
-                options_layout.addWidget(slid_widget)
-        elif self.setter_type == SetterType.color_picker:
-            # color picker input
-            col_widget = QtWidgets.QWidget(options_widget)
-            col_layout = QtWidgets.QHBoxLayout(col_widget)
-            col_layout.setContentsMargins(0, 2, 0, 2)
-            col_lbl = QtWidgets.QLabel(col_widget)
-            col_lbl.setText(self.label)
-            col_layout.addWidget(col_lbl)
-            col_picker_bg = QtWidgets.QWidget(col_widget)
-            col_picker_bg_layout = QtWidgets.QStackedLayout(col_picker_bg)
-            col_picker_bg_layout.setStackingMode(QtWidgets.QStackedLayout.StackAll)
-            col_picker_img = QtWidgets.QToolButton(col_picker_bg)
-            col_picker_img.setText("")
-            col_picker_img.setStyleSheet("background-image: url(:/gui/transparent.png); border-radius: 10px;")
-            col_picker = QtWidgets.QToolButton(col_picker_bg)
-            col_picker.setText("")
-            self.label_objects = [col_picker]
-            col_picker.setStyleSheet(self.get_stylesheet(color=self.value))
-            col_picker.clicked.connect(self.update_color)
-            col_picker_bg_layout.addWidget(col_picker_img)
-            col_picker_bg_layout.addWidget(col_picker)
-            col_picker_bg.setLayout(col_picker_bg_layout)
-            col_picker_bg.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-            col_layout.addWidget(col_picker_bg)
-            col_widget.setLayout(col_layout)
-            options_layout.addWidget(col_widget)
-
     # correcting the slider position
     def correct_slider_pos(self, pos: int, index: int = 0):
         # check if slider is divisible. If not, set it to a divisible value
         step = self.convert_float(self.step)
         if isinstance(step, list):
             step = step[index]
-        if pos%step != 0:
+        if pos % step != 0:
             # pos needs updated
             min_val = self.convert_float(self.min_value)
             max_val = self.convert_float(self.max_value)
             if isinstance(min_val, list):
                 min_val = min_val[index]
                 max_val = max_val[index]
-            if pos%step < step/2:
+            if pos % step < step / 2:
                 # set to left
-                pos = pos - (pos%step)
+                pos = pos - (pos % step)
             else:
                 # set to right
-                pos = pos + (step - (pos%step))
+                pos = pos + (step - (pos % step))
             # make sure it is within bounds
             if pos < min_val:
                 pos = min_val
@@ -258,6 +155,7 @@ class SetOption(TemplateOption):
         if isinstance(value, list):
             return [self.convert_float(item) for item in value]
         return int(value * 1000)
+
     def convert_str(self, value: str):
         # convert string to either float or int
         if self.value_type == "float":
@@ -268,11 +166,13 @@ class SetOption(TemplateOption):
             if self.setter_type == SetterType.slider:
                 self.value_type = "float"
             return float(value)
+
     def convert_color(self, value: float):
         return round(min(1, value) * 255)
+
     def convert_back(self, value):
         back_list = value
-        if isinstance(value, QColor):
+        if isinstance(value, RgbColor):
             # convert color back to string
             back_list = [str(value.redF()), str(value.greenF()), str(value.blueF())]
         elif not isinstance(value, list):
@@ -285,7 +185,7 @@ class SetOption(TemplateOption):
             back_str = self.value_tag + "(" + back_str + ")"
         return back_str
 
-    def update_value(self, nv: int, index: int=None):
+    def update_value(self, nv: int, index: int = None):
         if self.setter_type == SetterType.slider:
             # correct it to the step
             nv = self.correct_slider_pos(nv, index)
@@ -295,18 +195,12 @@ class SetOption(TemplateOption):
             self.value[index] = nv
         else:
             self.value = nv
-        if self.label_objects != None and index != None:
-            val = self.value
-            if isinstance(self.value, list):
-                val = val[index]
-            self.label_objects[index].setText(f"{self.label}: {val}")
-    def update_color(self):
-        color = QtWidgets.QColorDialog.getColor(initial=self.value, options=QtWidgets.QColorDialog.ColorDialogOption.ShowAlphaChannel)
-        if color.isValid():
-            self.value = color
-            self.label_objects[0].setStyleSheet(self.get_stylesheet(color=color))
+
     def update_bool(self, nv: bool):
         self.value = nv
+
+    def update_color(self, color: RgbColor):
+        self.value = color
 
     def apply(self, container_path: str):
         apply_val = self.value
@@ -324,7 +218,7 @@ class SetOption(TemplateOption):
                 # handle for file types
                 if full_path.endswith(".caml") or full_path.endswith(".xml"):
                     # set opacity if it has that
-                    if self.sets_opacity and isinstance(self.value, QColor):
+                    if self.sets_opacity and isinstance(self.value, RgbColor):
                         set_xml_values(file=full_path, id=self.identifier, keys=[self.key, "opacity"], values=[self.convert_back(apply_val), str(self.value.alphaF())], use_ca_id=self.use_ca_id)
                     else:
                         set_xml_value(file=full_path, id=self.identifier, key=self.key, val=self.convert_back(apply_val), use_ca_id=self.use_ca_id)

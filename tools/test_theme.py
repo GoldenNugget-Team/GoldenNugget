@@ -14,11 +14,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src' / 'qt'))
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
-from PySide6.QtCore import QSettings, QCoreApplication, QEvent
+from PySide6.QtCore import QCoreApplication, QEvent
 from PySide6.QtGui import QPalette, QColor
 from PySide6.QtTest import QSignalSpy
 from PySide6.QtWidgets import QApplication, QLabel
 from src.gui.theme import ColorThemeManager, DARK, ACCENT_PRESETS, STYLES, t
+
+from settings_sandbox import SettingsSandbox
 
 APP = QApplication.instance() or QApplication([])
 APP.setStyle('Fusion')
@@ -37,12 +39,12 @@ class Themes(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.settings = QSettings(str(Path(self.tmp.name) / 'appearance.ini'), QSettings.IniFormat)
+        self.sandbox = SettingsSandbox(Path(self.tmp.name))
+        self.make_settings = self.sandbox.__enter__()
+        self.addCleanup(self.sandbox.__exit__, None, None, None)
+        self.settings = self.make_settings('settings')
         self.old_manager = ColorThemeManager._inst
         self.old_palette = APP.palette()
-        self.patch_settings = patch('src.gui.theme.theme_manager.QSettings', return_value=self.settings)
-        self.patch_settings.start()
-        self.addCleanup(self.patch_settings.stop)
         self.manager = ColorThemeManager()
         ColorThemeManager._inst = self.manager
         self.addCleanup(self.restore)
@@ -180,7 +182,7 @@ class Themes(unittest.TestCase):
         new accent. Guards the lazy path: the previous accent must not survive
         on any page reached afterwards (the accent swatches keep their own
         preset colours by design)."""
-        from src.controllers.translator import Translator
+        from src.gui.translator import Translator
         from src.devicemanagement.device_manager import DeviceManager
         from src.gui.main_window import MainWindow
         from src.gui.theme import AccentPicker
@@ -190,7 +192,6 @@ class Themes(unittest.TestCase):
         with patch.object(MainWindow, 'refresh_devices'), patch.object(MainWindow, '_load_last_preset'), \
              patch.object(MainWindow, '_register_tweak_autosave'), \
              patch('src.gui.main_window.DeviceMonitorThread.start'), \
-             patch('src.gui.ios.theme_manager.QSettings', return_value=self.settings), \
              patch('PySide6.QtCore.QStandardPaths.writableLocation', return_value=self.tmp.name):
             window = MainWindow(dm, Translator(APP, self.settings))
         try:
@@ -232,7 +233,7 @@ class Themes(unittest.TestCase):
             QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
 
     def test_settings_has_no_mode_switch_and_rethemes_without_editing_tweaks(self):
-        from src.controllers.translator import Translator
+        from src.gui.translator import Translator
         from src.devicemanagement.device_manager import DeviceManager
         from src.gui.main_window import MainWindow
         from src.tweaks.tweaks import tweaks
@@ -241,7 +242,6 @@ class Themes(unittest.TestCase):
         with patch.object(MainWindow, 'refresh_devices'), patch.object(MainWindow, '_load_last_preset'), \
              patch.object(MainWindow, '_register_tweak_autosave'), \
              patch('src.gui.main_window.DeviceMonitorThread.start'), \
-             patch('src.gui.ios.theme_manager.QSettings', return_value=self.settings), \
              patch('PySide6.QtCore.QStandardPaths.writableLocation', return_value=self.tmp.name):
             window = MainWindow(dm, Translator(APP, self.settings))
         try:

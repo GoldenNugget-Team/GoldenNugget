@@ -6,32 +6,19 @@ code paths the GUI does: a ``Settings`` store, one ``DeviceManager``, the
 persisted preferences, and the registry/daemon/preset tweak loaders.
 """
 
-import os
 import sys
 from typing import Optional
 
 from src.controllers.settings import Settings
 
 
-def _qapp():
-    """Create (or reuse) a QApplication, falling back to the offscreen
-    platform when no windowing system is available (headless servers)."""
-    from PySide6.QtWidgets import QApplication
-    app = QApplication.instance()
-    if app is not None:
-        return app
-    if not os.environ.get("QT_QPA_PLATFORM") and os.name != "nt" and not os.environ.get("DISPLAY"):
-        # Headless *nix: don't require a real display for CLI operations.
-        os.environ["QT_QPA_PLATFORM"] = "offscreen"
-    return QApplication(sys.argv)
-
-
 def bootstrap() -> Settings:
-    """Set up Qt + the settings store the same way the GUI does."""
-    _qapp()
-    from PySide6.QtCore import QCoreApplication
-    QCoreApplication.setOrganizationDomain("com.leemin")
-    QCoreApplication.setApplicationName("GoldenNugget")
+    """Set up the settings store (no Qt, no windowing system required).
+
+    The CLI is fully headless: the backend only needs the Qt-free settings
+    store, and translations fall back to the source strings
+    (:mod:`src.utils.i18n`).
+    """
     return Settings("settings")
 
 

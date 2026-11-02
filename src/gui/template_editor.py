@@ -1,7 +1,11 @@
 """Qt editor for template selections; archive metadata stays in the model."""
 from PySide6 import QtWidgets, QtCore, QtGui
 from src.qt.custom_elements.resizable_image_label import ResizableImageLabel
-from src.tweaks.posterboard.template_options import OptionType
+from src.gui.template_option_editors import (
+    bind_previews as bind_option_previews,
+    create_interface as create_option_interface,
+    update_preview as update_option_preview,
+)
 from src.tweaks.posterboard.community_tweaks import CommunityTweak
 from src.gui.liquid.choice_editor import GlassComboBox
 
@@ -155,13 +159,10 @@ class TemplateEditor:
             opt_layout.addWidget(bx_widget)
 
         for option in self.options:
-            # provide the window
-            if option.type == OptionType.replace and option.window == None:
-                option.window = window#.set_window(self.window)
-            option.create_interface(options_widget=options_widget, options_layout=opt_layout)
-            # add the previews and update it
-            option.add_potential_preview_lbls(prevs)
-            option.update_preview()
+            create_option_interface(option, options_widget, opt_layout, window)
+            # attach the preview labels and show the current value
+            bind_option_previews(option, prevs)
+            update_option_preview(option)
 
         if self.tweaks:
             self.create_tweaks_ui(window, options_widget, opt_layout)

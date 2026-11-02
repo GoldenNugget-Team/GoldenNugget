@@ -196,7 +196,10 @@ class Backup:
                 if file.inode is None:
                     file.inode = int.from_bytes(randbytes(8), "big")
                 if file.size is None:
-                    file.read_contents()
+                    # Stream it: read_contents() pulled the whole payload into
+                    # RAM only so it could record the size and hash, which
+                    # write_contents() computes in bounded buffers.
+                    file.write_contents()
                 blob = self._mb_file_blob(file.path, int(_FileMode.S_IFREG | file.mode),
                                           file.size, now, file.inode,
                                           file.owner, file.group, 3)

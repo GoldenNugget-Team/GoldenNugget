@@ -99,7 +99,7 @@ class TendiePreviewDialog(QDialog):
 
     def _appearance_host(self):
         """Scene that carries the Light/Dark appearance states, if any."""
-        from src.controllers.ca import bundle_has_appearance_variants
+        from src.gui.preview.ca import bundle_has_appearance_variants
         bundle = self._tendie_bundle
         if bundle is None or not bundle_has_appearance_variants(bundle):
             return None
@@ -129,11 +129,11 @@ class TendiePreviewDialog(QDialog):
         """Render the preferred (or composited) scene, honouring the selected
         Light/Dark appearance. Returns True when a scene rendered."""
         try:
-            from src.controllers.ca import (
+            from src.gui.preview.ca import (
                 appearance_variant_state, document_loop_duration, home_state,
                 preview_renderer, state_transition_spec,
             )
-            from src.controllers.ca.tendie import preferred_scene
+            from src.gui.preview.ca.tendie import preferred_scene
             bundle = self._tendie_bundle
             if bundle is None:
                 return False
@@ -191,8 +191,8 @@ class TendiePreviewDialog(QDialog):
         tendie_path = self._tendie.path
 
         def load():
-            from src.controllers.ca.tendie import load_tendie
-            from src.controllers.tendie_preview import extract_tendie_preview
+            from src.gui.preview.ca.tendie import load_tendie
+            from src.gui.preview.tendie_preview import extract_tendie_preview
             bundle = load_tendie(tendie_path)
             # Avoid extracting the fallback when a valid scene exists.
             if bundle is not None and any((bundle.floating, bundle.wallpaper, bundle.background)):
@@ -210,7 +210,7 @@ class TendiePreviewDialog(QDialog):
             return
         if self._tendie_bundle is not None and path is None:
             from src.gui.dialogs.file_task import start_file_task
-            from src.controllers.tendie_preview import extract_tendie_preview
+            from src.gui.preview.tendie_preview import extract_tendie_preview
             tendie_path = self._tendie.path
             self._load_task = start_file_task(self, lambda: extract_tendie_preview(tendie_path),
                             lambda fallback: self._loaded((None, fallback)),

@@ -11,7 +11,7 @@ a stable rate is known).
 import time
 import math
 
-from PySide6.QtCore import QCoreApplication
+from src.utils.i18n import QCoreApplication
 
 
 class ProgressEta:

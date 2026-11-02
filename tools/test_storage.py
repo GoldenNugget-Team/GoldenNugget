@@ -3,9 +3,9 @@
 
 ``src/restore/storage.py`` decides where the heavy backup trees live:
   1. ``GOLDENNUGGET_BACKUP_DIR`` env override (headless/manual tools)
-  2. the ``backup_storage_dir`` QSettings key (GUI: Settings -> Backup
+  2. the ``backup_storage_dir`` settings key (GUI: Settings -> Backup
      -> "Backup/Cache Location")
-  3. the historical AppData defaults, byte-for-byte.
+  3. the app's own data folder (``src.utils.paths``).
 
 The test pins all three branches plus the relative-subfolder layout for a
 custom root, using throwaway XDG dirs so the host profile is never touched.
@@ -28,13 +28,19 @@ from PySide6.QtCore import QCoreApplication, QStandardPaths
 
 app = QCoreApplication(sys.argv)
 app.setApplicationName("GoldenNugget")
-app.setOrganizationName("GoldenNugget")
 app.setOrganizationDomain("com.leemin")
 
 from src.restore import storage
 from src.controllers.settings import Settings
+from src.utils.paths import (
+    APP_NAME, app_data_dir, app_data_root, legacy_app_data_dirs,
+)
 
-AD = Path(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation))
+# The app's own folder (``<data root>/gnugget``). The old builds used Qt's
+# ``QStandardPaths`` with the app name, which is exactly the legacy folder the
+# migration moves out of.
+AD = app_data_dir()
+QAD = Path(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation))
 
 PASS = 0
 
@@ -53,16 +59,22 @@ def reset():
 
 
 reset()
-check("custom root resolves under AppData when app name set", AD.name == "GoldenNugget")
+check("the brand folder is the lower-case name", APP_NAME == "gnugget")
+check("app data lives under <data root>/gnugget",
+      AD == app_data_root() / "gnugget")
+check("Qt still answers the OLD folder (that is what we migrate from)",
+      QAD != AD and QAD.parent == AD.parent)
+check("the legacy folder is a sibling of the new one",
+      legacy_app_data_dirs()[0] == AD.parent / "GoldenNugget")
 
-# 1. Defaults: nothing configured -> historical layout, byte-for-byte.
-check("default cache_base", storage.cache_base() == AD / "GoldenNugget" / "backup_cache")
-check("default protective_base", storage.protective_base() == AD / "GoldenNugget" / "protective")
+# 1. Defaults: nothing configured -> the app's own folder, no extra nesting.
+check("default cache_base", storage.cache_base() == AD / "backup_cache")
+check("default protective_base", storage.protective_base() == AD / "protective")
 check("default posterboard_dir", storage.posterboard_dir() == AD / "PosterBoard")
 check("default legacy_backups_dir", storage.legacy_backups_dir() == AD / "Backups")
 check("default is_custom_backup_dir()", storage.is_custom_backup_dir() is False)
 
-# 2. QSettings key set -> relative subfolders mirror the AppData layout.
+# 2. Settings key set -> relative subfolders mirror the default layout.
 custom = Path(tempfile.mkdtemp(prefix="gn_storage_custom_"))
 Settings("settings").setValue("backup_storage_dir", str(custom))
 Settings("settings").sync()
@@ -91,7 +103,7 @@ check("env: ~ expands to home", storage.cache_base() == Path.home() / "gn_backup
 os.environ.pop("GOLDENNUGGET_BACKUP_DIR", None)
 Settings("settings").remove("backup_storage_dir")
 Settings("settings").sync()
-check("reset: cache_base back to default", storage.cache_base() == AD / "GoldenNugget" / "backup_cache")
+check("reset: cache_base back to default", storage.cache_base() == AD / "backup_cache")
 check("reset: is_custom_backup_dir() False again", storage.is_custom_backup_dir() is False)
 
 print(f"ALL STORAGE CHECKS PASSED ({PASS} checks)", flush=True)

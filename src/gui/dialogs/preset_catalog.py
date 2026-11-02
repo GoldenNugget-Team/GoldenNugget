@@ -6,7 +6,7 @@ SHA-256 in the index, stored in the app's data folder and added to the
 Templates list; nothing is applied until the user presses Apply."""
 import time
 
-from PySide6.QtCore import QCoreApplication, QSettings, Qt, QUrl
+from PySide6.QtCore import QCoreApplication, Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QGuiApplication
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWidgets import (
@@ -614,7 +614,9 @@ def submit_preset_flow(parent, pm, name, window=None) -> bool:
         return False
     version, model, hotload = _device_context(window)
     settings = getattr(window, "settings", None)
-    if not isinstance(settings, QSettings):
+    # ``window.settings`` is the app's Qt-free ``src.utils.settings.Settings``
+    # store; duck-type it instead of checking for QSettings.
+    if settings is None or not hasattr(settings, "value"):
         settings = None
     dialog = SubmitPresetDialog(pm, name, code, settings, version, model, hotload, parent)
     accepted = dialog.exec() == QDialog.DialogCode.Accepted

@@ -1,15 +1,27 @@
 """Offline checks for contradictory plist selections, not a device safety audit."""
 from dataclasses import dataclass
 from copy import deepcopy
+import hashlib
 import plistlib
 
-from PySide6.QtCore import QCoreApplication, QT_TRANSLATE_NOOP
+from src.utils.i18n import QCoreApplication, QT_TRANSLATE_NOOP
 
 from src.tweaks.registry import SPECS_BY_ID
 from src.tweaks.tweak_classes import BasicPlistTweak, AdvancedPlistTweak, NullifyFileTweak
 from src.tweaks.tweak_names import TweakID
 from src.tweaks.candidate_preferences import InstalledAppSuggestionsBlacklist
 from src.tweaks.store import ChangeBus
+
+
+def _payload_digests(payload):
+    """``{key: sha1(serialized value)}`` for one tweak payload.
+
+    Comparing two writers used to re-serialize both sides of every shared key,
+    for every pair sharing a file — quadratic work on a value that never
+    changes during the comparison. The digests are computed once per payload.
+    """
+    return {key: hashlib.sha1(plistlib.dumps(value, sort_keys=True)).digest()
+            for key, value in payload.items()}
 
 
 @dataclass(frozen=True)
@@ -52,19 +64,19 @@ def find_conflicts(selections):
         else:
             continue
         location = tweak.file_location
-        for old_id, old in writers.get(location, []):
+        digests = _payload_digests(payload) if payload is not None else None
+        for old_id, old, old_digests in writers.get(location, []):
             reason = None
             if payload is None or old is None:
                 if payload != old:
                     reason = QT_TRANSLATE_NOOP("TweakConflicts", "One tweak clears a preferences file used by the other.")
-            elif any(plistlib.dumps(old[key], sort_keys=True) != plistlib.dumps(payload[key], sort_keys=True)
-                     for key in old.keys() & payload.keys()):
+            elif any(old_digests[key] != digests[key] for key in old.keys() & payload.keys()):
                 reason = QT_TRANSLATE_NOOP("TweakConflicts", "They write different values to the same setting.")
             elif isinstance(tweak, AdvancedPlistTweak) and old.keys() - payload.keys():
                 reason = QT_TRANSLATE_NOOP("TweakConflicts", "The later tweak replaces settings written by the earlier one.")
             if reason:
                 conflicts.append(TweakConflict(old_id, tid, reason))
-        writers.setdefault(location, []).append((tid, payload))
+        writers.setdefault(location, []).append((tid, payload, digests))
 
     rtl, ltr = (selections.get(tid) for tid in (TweakID.RTL, TweakID.LTR))
     if all(tweak is not None and tweak.enabled and tweak.value for tweak in (rtl, ltr)):
