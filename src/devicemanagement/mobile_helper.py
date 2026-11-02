@@ -46,6 +46,28 @@ log = logging.getLogger("GoldenNugget.mobile_helper")
 MOBILE_APP_BUNDLE_ID = "com.awesomenull.goldennugget"
 MOBILE_APP_NAME = "GoldenNugget Mobile"
 PAIRING_FILE_NAME = "pairingfile.mobiledevicepairing"
+
+# The keys GoldenNugget Mobile's lockdown parser requires before it will hand a
+# record to minimuxer (``Vendor/MinimuxerCommon/PairingFile.swift``:
+# ``LockdownPairingFile.missingKeys``). The host's stored record is keyed by its
+# FILE NAME, so it carries no ``UDID`` at all — exporting it untouched produced
+# a file the app rejected ("Missing keys: UDID") on every device.
+PAIRING_RECORD_KEYS = (
+    "DeviceCertificate",
+    "EscrowBag",
+    "HostCertificate",
+    "HostID",
+    "HostPrivateKey",
+    "RootCertificate",
+    "RootPrivateKey",
+    "SystemBUID",
+    "UDID",
+    "WiFiMACAddress",
+)
+
+# An iOS 17+ RemotePairing record has none of the lockdown keys and needs no
+# completion; the app parses it by its own shape.
+REMOTE_PAIRING_KEYS = ("identifier", "private_key", "public_key")
 LATEST_RELEASE_API = (
     "https://api.github.com/repos/GoldenNugget-Team/GoldenNugget-mobile/releases/latest"
 )
@@ -81,18 +103,82 @@ def find_engine(override: str | None = None) -> str | None:
     return None
 
 
+def is_remote_pairing_record(record: dict) -> bool:
+    """Whether ``record`` is an iOS 17+ RemotePairing record, not a lockdown one."""
+    return all(key in record for key in REMOTE_PAIRING_KEYS)
+
+
+def missing_pairing_keys(record: dict) -> list[str]:
+    """The lockdown keys GoldenNugget Mobile needs that ``record`` lacks.
+
+    Empty for a RemotePairing record: it is a different format with its own
+    key list and is exported as-is.
+    """
+    if is_remote_pairing_record(record):
+        return []
+    return [key for key in PAIRING_RECORD_KEYS if not record.get(key)]
+
+
+def complete_pairing_record(record: dict, udid: str, *,
+                            wifi_mac: str | None = None) -> dict:
+    """Complete a host pair record with the values only the device knows.
+
+    The host's stored record (usbmuxd / ``~/Library/Lockdown/<udid>.plist``)
+    names the device by its **file name**, so ``UDID`` is never one of its
+    keys, and records written by older hosts omit ``WiFiMACAddress`` too.
+    GoldenNugget Mobile's lockdown parser requires both, so an untouched
+    record is refused before minimuxer ever sees it.
+
+    Existing values are never overwritten — the record is the device's own
+    answer, and a stale WiFi MAC is not improved by guessing.
+    """
+    if not isinstance(record, dict) or not record:
+        return {}
+    if is_remote_pairing_record(record):
+        return dict(record)
+    completed = dict(record)
+    if not completed.get("UDID") and udid:
+        completed["UDID"] = str(udid)
+    if not completed.get("WiFiMACAddress") and wifi_mac:
+        completed["WiFiMACAddress"] = str(wifi_mac)
+    return completed
+
+
+async def _lockdown_values(ld, keys: tuple[str, ...]) -> dict:
+    """Best-effort ``GetValue`` lookups; a key the device refuses is skipped."""
+    found: dict = {}
+    for key in keys:
+        try:
+            value = await ld.get_value(key=key)
+        except Exception as exc:                       # noqa: BLE001 - best effort
+            log.debug("lockdown lookup of %s failed: %s", key, exc)
+            continue
+        if isinstance(value, str) and value.strip():
+            found[key] = value.strip()
+    return found
 
 
 async def read_pairing_record(udid: str) -> dict:
-    """The device's current pair record as a dict.
+    """The device's current pair record, completed for the mobile app.
 
     Uses the record the host already holds — no re-pair, so previously
-    delivered records stay valid. Raises :class:`NuggetException` when the
-    device never confirmed trust.
+    delivered records stay valid — and fills the two keys it cannot carry
+    (``UDID``, and ``WiFiMACAddress`` when absent) from the live device.
+    Raises :class:`NuggetException` when the device never confirmed trust.
     """
     async with lockdown_session(udid) as ld:
-        record = getattr(ld, "pair_record", None)
-    return record or {}
+        record = dict(getattr(ld, "pair_record", None) or {})
+        serial = getattr(ld, "identifier", None) or udid
+        values: dict = {}
+        if record:
+            # Only ask for what the record cannot answer on its own.
+            wanted = ["UniqueDeviceID"]
+            if not record.get("WiFiMACAddress"):
+                wanted.append("WiFiMACAddress")
+            values = await _lockdown_values(ld, tuple(wanted))
+    return complete_pairing_record(
+        record, values.get("UniqueDeviceID") or serial,
+        wifi_mac=values.get("WiFiMACAddress"))
 
 
 def pairing_record_xml(record: dict) -> bytes:
@@ -101,9 +187,18 @@ def pairing_record_xml(record: dict) -> bytes:
         raise NuggetException(
             "The device did not return a pairing record. Re-pair the device "
             "(tap Trust on the phone) and try again.")
-    if "EscrowBag" not in record:
-        log.warning("pairing record has no EscrowBag — on-device minimuxer may "
-                    "refuse backup-driven operations")
+    missing = missing_pairing_keys(record)
+    if "UDID" in missing:
+        # Without a UDID the app cannot even name the record; refuse to write a
+        # file it is guaranteed to reject instead of failing on the phone.
+        raise NuggetException(
+            "The pairing record has no UDID. GoldenNugget Mobile cannot use a "
+            "lockdown record without it — reconnect and unlock the device, "
+            "then export the pairing file again.")
+    if missing:
+        log.warning("pairing record is missing %s — GoldenNugget Mobile may "
+                    "refuse it (a missing EscrowBag breaks backup-driven "
+                    "operations)", ", ".join(missing))
     return plistlib.dumps(dict(record), fmt=plistlib.FMT_XML)
 
 

@@ -217,9 +217,16 @@ pairing record:
 - Device logic (`mobile_helper.py`) is the only consumer allowed to pair with a
   device whose record is not known yet — everything still goes through
   `lockdown_session`. `read_pairing_record()` returns the record **the host
-  already holds** (no re-pair), `pairing_record_xml()` dumps it as an
+  already holds** (no re-pair), **completed** with the keys the host record
+  cannot carry: it is keyed by its file name, so it has no `UDID`, and older
+  records omit `WiFiMACAddress` — both are read from the live device
+  (`complete_pairing_record`). The mobile app's lockdown parser
+  (`Vendor/MinimuxerCommon/PairingFile.swift`) requires all ten keys and
+  rejects the file otherwise. `pairing_record_xml()` dumps it as an
   **XML plist**: the mobile app's importer (`PairingRecord.accept`) only parses
-  UTF-8 text plists — a binary plist is silently refused there.
+  UTF-8 text plists — a binary plist is silently refused there — and refuses
+  (instead of writing a dead file) when a `UDID` is still missing. Offline
+  suite: `tools/test_mobile_helper_pairing.py`.
 - Delivery rides `HouseArrestService` (`VendDocuments`): the record must land
   exactly at `Documents/pairingfile.mobiledevicepairing` (`AppPaths.pairingFile`
   on the app side) — filename and location are contract, not convenience.
