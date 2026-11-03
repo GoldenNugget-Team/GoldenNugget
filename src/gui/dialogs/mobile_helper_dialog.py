@@ -13,9 +13,14 @@ device is already paired with GoldenNugget, which is exactly the record
      registration, certificate, profile), re-signing of the freshly
      downloaded ``GoldenNuggetMobile.ipa`` and the actual install. After a
      successful install the pairing file is pushed automatically.
-  2. **Pairing file** — mailed into the app's
-     ``Documents/pairingfile.mobiledevicepairing`` over house_arrest, or saved
-     to disk for a manual AirDrop.
+  2. **Pairing** — one button, **Send Remote Pairing**. Pair-setup runs on the
+     already-trusted lockdown link
+     (``com.apple.dt.remotepairingdeviced.lockdown``), so it is promptless —
+     no PIN, no Wi-Fi pairing, no Paired Macs screen — and the resulting
+     ``identifier``/``private_key``/``public_key`` record is mailed into the
+     app's ``Documents/pairingfile.mobiledevicepairing``. That is the transport
+     the app needs on iOS 26.4+; the lockdown record it replaced cannot serve
+     it.
 
 Direct InstallationProxy installs (``Download && Install``, ``Install from
 .ipa``) remain for **already-signed** packages; without an Apple ID session
@@ -40,11 +45,14 @@ import sys
 import tempfile
 from pathlib import Path
 
-from PySide6.QtCore import QCoreApplication, Qt, QProcess, QThread, QUrl, Signal
+from PySide6.QtCore import (
+    QCoreApplication, QStandardPaths, Qt, QProcess, QThread, QUrl, Signal,
+)
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWidgets import (
-    QDialog, QDialogButtonBox, QVBoxLayout, QLabel, QLineEdit, QPushButton,
-    QFileDialog, QInputDialog, QMessageBox, QProgressDialog, QGridLayout,
+    QDialog, QDialogButtonBox, QVBoxLayout, QLabel, QLineEdit,
+    QPushButton, QFileDialog, QInputDialog, QMessageBox, QProgressDialog,
+    QGridLayout, QWidget,
 )
 
 from src.devicemanagement import mobile_helper as mh
@@ -54,7 +62,8 @@ from src.gui.theme import ColorThemeManager, t
 
 
 class _MobileHelperThread(QThread):
-    """One device action per thread: ``install``, ``send`` or ``save``.
+    """One device action per thread: ``install``, ``remote_pair``, ``send`` or
+    ``save``.
 
     The pattern lives on from FetchAppsThread: a fresh asyncio loop per run,
     all lockdown work through ``lockdown_session``, signals back to the dialog.
@@ -91,27 +100,32 @@ class _MobileHelperThread(QThread):
                 self.udid, ipa_path, progress=lambda p, *_: self.progress.emit(float(p)))
             return {"action": "install", "ipa": os.path.basename(ipa_path)}
 
-        if self.action == "send":
-            xml = mh.pairing_record_xml(await mh.read_pairing_record(self.udid))
-            try:
-                installed = await mh.is_mobile_app_installed(self.udid)
-                if installed is None:
-                    return {"action": "send", "sent": False, "xml": xml}
-                status = await mh.send_pairing_to_app(
-                    self.udid, xml, bundle_id=installed["bundle_id"])
-            except NuggetException as e:
-                if "not installed" in str(e).lower():
-                    return {"action": "send", "sent": False, "xml": xml}
-                raise
-            return {"action": "send", "sent": True, "xml": xml,
-                    "kept_existing": status == "kept",
-                    "app": installed["display_name"], "version": installed["version"]}
-
-        if self.action == "save":
-            await mh.export_pairing_file(self.udid, self.payload["dest_path"])
-            return {"action": "save", "path": self.payload["dest_path"]}
+        if self.action == "remote_pair":
+            # Promptless: pair-setup runs on the lockdown link that is already
+            # trusted, so this needs no PIN and no device-side screen.
+            exported = await mh.export_remote_pairing_file(
+                self.payload["dest_path"], udid=self.udid)
+            # Deliver from this thread: the done-signal handler must not start
+            # another thread (the finished handler would clear it).
+            return await self._deliver(exported["xml"])
 
         raise NuggetException(f"Unknown GoldenNugget Mobile action: {self.action}")
+
+    async def _deliver(self, xml: bytes) -> dict:
+        """Write a pairing record into the app's container, or report it missing."""
+        try:
+            installed = await mh.is_mobile_app_installed(self.udid)
+            if installed is None:
+                return {"action": "send", "sent": False, "xml": xml}
+            status = await mh.send_pairing_to_app(
+                self.udid, xml, bundle_id=installed["bundle_id"])
+        except NuggetException as e:
+            if "not installed" in str(e).lower():
+                return {"action": "send", "sent": False, "xml": xml}
+            raise
+        return {"action": "send", "sent": True, "xml": xml,
+                "kept_existing": status == "kept",
+                "app": installed["display_name"], "version": installed["version"]}
 
 
 class _AppleLoginDialog(QDialog):
@@ -232,6 +246,8 @@ class MobileHelperDialog(QDialog):
         self.install_ipa_btn.setObjectName("mhSecondary")
         self.install_ipa_btn.clicked.connect(self._install_from_file)
         app_grid.addWidget(self.install_ipa_btn, 0, 1)
+        app_grid.setColumnStretch(0, 1)
+        app_grid.setColumnStretch(1, 1)
         layout.addLayout(app_grid)
 
         # engine availability row (hidden while the engine is found)
@@ -252,29 +268,30 @@ class MobileHelperDialog(QDialog):
         self.locate_engine_btn.setObjectName("mhSecondary")
         self.locate_engine_btn.clicked.connect(self._locate_engine)
         engine_row.addWidget(self.locate_engine_btn, 0, 1)
-        self._engine_row = engine_row
-        layout.addLayout(engine_row)
+        engine_row.setColumnStretch(0, 1)
+        engine_row.setColumnStretch(1, 1)
+        # A container rather than a bare layout: hiding the row must also drop
+        # the layout spacing around it, not leave a gap in the dialog.
+        engine_box = QWidget(self)
+        engine_box.setLayout(engine_row)
+        self._engine_box = engine_box
+        layout.addWidget(engine_box)
 
-        # --- Pairing file ---
-        layout.addWidget(QLabel(QCoreApplication.translate("Nugget", "2. Pairing file"), self))
-        pairing_grid = QGridLayout()
-        pairing_grid.setSpacing(8)
-        self.send_pairing_btn = QPushButton(
-            QCoreApplication.translate("Nugget", "Export && Send to the App"), self)
-        self.send_pairing_btn.setObjectName("mhPrimary")
-        self.send_pairing_btn.clicked.connect(self._send_pairing)
-        pairing_grid.addWidget(self.send_pairing_btn, 0, 0)
-        self.save_pairing_btn = QPushButton(
-            QCoreApplication.translate("Nugget", "Save Pairing File to Disk…"), self)
-        self.save_pairing_btn.setObjectName("mhSecondary")
-        self.save_pairing_btn.clicked.connect(self._save_pairing)
-        pairing_grid.addWidget(self.save_pairing_btn, 0, 1)
-        layout.addLayout(pairing_grid)
+        # --- Pairing ---
+        layout.addWidget(QLabel(QCoreApplication.translate("Nugget", "2. Pairing"), self))
+        self.remote_pair_send_btn = QPushButton(
+            QCoreApplication.translate(
+                "Nugget", "Send Remote Pairing"), self)
+        self.remote_pair_send_btn.setObjectName("mhPrimary")
+        self.remote_pair_send_btn.clicked.connect(self._pair_remote)
+        layout.addWidget(self.remote_pair_send_btn)
 
         hint = QLabel(QCoreApplication.translate(
             "Nugget",
             "GoldenNugget Mobile reads the pairing file at launch — send it "
-            "while the app is closed, then reopen it."), self)
+            "while the app is closed, then reopen it. Pairing takes a few "
+            "seconds and needs nothing on the phone."),
+            self)
         hint.setObjectName("mhHint")
         hint.setWordWrap(True)
         layout.addWidget(hint)
@@ -291,6 +308,7 @@ class MobileHelperDialog(QDialog):
 
         self._retheme()
         self._refresh_engine_state(report=False)
+        self._fit_window(resize=True)
 
     # --- helpers ---
 
@@ -312,11 +330,14 @@ class MobileHelperDialog(QDialog):
             return None
         return udid
 
+    def _action_buttons(self) -> tuple[QPushButton, ...]:
+        """Every action button, so one busy state disables them all."""
+        return (self.sideload_btn, self.install_download_btn,
+                self.install_ipa_btn, self.build_engine_btn,
+                self.locate_engine_btn, self.remote_pair_send_btn)
+
     def _set_busy(self, busy: bool):
-        for btn in (self.install_download_btn, self.install_ipa_btn,
-                    self.send_pairing_btn, self.save_pairing_btn,
-                    self.sideload_btn, self.locate_engine_btn,
-                    self.build_engine_btn):
+        for btn in self._action_buttons():
             btn.setEnabled(not busy)
 
     def _start_thread(self, action: str, payload: dict):
@@ -360,6 +381,7 @@ class MobileHelperDialog(QDialog):
         self.engine_hint.setVisible(not found)
         self.build_engine_btn.setVisible(not found)
         self.locate_engine_btn.setVisible(not found)
+        self._engine_box.setVisible(not found)
         if found and report:
             self._report(QCoreApplication.translate(
                 "Nugget", "Sideload engine ready: {0}").format(path))
@@ -673,7 +695,7 @@ class MobileHelperDialog(QDialog):
                 "Nugget",
                 "{0} was signed and installed with your Apple ID. "
                 "Exporting the pairing file…").format(mh.MOBILE_APP_NAME))
-            self._send_pairing()
+            self._pair_remote()
             return
         detail = self._eng_result_error or self._last_engine_error(out)
         self._report(QCoreApplication.translate(
@@ -986,30 +1008,27 @@ class MobileHelperDialog(QDialog):
 
     # --- pairing file ---
 
-    def _send_pairing(self):
-        if self._require_device() is None:
-            return
-        self._report(QCoreApplication.translate(
-            "Nugget", "Reading the pairing record… If the phone shows the "
-            "Trust dialog, tap Trust."))
-        self._start_thread("send", {})
+    def _remote_pairing_cache_path(self, udid: str) -> Path:
+        base = QStandardPaths.writableLocation(
+            QStandardPaths.StandardLocation.AppDataLocation) or tempfile.gettempdir()
+        return Path(base) / "remote-pairing" / f"{udid}.mobiledevicepairing"
 
-    def _save_pairing(self):
+    def _pair_remote(self):
+        """Pair over the lockdown link and send the record to the app.
+
+        Promptless by design: pair-setup rides the lockdown transport that is
+        already trusted, so nothing has to be tapped on the phone, no code is
+        shown and no Wi-Fi pairing is involved. The record is the one the app
+        needs on iOS 26.4+.
+        """
         udid = self._require_device()
         if udid is None:
             return
-        default_name = os.path.join(
-            os.path.expanduser("~"), f"{udid}.mobiledevicepairing")
-        path, _ = QFileDialog.getSaveFileName(
-            self,
-            QCoreApplication.translate("Nugget", "Save Pairing File"),
-            default_name,
-            "Pairing file (*.mobiledevicepairing)")
-        if not path:
-            return
         self._report(QCoreApplication.translate(
-            "Nugget", "Exporting the pairing record…"))
-        self._start_thread("save", {"dest_path": path})
+            "Nugget", "Pairing over the USB/network connection… This takes a "
+            "few seconds and needs nothing on the phone."))
+        self._start_thread("remote_pair", {
+            "dest_path": str(self._remote_pairing_cache_path(udid))})
 
     # --- thread outcomes ---
 
@@ -1018,26 +1037,16 @@ class MobileHelperDialog(QDialog):
         if action == "install":
             self._report(QCoreApplication.translate(
                 "Nugget",
-                "{0} installed. Now export the pairing file below.").format(
+                "{0} installed. Now tap Send Remote Pairing.").format(
                     result.get("ipa", "GoldenNugget Mobile")))
-            return
-        if action == "save":
-            self._report(QCoreApplication.translate(
-                "Nugget",
-                "Pairing file saved to:\n{0}\n\nAirDrop it to the iPhone and "
-                "share it to GoldenNugget Mobile, or import it from the app's "
-                "file picker.").format(result.get("path", "")))
             return
         # action == "send"
         if result.get("sent") and result.get("kept_existing"):
-            # The app paired itself over RemotePairing and that record is the
-            # one it needs; ours would force the lockdown transport instead.
             self._report(QCoreApplication.translate(
                 "Nugget",
-                "{0} already holds its own wireless pairing record on the "
-                "phone, and it was left untouched. A record sent from here "
-                "would replace it and may leave the app unable to connect on "
-                "iOS 26.4+ — nothing to do, just reopen the app.").format(
+                "{0} already holds its own RemotePairing record on the phone, "
+                "and it was left untouched — it is just as good as the one "
+                "from here. Reopen the app to pair.").format(
                     result.get("app", "GoldenNugget Mobile")))
         elif result.get("sent"):
             self._report(QCoreApplication.translate(
@@ -1046,15 +1055,21 @@ class MobileHelperDialog(QDialog):
                     result.get("app", "GoldenNugget Mobile"),
                     result.get("version", "")).strip())
         else:
-            # App missing — offer to save the record for a manual import.
+            # App missing — offer to save the record for a manual import. The
+            # bytes are already in hand, so no device round-trip is needed.
             path, _ = QFileDialog.getSaveFileName(
                 self,
                 QCoreApplication.translate(
                     "Nugget", "GoldenNugget Mobile is not installed — save the pairing file?"),
                 os.path.join(os.path.expanduser("~"), f"{self._udid()}.mobiledevicepairing"),
                 "Pairing file (*.mobiledevicepairing)")
-            if path:
-                self._start_thread("save", {"dest_path": path})
+            if path and result.get("xml"):
+                # The bytes are already in hand; writing them needs no thread.
+                target = Path(path)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(result["xml"])
+                self._report(QCoreApplication.translate(
+                    "Nugget", "Pairing file saved to:\n{0}").format(str(target)))
             else:
                 self._report(QCoreApplication.translate(
                     "Nugget", "Pairing file not sent — the app is not installed."))
@@ -1082,3 +1097,26 @@ class MobileHelperDialog(QDialog):
 
     def _retheme(self):
         self.setStyleSheet(t("mobile_helper_dialog"))
+        self._fit_window()
+
+    def _fit_window(self, resize: bool = False):
+        """Size the window to the layout, never below it.
+
+        The buttons are the dialog's whole point, and a window narrower or
+        shorter than the layout needs is exactly what flattens them. The
+        layout's preferred size becomes the window minimum, so the dialog can
+        be enlarged (a long status message) but never squashed; ``resize``
+        also snaps it to that size, which is what opening it does.
+        """
+        layout = self.layout()
+        if layout is None:
+            return
+        layout.activate()
+        natural = layout.sizeHint()
+        self.setMinimumSize(natural)
+        if resize:
+            self.resize(natural)
+        elif self.width() < natural.width() or self.height() < natural.height():
+            self.resize(max(self.width(), natural.width()),
+                        max(self.height(), natural.height()))
+

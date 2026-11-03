@@ -212,27 +212,33 @@ navigating to Settings. The module is deliberately split in two:
 Settings → Device → **"GoldenNugget Mobile Helper"** sideloads the on-device
 port (`GoldenNugget-Team/GoldenNugget-mobile`, bundle id
 `com.awesomenull.goldennugget`) onto the connected iPhone and delivers its
-pairing record:
+**RemotePairing** pairing record — the transport the app needs on iOS 26.4+.
+The pairing section is a single button, **"Send Remote Pairing"**.
 
 - Device logic (`mobile_helper.py`) is the only consumer allowed to pair with a
   device whose record is not known yet — everything still goes through
-  `lockdown_session`. `read_pairing_record()` returns the record **the host
-  already holds** (no re-pair), **completed** with the keys the host record
-  cannot carry: it is keyed by its file name, so it has no `UDID`, and older
-  records omit `WiFiMACAddress` — both are read from the live device
-  (`complete_pairing_record`). The mobile app's lockdown parser
-  (`Vendor/MinimuxerCommon/PairingFile.swift`) requires all ten keys and
-  rejects the file otherwise. `pairing_record_xml()` dumps it as an
-  **XML plist**: the mobile app's importer (`PairingRecord.accept`) only parses
-  UTF-8 text plists — a binary plist is silently refused there — and refuses
-  (instead of writing a dead file) when a `UDID` is still missing. Offline
-  suite: `tools/test_mobile_helper_pairing.py`.
-- Delivery rides `HouseArrestService` (`VendDocuments`): the record must land
+  `lockdown_session`.
+- **The export is RemotePairing** (`export_remote_pairing_file()`). It is
+  host-initiated and **promptless**: pair-setup runs on
+  `com.apple.dt.remotepairingdeviced.lockdown`, i.e. over the lockdown link
+  that is already trusted, so there is no Wi-Fi pairing, no PIN, no on-device
+  Trust dialog and no **Settings → Developer → Paired Macs** step (the flow
+  iLoader/AltStore use). pymobiledevice3 exposes it as
+  `RemotePairingLockdownService`; a first pairing ends with
+  `RemotePairingCompletedError` (the endpoint closes the link) and a later
+  export pair-verifies with the cached key pair instead. `mobile_remote_pairing_xml()`
+  writes the app's three keys: the key pair from the service's cached record
+  plus `service.identifier` — the UUIDv3-of-hostname the device stores as the
+  host's `accountID`, which pymobiledevice3 keeps out of its own record.
+  `alt_irk` is **not** written: it is the device's mDNS key, only needed for
+  Bonjour discovery, and the phone reaches the device over the tunnel where
+  pair-verify uses the key pair alone.
+- Delivery rides `HouseArrestService` (`VendContainer`): the record must land
   exactly at `Documents/pairingfile.mobiledevicepairing` (`AppPaths.pairingFile`
   on the app side) — filename and location are contract, not convenience.
-  `AppNotInstalledError` is translated into a save-to-disk fallback, same
-  `save_pairing` flow used by the explicit "Save to Disk…" action (the manual
-  AirDrop route when the app is not installed yet).
+  `AppNotInstalledError` is translated into a save-to-disk prompt: the XML is
+  already in hand, so the fallback is a plain write (the manual AirDrop route
+  when the app is not installed yet).
 - **The phone's own record is never overwritten.** On iOS 17+ the app's setup
   guide pairs itself over RemotePairing and writes an `.rppairing` record
   (`identifier`/`private_key`/`public_key`) to the same path; that record uses
@@ -242,6 +248,19 @@ pairing record:
   `pairing_file_action()` keeps an app-generated record ("kept"); only a
   missing, damaged or old lockdown record is replaced ("delivered"), and the
   dialog reports which happened.
+- The **lockdown** helpers (`read_pairing_record()`, `pairing_record_xml()`,
+  `export_pairing_file()`) are still there for older systems and other
+  callers, but no longer have a button. `read_pairing_record()` returns the
+  record **the host already holds** (no re-pair), **completed** with the keys
+  the host record cannot carry: it is keyed by its file name, so it has no
+  `UDID`, and older records omit `WiFiMACAddress` — both are read from the live
+  device (`complete_pairing_record`). The mobile app's lockdown parser
+  (`Vendor/MinimuxerCommon/PairingFile.swift`) requires all ten keys and
+  rejects the file otherwise. `pairing_record_xml()` dumps it as an **XML
+  plist**: the mobile app's importer (`PairingRecord.accept`) only parses UTF-8
+  text plists — a binary plist is silently refused there — and refuses
+  (instead of writing a dead file) when a `UDID` is still missing. Offline
+  suite: `tools/test_mobile_helper_pairing.py`.
 - IPA installation goes through `InstallationProxyService.install_from_local`
   on a background async-loop QThread (pattern of `FetchAppsThread`) for
   **already-signed** IPAs. Latest-release downloads ride QtNetwork

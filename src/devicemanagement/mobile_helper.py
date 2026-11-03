@@ -2,13 +2,18 @@
 
 GoldenNugget Mobile (github.com/GoldenNugget-Team/GoldenNugget-mobile) is the
 on-device port of this app. It is a sideloaded IPA whose minimuxer core needs a
-lockdown pairing record to talk to the phone it runs on. The device is already
-paired with this desktop app over usbmuxd, so GoldenNugget is the right host to
+pairing record to talk to the phone it runs on. The device is already paired
+with this desktop app over usbmuxd, so GoldenNugget is the right host to
 produce that record and hand it to the mobile app:
 
-* the record is whatever the lockdown client holds (``ld.pair_record``) —
-  the same shape ``jitterbugpair`` writes — dumped as an **XML plist**
-  (the mobile app's importer only accepts UTF-8 text plists, never binary);
+* the **RemotePairing** record (``identifier``, ``private_key``,
+  ``public_key``) is the one the app needs on iOS 26.4+; it is produced by
+  pair-setup on the lockdown link and needs no Wi-Fi pairing and no PIN;
+* the older **lockdown** record is whatever the lockdown client holds
+  (``ld.pair_record``) — the same shape ``jitterbugpair`` writes — and is a
+  fallback for older systems;
+* both are dumped as an **XML plist** (the mobile app's importer only accepts
+  UTF-8 text plists, never binary);
 * delivery rides ``com.apple.mobile.house_arrest`` (AFC onto one app's
   container): the app reads ``Documents/pairingfile.mobiledevicepairing``
   at launch, so the file must land exactly there, with that exact name;
@@ -27,6 +32,7 @@ All entry points are async and only ever talk through ``lockdown_session``.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import plistlib
@@ -68,6 +74,7 @@ PAIRING_RECORD_KEYS = (
 # An iOS 17+ RemotePairing record has none of the lockdown keys and needs no
 # completion; the app parses it by its own shape.
 REMOTE_PAIRING_KEYS = ("identifier", "private_key", "public_key")
+REMOTE_PAIRING_TIMEOUT = 180.0
 LATEST_RELEASE_API = (
     "https://api.github.com/repos/GoldenNugget-Team/GoldenNugget-mobile/releases/latest"
 )
@@ -233,6 +240,120 @@ async def export_pairing_file(udid: str, dest: str) -> bytes:
     data.write_bytes(xml)
     log.info("pairing record exported to %s", dest)
     return xml
+
+
+# ---------------------------------------------------------------------------
+# RemotePairing export (iOS 17+; required on iOS 26.4+)
+#
+# The lockdown record above only serves the lockdown transport, which some
+# iOS 26.4+ setups cannot provide (``InvalidVPN`` on a userspace utun VPN).
+# GoldenNugget Mobile's working transport is RemotePairing: its own setup guide
+# pairs the phone with itself and stores an ``.rppairing`` record. The desktop
+# produces the same kind of record with no Wi-Fi pairing, no PIN and no
+# Settings → Developer → Paired Macs step: ``remotepairingdeviced`` is reachable
+# through the lockdown link the helper already has
+# (``com.apple.dt.remotepairingdeviced.lockdown``), and pair-setup on that
+# already-trusted transport is promptless. That is the flow iLoader/AltStore
+# use; pymobiledevice3 exposes it as ``RemotePairingLockdownService``.
+
+
+def mobile_remote_pairing_xml(record: dict, identifier: str) -> bytes:
+    """The rppairing record as GoldenNugget Mobile's XML plist.
+
+    The service caches a record with the Ed25519 key pair and the remote-unlock
+    key, but not the host identifier: pymobiledevice3's own pair record omits
+    it because it re-derives the same UUIDv3-from-hostname on every run. The
+    device stores that identifier as the host's ``accountID``, so the file
+    handed to the phone has to carry it explicitly — GoldenNugget Mobile's
+    ``RPPairingFile`` and the Rust ``RpPairingFile`` require all three keys.
+
+    ``alt_irk`` is not included: it is the *device's* mDNS identity key, only
+    used to authenticate Bonjour discovery. The phone reaches the device over
+    the tunnel, where pair-verify uses the key pair alone.
+    """
+    private_key = record.get("private_key")
+    public_key = record.get("public_key")
+    if not isinstance(private_key, (bytes, bytearray)) or len(private_key) != 32:
+        raise NuggetException(
+            "The RemotePairing record has no 32-byte Ed25519 private key. "
+            "Pair the device again.")
+    if not isinstance(public_key, (bytes, bytearray)) or len(public_key) != 32:
+        raise NuggetException(
+            "The RemotePairing record has no 32-byte Ed25519 public key. "
+            "Pair the device again.")
+    if not isinstance(identifier, str) or not identifier.strip():
+        raise NuggetException(
+            "The RemotePairing record has no host identifier. Pair the device "
+            "again.")
+    return plistlib.dumps({
+        "identifier": identifier.strip(),
+        "private_key": bytes(private_key),
+        "public_key": bytes(public_key),
+    }, fmt=plistlib.FMT_XML)
+
+
+async def export_remote_pairing_file(
+    dest: str,
+    *,
+    udid: str,
+    connection_type: str | None = None,
+    timeout: float = REMOTE_PAIRING_TIMEOUT,
+) -> dict:
+    """Pair the device over its lockdown link and write an rppairing record.
+
+    ``dest`` receives the **mobile-compatible** XML (``identifier``,
+    ``private_key``, ``public_key``) — the transport GoldenNugget Mobile needs,
+    which a lockdown record cannot provide on iOS 26.4+.
+
+    The pairing itself is host-initiated and promptless: pair-setup runs on the
+    ``com.apple.dt.remotepairingdeviced.lockdown`` service, i.e. on the lockdown
+    transport that is already trusted, so there is no "Trust This Computer?"
+    dialog, no code to type and no Paired Macs screen to open. The device
+    remembers this host under a UUIDv3-of-hostname identifier, and the key pair
+    is cached by pymobiledevice3, so the next export pair-verifies instead of
+    pairing again — a fresh key on every export would make GoldenNugget a new
+    host each time.
+
+    Returns a dict with ``path``, ``xml``, ``name``, ``model`` and ``udid``.
+    """
+    # Imported here: the pairing stack pulls in cryptography, and the
+    # lockdown-only helpers above must stay importable even where that optional
+    # stack is incomplete.
+    from pymobiledevice3.exceptions import RemotePairingCompletedError
+    from pymobiledevice3.remote.tunnel_service import RemotePairingLockdownService
+
+    async with lockdown_session(udid, connection_type=connection_type) as ld:
+        service = await RemotePairingLockdownService.create(ld)
+        try:
+            try:
+                await asyncio.wait_for(
+                    service.connect(autopair=True), timeout=timeout)
+            except RemotePairingCompletedError:
+                # First pairing: the service writes the record and the endpoint
+                # then closes the connection (pair-verify runs on a fresh one).
+                log.info("RemotePairing pair-setup completed over lockdown")
+            record = service.pair_record or {}
+            identifier = service.identifier
+            peer = dict((service.handshake_info or {}).get("peerDeviceInfo") or {})
+        finally:
+            try:
+                await service.close()
+            except Exception:                      # noqa: BLE001 - best effort
+                pass
+
+    xml = mobile_remote_pairing_xml(record, identifier)
+    target = Path(dest)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(xml)
+    log.info("RemotePairing record for %s (%s) written to %s",
+             peer.get("name") or udid, peer.get("model") or "?", target)
+    return {
+        "path": str(target),
+        "xml": xml,
+        "name": peer.get("name") or "",
+        "model": peer.get("model") or "",
+        "udid": peer.get("identifier") or udid,
+    }
 
 
 async def is_mobile_app_installed(udid: str, bundle_id: str = MOBILE_APP_BUNDLE_ID) -> dict | None:
