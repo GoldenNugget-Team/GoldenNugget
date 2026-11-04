@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline regression test for preference tweaks whose baseline is absent.
+"""Offline regression test for preference tweaks whose baseline is unusable.
 
 The 9.7.x regression: all tweak delivery moved into Phase 1's Manifest.db
 injection, which merges each preference tweak into the device's existing
@@ -221,7 +221,49 @@ def main():
             check("feature-flag reset without a baseline still raises explicitly",
                   False, "no exception raised")
 
-    # ---- An unreadable baseline payload still aborts ------------------------
+    # ---- Issue #85: an unreadable MANAGED baseline degrades to whole-file
+    # delivery (device upgraded from an iOS 26 apply to iOS 27 keeps managed
+    # files the merge can no longer read; re-capturing yields the same
+    # payload, so aborting makes the apply unrecoverable) ---------------------
+    with tempfile.TemporaryDirectory() as tmp:
+        dev = make_core_backup(Path(tmp), "UDID")
+        items = [("ManagedPreferencesDomain", "mobile/com.apple.Accessibility.plist",
+                  plistlib.dumps({"AccessibilityKey": 1}), mode, 501, 501),
+                 ("ManagedPreferencesDomain", "mobile/com.apple.springboard.plist",
+                  plistlib.dumps({"SBSomeTweakKey": True}), mode, 501, 501)]
+        make_row(dev, items[0][0], items[0][1], b"\x00not-a-plist")
+        make_row(dev, items[1][0], items[1][1], b"")            # zero-byte capture
+        injected, unchanged, failed, created = inject(Path(tmp), "UDID", items)
+        check("unreadable managed baselines do not abort the apply",
+              failed == 0 and injected == 2, f"{injected}/{unchanged}/{failed}")
+        check("both degraded files recorded as created-new",
+              sorted(created) == sorted(f"ManagedPreferencesDomain/{p}"
+                                        for p in ("mobile/com.apple.Accessibility.plist",
+                                                  "mobile/com.apple.springboard.plist")),
+              f"created={sorted(created)}")
+        first = plistlib.loads(read_payload(dev, items[0][0], items[0][1]))
+        check("the tweak payload replaced the unreadable baseline",
+              first == {"AccessibilityKey": 1}, f"contents={first}")
+
+    # ---- A managed row whose payload file is missing degrades the same way --
+    with tempfile.TemporaryDirectory() as tmp:
+        dev = make_core_backup(Path(tmp), "UDID")
+        path = "mobile/com.apple.springboard.plist"
+        file_id = hashlib.sha1(f"ManagedPreferencesDomain-{path}".encode()).hexdigest()
+        conn = sqlite3.connect(str(dev / "Manifest.db"))
+        conn.execute("INSERT INTO Files VALUES (?, ?, ?, 1, ?)",
+                     (file_id, "ManagedPreferencesDomain", path, _blob_for(path)))
+        conn.commit()
+        conn.close()
+        injected, unchanged, failed, created = inject(Path(tmp), "UDID", [
+            ("ManagedPreferencesDomain", path,
+             plistlib.dumps({"Key": True}), mode, 501, 501)])
+        check("a managed row with a missing payload file is delivered wholesale",
+              failed == 0 and injected == 1, f"{injected}/{unchanged}/{failed}")
+        check("recorded as created-new", created == [f"ManagedPreferencesDomain/{path}"],
+              f"created={created}")
+
+    # ---- An unreadable NATIVE baseline still aborts (user data may be lost) -
     with tempfile.TemporaryDirectory() as tmp:
         dev = make_core_backup(Path(tmp), "UDID")
         make_row(dev, "HomeDomain", "Library/Preferences/com.apple.Preferences.plist",
@@ -231,10 +273,12 @@ def main():
                 ("HomeDomain", "Library/Preferences/com.apple.Preferences.plist",
                  plistlib.dumps({"K": 1}), mode, 501, 501)])
         except ValueError as error:
-            check("corrupt baseline payload still aborts loudly",
+            check("corrupt native baseline payload still aborts loudly",
                   "could not be merged" in str(error), str(error)[:80])
+            check("the abort reports the payload size for triage",
+                  "InvalidFileException" in str(error), str(error)[:120])
         else:
-            check("corrupt baseline payload still aborts loudly", False,
+            check("corrupt native baseline payload still aborts loudly", False,
                   "no exception raised")
 
     print(f"\nALL {PASS} CHECKS PASSED")

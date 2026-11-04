@@ -853,8 +853,14 @@ from `src.utils.paths`):
   (nothing to reset, recorded in `preference_baseline_skips`); a
   FeatureFlags/Global.plist RESET still raises `FeatureFlagBaselineUnavailable`
   with its explicit instruction; rows that EXIST but have a missing payload or
-  unreadable content still abort the injection loudly (the file may hold the
-  user's baseline that a patch-only file would clobber).
+  unreadable content abort with the payload size recorded for triage — EXCEPT
+  `ManagedPreferencesDomain`, where an unreadable/missing baseline degrades to
+  whole-payload delivery (recorded in `preference_baseline_creates` + log):
+  managed files carry pushed policy, not user data, the tweak/reset payload IS
+  the whole intended file, and re-capturing after a retry yields the same
+  unreadable payload (issue #85: iOS 26.6 → 27.0.1 upgrade, e.g.
+  `mobile/com.apple.Accessibility.plist` / `mobile/com.apple.springboard.plist`),
+  so the abort made the apply unrecoverable.
 
 **Phase 2 (40-60%)**: Sparse Restore — **no reboot** (default, merged phases)
 - `perform_restore()` applies tweaks via sparse restore with `reboot=not merge_phases`; if it drops at 0% it waits 25 s and retries once on a fresh connection.
