@@ -18,7 +18,11 @@ out-of-band channel is involved.
 
 Scope: the carrier name, service badge, signal-bar count and fixed network
 badge are user-settable. Network type is a visual override only; it cannot
-change the radio connection or track live LTE/5G transitions.
+change the radio connection or track live LTE/5G transitions. An *enabled*
+carrier override with a blank name writes the entry with an empty string,
+which replaces the live entry and draws no text at all -- the OG Nugget
+"enabled with no input hides the label" behaviour (issue #83); spaces or
+blank unicode instead render a literal gap.
 
 Signal bars are optional: omit ``displayValue`` unless the user explicitly
 selects a count, including an explicit zero. Network type defaults to
@@ -93,10 +97,12 @@ def _class_def(classname, chain):
 
 
 def _truncate(name):
-    if not name:
+    # An explicit "" is a blank override (hide the label entirely, issue #83):
+    # keep it as "" so build_archive writes a hiding entry instead of
+    # collapsing the override into the reset record. Only None means unset.
+    if name is None:
         return None
-    name = str(name)[:MAX_CARRIER_LENGTH]
-    return name or None
+    return str(name)[:MAX_CARRIER_LENGTH]
 
 
 def _truncate_badge(text):
@@ -130,9 +136,16 @@ def build_archive(
 ) -> bytes:
     """Build the ``StatusBarOverrides.archive`` payload.
 
-    With no carrier names this returns the *reset* record: a structurally
-    valid archive whose status-bar data carries no cellular entries, which
-    SpringBoard decodes as "no overrides" and then unlinks.
+    Three carrier-name states:
+    - ``None`` — the entry is omitted. With neither name set this returns the
+      *reset* record: a structurally valid archive whose status-bar data
+      carries no cellular entries, which SpringBoard decodes as "no
+      overrides" and then unlinks.
+    - ``""`` — a *hiding* entry: the cellular entry is still written, but with
+      an empty string, so the whole live entry is replaced and the label draws
+      nothing (no glyphs, no gap -- the OG Nugget "enabled with no input
+      hides the label" behaviour restored, issue #83).
+    - a name — the normal name override.
 
     ``primary_badge``/``secondary_badge`` become the entry ``badgeString`` and
     ``primary_bars``/``secondary_bars`` its ``displayValue``; ``None`` keeps
@@ -181,13 +194,13 @@ def build_archive(
         return add(entry)
 
     entries = []
-    if primary:
+    if primary is not None:
         entry_uid = add_cellular(
             primary, _truncate_badge(primary_badge), primary_bars, primary_network_type
         )
         data_obj["cellularEntry"] = entry_uid
         entries.append(entry_uid)
-    if secondary:
+    if secondary is not None:
         entry_uid = add_cellular(
             secondary, _truncate_badge(secondary_badge), secondary_bars, secondary_network_type
         )
@@ -238,7 +251,11 @@ def status_bar_data(payload: bytes):
 
 
 def carrier_names(payload: bytes):
-    """Return ``(primary, secondary)`` carrier names held by an archive."""
+    """Return ``(primary, secondary)`` carrier names held by an archive.
+
+    An unset entry reads back ``None``; a blank (hiding) entry reads back
+    ``""``.
+    """
     data, objects = status_bar_data(payload)
 
     def read(key):
