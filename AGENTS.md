@@ -128,6 +128,81 @@ dialog imports it from `src.gui.crash_ui`.
 **CLI is headless.** `src/cli/common.py::bootstrap()` only builds `Settings`;
 there is no `QApplication` and no offscreen-platform juggling.
 
+## Window Frame (src/gui/window_chrome.py)
+
+The main window is **frameless** (`Qt.FramelessWindowHint`): the OS paints no
+title bar, so the app's surface reaches the window edge on macOS, Windows and
+Linux alike. `MainWindow.__init__` installs the chrome right after
+`setCentralWidget(shell)`; everything the native frame used to do is drawn and
+handled by `WindowChrome`:
+
+- **Buttons** — close / minimize / zoom, painted by `WindowButton` and floated
+  over the window's top-left corner (`CONTROLS_LEFT`, `CONTROLS_TOP`), raised on
+  every relayout so no page can ever cover them. The glyphs appear on hover and
+  the group greys out while the window is inactive (`isActiveWindow()`), which
+  is why a `widget.grab()` screenshot always shows them grey.
+- **Name** — `WindowChrome.title` draws the window title where a title bar puts
+  it, but only while the shared header is hidden (the home page is full
+  screen). Pages with the header already name themselves. It follows
+  `WindowTitleChange` and is `WA_TransparentForMouseEvents`, so it never eats a
+  drag.
+- **Zoom** — `toggle_zoom()` fills `screen().availableGeometry()` instead of
+  `showMaximized()`: a maximized *frameless* window covers the Windows taskbar,
+  and this behaves identically on every desktop. The previous geometry is
+  restored on the way back, and the rounded mask is dropped while zoomed,
+  maximized or full screen.
+- **Rounded corners** — `_apply_shape()` asks the OS first
+  (`src/gui/native_corners.py`) and falls back to a mask built by
+  `rounded_region()` (`CORNER_RADIUS`). The clip is dropped while
+  zoomed/maximized/full screen, where it would cut the window's edges.
+  - *Native* — a radius belongs to the window **frame**, which a frameless
+    window does not have and Qt has no API for, so the two platforms that
+    expose one are driven directly: **macOS** clips the `NSWindow` content
+    view's layer (`cornerRadius` + `masksToBounds`, through `ctypes`/`objc` —
+    antialiased, and the window keeps its native drop shadow) and **Windows 11**
+    rounds via `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE)`, whose
+    failure on Windows 10 is the signal to keep the mask.
+    `native_corners.prepare_window()` must run at install time: the macOS clip
+    only shows through if the window is non-opaque, and Qt applies
+    `WA_TranslucentBackground` when it *creates* the native window. Setting the
+    attribute later leaves it opaque (verified).
+  - *Guard* — the backend is chosen by **platform plugin name**
+    (`QGuiApplication.platformName()`, `"cocoa"`/`"windows"`), not by
+    `sys.platform`: under `QT_QPA_PLATFORM=offscreen` `winId()` is a made-up
+    number, and handing it to `objc_msgSend` aborts the process inside AppKit
+    (an Objective-C exception Python cannot catch). Every native call is also
+    wrapped, and reports failure instead of raising.
+  - *Mask (fallback)* — exact in shape but a 1-bit `QRegion`, so that edge is
+    hard. The region samples the arc itself (`CORNER_STEPS` per corner) because
+    `QPainterPath.toFillPolygon` flattens a 10px corner into four vertices — a
+    chamfer instead of a circle — and it is built one pixel past the window
+    because a region counts a pixel as inside only when its centre is.
+- **Drag** — the shared header, the sidebar, and the blank strip across the
+  window's top (`DRAG_STRIP_HEIGHT`) move the window. `_accepts_press()` walks
+  up to any button/slider/input/list and refuses the drag, so a control is
+  never swallowed. `startSystemMove()` is asked first (window snapping, edge
+  docking); this macOS box returns False, so the manual `move()` fallback is
+  not optional.
+- **Resize** — `RESIZE_MARGIN` px of every edge/corner start a resize, with the
+  matching cursor from `cursor_for_edges()`. `startSystemResize()` is tried
+  first; otherwise `_resize()` drives `setGeometry`, clamped to the window's
+  minimum size. The edge cursor is refreshed by a 120 ms poll
+  (`_poll_cursor`) — turning on mouse tracking across the whole widget tree
+  just for the border would tax every page's mouse handling.
+- **Insets** — surfaces in the top-left corner leave room for the buttons:
+  `LiquidNavBar.set_leading_inset(CONTROLS_INSET)`,
+  `NavigationSidebar.set_top_inset(TITLE_BAR_HEIGHT)` and, for pages that reach
+  the window's top edge, `set_top_inset(CONTENT_TOP_INSET)` (currently only
+  `IOSHomePage`, via `CONTENT_TOP_INSET + its own CONTENT_TOP_MARGIN`).
+  `WindowChrome` calls them from `install_window_chrome(..., pages=...)`.
+
+**Never call `QWidget.window()` here.** Several pages keep their own
+`self.window` attribute, which shadows the Qt method, so `widget.window()`
+raises `TypeError: 'MainWindow' object is not callable`. `_top_level()` walks
+the parent chain instead, and `tools/test_window_chrome.py` fails if a
+`.window()` call reappears. Same file pins the mask, the edge math, the
+drag-target rules, the title visibility and the button wiring.
+
 ## Startup & Lazy Pages (src/gui/main_window.py)
 
 Startup is measured until `QApplication.exec` is entered; the window must be

@@ -17,13 +17,16 @@ class LiquidNavBar(GlassPanel):
     widget tree (``GlassPanel`` supplies the transparent-background setup).
     """
 
+    #: Left margin of the header content (the window's edge inset).
+    LEADING_MARGIN = 14
+
     def __init__(self,title='',parent=None,on_back=None):
         super().__init__(parent)
         ColorThemeManager.instance().theme_changed.connect(self.update)
         self._category_buttons=[]
         self._right_btn=None
         root=QVBoxLayout(self)
-        root.setContentsMargins(14,9,14,9)
+        root.setContentsMargins(self.LEADING_MARGIN,9,14,9)
         root.setSpacing(5)
         row=QHBoxLayout()
         row.setSpacing(12)
@@ -78,6 +81,20 @@ class LiquidNavBar(GlassPanel):
 
     def set_title(self,title):
         self.title_lbl.setText(title)
+
+    def set_leading_inset(self,px):
+        """Reserve room on the left for the window's own buttons.
+
+        The header is normally the window's title bar, so the back button and
+        the title start after the app-drawn traffic lights instead of
+        underneath them (see ``src/gui/window_chrome.py``).
+        """
+        root=self.layout()
+        if root is None:
+            return
+        margins=root.contentsMargins()
+        root.setContentsMargins(self.LEADING_MARGIN+max(0,int(px)),
+                                margins.top(),margins.right(),margins.bottom())
 
     def set_back_visible(self,visible):
         self.back_btn.setVisible(visible)

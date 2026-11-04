@@ -313,6 +313,12 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         self.shell_layout.addLayout(self.body_row)
         self.setCentralWidget(shell)
 
+        # The window's frame is drawn by the app: the OS title bar is gone and
+        # the traffic-light buttons, drag surfaces and edges live here.
+        from src.gui.window_chrome import install_window_chrome
+        self.window_chrome = install_window_chrome(
+            self, self.ios_nav, self.ui.sidebar, pages=(self.ios_home,))
+
         self.apply_theme(self.theme_manager.current_theme)
 
         # Back navigation: ESC key and mouse back button go to the home page

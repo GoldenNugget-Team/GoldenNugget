@@ -77,6 +77,9 @@ class NavigationSidebar(Sidebar):
 
     def __init__(self, ui, parent=None):
         super().__init__(parent, collapsible=False)
+        # Sidebar mode puts this column at the window's top left, where the
+        # app-drawn window buttons live; set_top_inset grows this base margin.
+        self._base_top_padding = self.layout().contentsMargins().top()
         from PySide6.QtCore import QCoreApplication
         from PySide6.QtGui import QIcon
         for name in self.ITEM_NAMES:
@@ -109,6 +112,20 @@ class NavigationSidebar(Sidebar):
             active_background=colors.bg_tertiary, active_indicator=colors.accent,
             separator=colors.divider, width=232, item_height=38,
         ))
+
+    def set_top_inset(self, px):
+        """Leave room above the first item for the window's own buttons.
+
+        Only sidebar mode needs it: the shared header (which the buttons sit
+        on otherwise) is hidden, so this column starts at the window's corner.
+        """
+        root = self.layout()
+        if root is None:
+            return
+        margins = root.contentsMargins()
+        root.setContentsMargins(margins.left(),
+                                self._base_top_padding + max(0, int(px)),
+                                margins.right(), margins.bottom())
 
 
 from src.gui.liquid.controls import LiquidSwitch as IOSSwitch

@@ -211,6 +211,11 @@ class IOSHomePage(QWidget):
     # layout so a subtitle that wraps to two lines grows the whole row.
     TILE_ICON_PX = 92
 
+    #: Content margin above the first row. The home page has no shared header
+    #: (it is full screen), so this is also where ``set_top_inset`` grows the
+    #: room for the window's own title-bar buttons.
+    CONTENT_TOP_MARGIN = 6
+
     def __init__(self, window, parent=None):
         super().__init__(parent)
         self.window = window
@@ -234,7 +239,7 @@ class IOSHomePage(QWidget):
         outer.addWidget(scroll)
 
         layout = QVBoxLayout(content)
-        layout.setContentsMargins(16, 6, 16, 98)
+        layout.setContentsMargins(16, self.CONTENT_TOP_MARGIN, 16, 98)
         layout.setSpacing(12)
 
         # Logo + Title row
@@ -504,6 +509,21 @@ class IOSHomePage(QWidget):
         self.update_status()
         self.update_device_info()
         self.refresh_preset_widget()
+
+    def set_top_inset(self, px: int) -> None:
+        """Reserve room above the first row for the window's own buttons.
+
+        The home page is the one page without the shared header, so instead of
+        sitting under a title bar it pads its content (see
+        ``src/gui/window_chrome.py``).
+        """
+        layout = self._scroll.widget().layout()
+        if layout is None:
+            return
+        margins = layout.contentsMargins()
+        layout.setContentsMargins(margins.left(),
+                                  self.CONTENT_TOP_MARGIN + max(0, int(px)),
+                                  margins.right(), margins.bottom())
 
     def _style_device_combo(self):
         c = self._c

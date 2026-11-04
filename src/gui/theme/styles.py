@@ -172,6 +172,8 @@ STYLES = {
     """,
 
     "nav_title": "font-size: 20px; font-weight: 600; color: {text_primary}; background: transparent;",
+    "window_title": "font-size: 13px; font-weight: 600; color: {text_primary}; background: transparent;",
+    "window_version": "font-size: 12px; font-weight: 500; color: {text_secondary}; background: transparent;",
 
     "nav_category": """
         QPushButton {{
