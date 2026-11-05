@@ -54,6 +54,7 @@ to open the interface with mock devices and no iPhone connected.
 | iOS | 26.2–27.x | Older versions are blocked by the app. |
 | Windows | Apple Devices or iTunes | Install one before connecting an iPhone. |
 | Linux | `usbmuxd` and `libimobiledevice` | Both are required for USB access. |
+| Linux (release) | glibc 2.34+ (x86_64) | The frozen build runs where PySide6 itself runs. Debian 12, Ubuntu 22.04, RHEL 9, Mint 21+. Source runs on any Python 3.15 distro. |
 | Python | 3.10+ | Use the pinned packages in `requirements.txt`. |
 
 ## Discord server

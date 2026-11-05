@@ -2,6 +2,50 @@
 
 > Full codebase documentation: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
+## Linux Releases & the glibc Floor (CI + compile.py)
+
+**The released x86_64 Linux bundle must start on glibc >= 2.34** (Ubuntu 22.04,
+Debian 12, RHEL 9, Mint 21). Users reported "GoldenNugget doesn't work on
+Linux" for every release built after the Python 3.15 swap because
+`actions/setup-python` installs the RUNNER-NATIVE CPython: its `libpython`,
+`lib-dynload` extension modules and the libraries PyInstaller copies from the
+host (libxkbcommon, libmvec, libuuid, …) all demanded GLIBC_2.38/2.39, while
+every shipping wheel sat far lower (PySide6 x86_64 = manylinux_2_34). The
+bundle then died at start on older distros with
+`GLIBC_2.38 not found … required by libpython3.15.so.1.0`.
+
+The guarantee is structural, enforced by CI:
+
+- **build-linux runs INSIDE `quay.io/pypa/manylinux_2_34_x86_64`** (AlmaLinux
+  9 / glibc 2.34). Everything PyInstaller collects from the build environment
+  is therefore ≤ 2.34 by construction. Python comes from
+  **`uv python install 3.15`** (python-build-standalone, glibc 2.17 target),
+  NOT from setup-python — do not reintroduce it in the Linux jobs.
+- **`tools/check_glibc_floor.py` gates the result** (`--floor 2.34`
+  default): it parses each ELF's `.gnu.version_r` (no `strings`-style text
+  sniffs — they false-positive and false-negative) and fails CI when any
+  bundled file would not load on the floor distro. The ARM job keeps
+  `--floor 2.39` because PySide6's aarch64 wheel is manylinux_2_39 — the
+  native `ubuntu-24.04-arm` runner stays there on purpose.
+- **compile.py removes `libgcc_s.so.1` from the bundle** (post-build, Linux
+  only): it is a manylinux-policy whitelisted SYSTEM runtime (gcc-12-base on
+  Debian, libgcc on RHEL — universally present), and bundling the build
+  container's copy pushed the floor to 2.35 for nothing.
+- **compile.py adds `src/gui/liquid/assets`** to the bundle (all platforms):
+  dock/notifications/experience load `more.svg`/`bell.svg`/`usb.svg` from
+  `Path(__file__).parent/'assets'` at runtime, PyInstaller's analysis follows
+  only imports, and every release to date rendered those buttons icon-less
+  (Qt warnings "Cannot open file …/liquid/assets/*.svg" in a frozen app).
+  It is a real bug on EVERY platform, not just Linux.
+- PySide6 6.12's own wheels define the 2.34 floor; if a bumped dependency
+  raises it (e.g. PySide6 6.13+ aarch64-style), decide DELIBERATELY: bump the
+  floor + `DEFAULT_FLOOR` in the gate together, never silently.
+
+Verified end to end (Nov 2026): a container-built bundle passes the gate (0
+offenders) and launches (`GoldenNugget launched.`) on Ubuntu 22.04 with a
+minimal desktop stack, where both released 9.6.2 and 9.7.5 die with
+`GLIBC_2.38 not found` before any window exists.
+
 This document describes the background threads, async backup/restore operations, and error handling used in GoldenNugget.
 
 ## Color Theme System (src/gui/theme/)
@@ -786,8 +830,9 @@ backup in the persistent app-data store
 - Used in all backup/restore operations
 
 ### Global Crash Handler (src/exceptions/crash_handler.py)
-- `install_crash_handler()` sets `sys.excepthook` (plus a `sys.unraisablehook`
-  fallback) and is called once at `main_app` import, before the window is built.
+- `install_crash_handler()` sets `sys.excepthook`, `threading.excepthook`
+  (plain worker threads) plus a `sys.unraisablehook`
+  fallback and is called once at `main_app` import, before the window is built.
 - `CrashHandlerApp` is a `QApplication` subclass whose `notify()` routes
   exceptions raised inside Qt event handlers/slots to the same handler —
   PySide6 would otherwise print and drop them.
@@ -795,6 +840,19 @@ backup in the persistent app-data store
   button (copies the full traceback to the clipboard) and a **"Continue"**
   button that dismisses the dialog and lets the session keep running (no
   data-loss exit). `KeyboardInterrupt` is still allowed to exit normally.
+- **NEVER build/exec a dialog from a worker thread — the handler is
+  thread-aware by contract.** A crash reported off the GUI thread (exception
+  escaping a QThread run(), a slot PySide executed in the emitter's thread)
+  must not instantiate `QWidget`/`NSWindow` there: on macOS that is an instant
+  `NSInternalInconsistencyException` ("NSWindow should only be instantiated
+  on the main thread!") aborting the whole process — the crash handler itself
+  used to BE that abort. `_handle_crash` / `_show_crash_dialog` /
+  `show_error_dialog` check `_on_gui_thread()`; off it they log the FULL
+  traceback (with the thread name), post a thread-safe `_CrashEvent` into
+  `CrashHandlerApp.event()` (via `QApplication.postEvent`) where the dialog is
+  built and exec'd, and RETURN — `os.execv` restarts are main-thread only.
+  Keep new callers of `show_error_dialog` on that contract; a widget may only
+  be created after `_on_gui_thread()` says yes (or after a queued event).
 - Never raises: the crash handler safely falls back to stderr if no
   `QApplication` exists yet.
 

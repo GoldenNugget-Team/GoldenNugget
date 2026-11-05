@@ -73,7 +73,14 @@ args = [
     '--hidden-import=zeroconf._handlers.answers',
     '--hidden-import=src.qt.resources_rc',
     '--add-data=src/qt:src/qt',
-    '--add-data=awesomeui/LICENSE:licenses/awesomeUI',
+    # Liquid glass panel icons are loaded at RUNTIME from the installed
+    # package directory (Path(__file__).parent/'assets') by dock.py,
+    # notifications.py and experience.py — PyInstaller's analysis only follows
+    # imports, so the SVGs were missing from every frozen release and the
+    # dock/notification/device buttons rendered without icons.
+    # Bundle with os.pathsep, not ':' — on Windows the separator is ';'.
+    '--add-data=' + os.pathsep.join(('src/gui/liquid/assets', 'src/gui/liquid/assets')),
+    '--add-data=' + os.pathsep.join(('awesomeui/LICENSE', 'licenses/awesomeUI')),
     # Bundle the helper tool modules (imported lazily by the CLI wrapper).
     '--hidden-import=apply_wallpaper',
     '--hidden-import=restore_cache',
@@ -253,6 +260,21 @@ if os.name == 'nt' and python3t_dll:
             "release would crash with 'DLL load failed while importing _rust'."
         )
     print(f"[+] Verified abi3t compat DLL in bundle: {landed}")
+
+# --- LINUX: drop system-runtime libraries from the bundle -----------------
+# libgcc_s.so.1 (pulled in as a dependency of gn-sideload/the C++ runtime)
+# is a manylinux-policy whitelisted system library: every glibc distro ships
+# it as part of the base system (gcc-12-base on Debian-based, libgcc on
+# RHEL-based). Bundling the build container's copy raised the released
+# bundle's load-time floor from 2.34 to 2.35 for a file the OS already
+# provides; delete it and let ld.so resolve the system one.
+if platform.startswith("linux"):
+    for name in ("libgcc_s.so.1",):
+        for path in ("dist/GoldenNugget/_internal/" + name,
+                     "dist/GoldenNugget/" + name):
+            if os.path.isfile(path):
+                os.remove(path)
+                print(f"[-] Linux Fix: removed bundled system runtime {name}")
 
 if platform == "darwin":
     _package_macos_app("dist")

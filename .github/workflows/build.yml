@@ -244,35 +244,37 @@ jobs:
   build-linux:
     if: ${{ github.event_name == 'push' || github.event.inputs.build_for_linux == 'true' }}
     runs-on: ubuntu-latest
+    # Build INSIDE the glibc 2.34 environment the release must run on.
+    # setup-python's runner-native CPython (libpython + lib-dynload + libraries
+    # PyInstaller copies from the host) demanded GLIBC_2.38, which froze the
+    # released bundle out of Ubuntu 22.04 / Debian 12 / RHEL 9 (2.35/2.36/2.34)
+    # where users reported "the app doesn't work". Every shipping wheel sits
+    # much lower (PySide6 x86_64 = manylinux_2_34, numpy/opencv 2_27), so this
+    # floor is reachable: the whole build runs in the manylinux_2_34 container
+    # and tools/check_glibc_floor.py gates the result below.
+    container:
+      image: quay.io/pypa/manylinux_2_34_x86_64
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.15'
-
-      - name: Install system dependencies
+      - name: Install Rust + engine build dependencies
         run: |
-          sudo apt-get update
-          # libdbus-1-dev: isideload's keyring backend (dbus-secret-service)
-          # links the system D-Bus on Linux; without its headers and dbus-1.pc
-          # the libdbus-sys build script aborts the engine build.
-          sudo apt-get install -y libssl-dev pkg-config libdbus-1-dev
+          # dbus-devel: isideload's keyring backend (dbus-secret-service) links
+          # the system D-Bus on Linux; without its headers and dbus-1.pc the
+          # libdbus-sys build script aborts the engine build.
+          yum install -y -q dbus-devel
+          curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Rust engine build
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            tools/sideload-engine/target
-          key: gn-sideload-linux-${{ runner.arch }}-${{ hashFiles('tools/sideload-engine/Cargo.lock') }}
+      - name: Install Python 3.15 (python-build-standalone, glibc 2.17 floor)
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          uv python install 3.15
+          uv venv .build-env --python 3.15
+          echo "$GITHUB_WORKSPACE/.build-env/bin" >> "$GITHUB_PATH"
 
       # The script resolves the repo root from its own path and cds into
       # tools/sideload-engine itself, so it runs from the workspace root — a
@@ -285,8 +287,8 @@ jobs:
           set -uo pipefail
           installed=0
           for attempt in 1 2 3 4; do
-            if python -m pip install -U pip setuptools wheel \
-              && pip install --retries 5 --timeout 60 -r requirements.txt; then
+            if uv pip install --python .build-env/bin/python -U pip setuptools wheel \
+              && uv pip install --python .build-env/bin/python --retries 5 --timeout 60 -r requirements.txt; then
               installed=1
               break
             fi
@@ -297,12 +299,18 @@ jobs:
             echo "::error::requirements.txt still not installable after 4 attempts"
             exit 1
           fi
-          pip check
+          uv pip check --python .build-env/bin/python
           test -x tools/sideload-engine/target/release/gn-sideload
           tools/sideload-engine/target/release/gn-sideload --version
 
       - name: Build Linux
         run: python compile.py
+
+      # Regression gate: one runner-native binary made the whole released
+      # bundle unreadable on glibc < 2.38 systems. Nothing entering the freeze
+      # may require a glibc newer than the manylinux_2_34 build environment.
+      - name: Glibc floor gate
+        run: python tools/check_glibc_floor.py dist/GoldenNugget/_internal
 
       - name: Verify bundled engine
         run: |
@@ -323,6 +331,11 @@ jobs:
   build-linux-arm:
     if: ${{ github.event_name == 'push' || github.event.inputs.build_for_arm_linux == 'true' }}
     runs-on: ubuntu-24.04-arm
+    # NOTE: unlike the x86_64 job this stays on the native runner ON PURPOSE:
+    # the PySide6 aarch64 wheel is manylinux_2_39, so a glibc-2.34-style
+    # container cannot consume it and the ARM floor cannot be pushed below
+    # 2.39 by the build environment. Keep the floor-gate step so regressions
+    # beyond the wheel floor are still caught.
 
     steps:
       - name: Checkout
@@ -381,6 +394,9 @@ jobs:
 
       - name: Build Linux ARM
         run: python compile.py
+
+      - name: Glibc floor gate (ARM floor is the PySide6 wheel's manylinux_2_39)
+        run: python tools/check_glibc_floor.py --floor 2.39 dist/GoldenNugget/_internal
 
       - name: Verify bundled engine
         run: |
