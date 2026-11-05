@@ -12,6 +12,13 @@ Two entry points are hooked:
 * ``QApplication.notify`` (via :class:`CrashHandlerApp`) — for exceptions
   raised inside Qt event handlers / slots, which PySide6 otherwise lets die
   silently after a printed traceback.
+* ``threading.excepthook`` — for exceptions that escape a plain Python/worker
+  thread. These CANNOT build a dialog: on macOS creating ``NSWindow`` (what a
+  ``QWidget.show()/exec()`` does underneath) off the main thread raises
+  ``NSInternalInconsistencyException`` and aborts the whole process. A crash
+  reported from a worker thread is therefore logged in full and its dialog is
+  posted to the GUI thread as a queued event (``postEvent`` is thread-safe);
+  the app never restarts itself from a worker thread.
 
 Apply/reset failures are routed through the same dialog: the worker threads
 report them via :class:`ApplyAlertMessage`, and the main window opens
@@ -27,12 +34,13 @@ import sys
 import traceback
 import logging
 import os
+import threading
 from typing import Callable, Optional
 from urllib.parse import quote
 
 from shiboken6 import isValid
 
-from PySide6.QtCore import QCoreApplication, QObject, QEvent, QUrl, QT_TRANSLATE_NOOP
+from PySide6.QtCore import QCoreApplication, QObject, QEvent, QThread, QUrl, QT_TRANSLATE_NOOP
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QApplication, QDialog, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QPlainTextEdit
 
@@ -363,6 +371,10 @@ def show_error_dialog(summary: str, traceback_text: str, info: Optional[dict] = 
     if app is None:
         print(f"ERROR: {summary}\n{traceback_text}", file=sys.stderr)
         return
+    if not _on_gui_thread():
+        _queue_crash_dialog_on_gui_thread(app, summary, traceback_text, info,
+                                          backup_path, on_restore)
+        return
     dialog = CrashDialog(summary=summary, traceback_text=traceback_text,
                          info=info, backup_path=backup_path, on_restore=on_restore)
     _exec_dialog_on_gui_thread(dialog)
@@ -376,6 +388,68 @@ def _show_crash_dialog(summary: str, traceback_text: str, exc_type=None, exc_val
         # No application yet — fall back to printing so nothing is lost.
         print(f"CRASH: {summary}\n{traceback_text}", file=sys.stderr)
         return
+    if not _on_gui_thread():
+        # A worker thread reported this crash. Building a QWidget here would
+        # instantiate NSWindow off the main thread (macOS: instant process
+        # abort), so post it to the GUI thread instead and continue this
+        # thread — the session must be allowed to keep running.
+        _queue_crash_dialog_on_gui_thread(app, summary, traceback_text, info)
+        return
+    _build_and_exec_crash_dialog(summary, traceback_text, info)
+
+
+def _on_gui_thread() -> bool:
+    """True when widgets/dialogs may be created on the current thread."""
+    app = QApplication.instance()
+    if app is None:
+        return threading.current_thread() is threading.main_thread()
+    return QThread.currentThread() is app.thread()
+
+
+class _CrashEvent(QEvent):
+    """Queued "show the crash dialog" request, posted from worker threads.
+
+    ``QApplication.postEvent`` is thread-safe, and the GUI thread processes it
+    inside :meth:`CrashHandlerApp.event` — the only cross-thread-safe way to
+    marshal widget creation without a helper QObject whose affinity would
+    depend on which thread created it first.
+    """
+
+    _TYPE = None
+
+    @classmethod
+    def qt_type(cls) -> int:
+        if cls._TYPE is None:
+            cls._TYPE = QEvent.registerEventType()
+        return cls._TYPE
+
+    def __init__(self, summary: str, traceback_text: str, info: Optional[dict],
+                 backup_path: Optional[str] = None,
+                 on_restore: Optional[Callable[[], None]] = None):
+        super().__init__(QEvent.Type(self.qt_type()))
+        self.summary = summary
+        self.traceback_text = traceback_text
+        self.info = info
+        self.backup_path = backup_path
+        self.on_restore = on_restore
+
+
+def _queue_crash_dialog_on_gui_thread(app, summary: str, traceback_text: str,
+                                      info: Optional[dict],
+                                      backup_path: Optional[str] = None,
+                                      on_restore: Optional[Callable[[], None]] = None) -> None:
+    print(f"CRASH: {summary}\n{traceback_text}", file=sys.stderr)
+    if isinstance(app, CrashHandlerApp):
+        QApplication.postEvent(app, _CrashEvent(summary, traceback_text, info,
+                                                backup_path, on_restore))
+    else:
+        # A plain QApplication never sees our event type; the log (written by
+        # _handle_crash above) and stderr are the survivor of record.
+        pass
+
+
+def _build_and_exec_crash_dialog(summary: str, traceback_text: str,
+                                 info: Optional[dict]) -> None:
     dialog = CrashDialog(summary=summary, traceback_text=traceback_text, info=info)
     _exec_dialog_on_gui_thread(dialog)
 
@@ -401,7 +475,17 @@ def _restart_app():
 def _handle_crash(exc_type, exc_value, exc_tb):
     summary, tb = _format_error(exc_type, exc_value, exc_tb)
     if exc_type is not KeyboardInterrupt:
-        logger.error("Uncaught exception: %s\n%s", summary, tb)
+        logger.error("Uncaught exception (thread=%s): %s\n%s",
+                     threading.current_thread().name, summary, tb)
+    if not _on_gui_thread():
+        # A worker thread crashed. NEVER create the dialog (or os.execv!) on
+        # this thread: instantiating NSWindow off the main thread aborts the
+        # whole process (NSInternalInconsistencyException), which is exactly
+        # what a "widget built from a slot running on the emitter thread"
+        # does. _show_crash_dialog posts the report to the GUI thread and this
+        # thread keeps running — the session is not lost.
+        _show_crash_dialog(summary, tb, exc_type, exc_value)
+        return
     try:
         _show_crash_dialog(summary, tb, exc_type, exc_value)
     except Exception:
@@ -434,6 +518,24 @@ def _is_dead_object_event(exc_value, exc_tb) -> bool:
 class CrashHandlerApp(QApplication):
     """QApplication subclass that routes Qt event-handler exceptions to the
     crash handler instead of silently printing and dropping them."""
+
+    def event(self, event: QEvent) -> bool:
+        if _CrashEvent._TYPE is not None and event.type() == QEvent.Type(_CrashEvent._TYPE) \
+                and isinstance(event, _CrashEvent):
+            # A worker thread posted a crash report: build the dialog here, on
+            # the GUI thread, where NSWindow instantiation is legal.
+            try:
+                dialog = CrashDialog(summary=event.summary,
+                                     traceback_text=event.traceback_text,
+                                     info=event.info,
+                                     backup_path=event.backup_path,
+                                     on_restore=event.on_restore)
+                _exec_dialog_on_gui_thread(dialog)
+            except Exception:
+                print(f"CRASH: {event.summary}\n{event.traceback_text}",
+                      file=sys.stderr)
+            return True
+        return super().event(event)
 
     def notify(self, receiver: QObject, event: QEvent) -> bool:
         if receiver is not None and not isValid(receiver):
@@ -574,6 +676,20 @@ def install_crash_handler():
     _install_faulthandler()
     _install_qt_message_handler()
     sys.excepthook = _excepthook
+    # Plain Python threads (queue workers, asyncio.ToThread helpers, ...)
+    # route uncaught exceptions through threading.excepthook, which by default
+    # only prints. Route them into the same handler so the report reaches the
+    # log AND a dialog can be shown — on the GUI thread via _handle_crash's
+    # worker-thread path (never building widgets off the main thread).
+    try:
+        def _threading_excepthook(args):
+            if issubclass(args.exc_type, KeyboardInterrupt):
+                traceback.print_exception(args.exc_type, args.exc_value, args.exc_traceback)
+                return
+            _handle_crash(args.exc_type, args.exc_value, args.exc_traceback)
+        threading.excepthook = _threading_excepthook
+    except Exception:
+        pass
     # Sys.unraisablehook catches errors in __del__ / finalizers, which would
     # otherwise be reported to stderr and might quietly abort cleanup.
     try:
