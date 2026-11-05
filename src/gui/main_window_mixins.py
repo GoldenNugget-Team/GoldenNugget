@@ -720,36 +720,20 @@ class SettingsMixin(AutosaveMixin):
 
 
 
-    def sidebar_enabled(self) -> bool:
-        return self.settings.value("ui/show_sidebar", False, type=bool)
-
-    def set_sidebar_enabled(self, enabled: bool):
-        self.settings.setValue("ui/show_sidebar", bool(enabled))
-        self._sync_settings()
-        show_sidebar = self.theme_manager.current_theme == ThemeManager.CLASSIC or bool(enabled)
-        self.ui.sidebar.setVisible(show_sidebar)
-        self.bottom_navigation.setVisible(not show_sidebar)
-        self.bottom_navigation.popup.hide()
-        self.ios_home.cards_grid.setVisible(not show_sidebar)
-        self.ios_home.apply_btn.setVisible(not show_sidebar)
-        self._update_shared_nav(self.ios_pages.currentIndex())
-        self._sync_sidebar_selection()
-
     def apply_theme(self, theme: int):
         """Apply the UI mode WITHOUT navigating away.
 
         CLASSIC: sidebar + classic home; iOS-style pages open as actions.
-        IOS: iOS UI with an optional sidebar and the shared header providing
-        back navigation. Only the chrome changes — the current page stays put.
+        IOS: iOS UI with the shared header providing back navigation and the
+        floating dock. Only the chrome changes — the current page stays put.
         """
         self.theme_manager.save_theme(theme)
         is_ios = theme == ThemeManager.IOS
-        show_sidebar = not is_ios or self.sidebar_enabled()
-        self.ui.sidebar.setVisible(show_sidebar)
-        self.bottom_navigation.setVisible(not show_sidebar)
+        self.ui.sidebar.setVisible(not is_ios)
+        self.bottom_navigation.setVisible(is_ios)
         self.bottom_navigation.popup.hide()
-        self.ios_home.cards_grid.setVisible(not show_sidebar)
-        self.ios_home.apply_btn.setVisible(not show_sidebar)
+        self.ios_home.cards_grid.setVisible(True)
+        self.ios_home.apply_btn.setVisible(True)
         self.ui.deviceBar.setVisible(not is_ios)
         if is_ios:
             # iOS mode: full-screen, no padding
@@ -815,8 +799,7 @@ class NavigationMixin:
         title = self._ios_page_titles.get(index, "")
         self.ios_nav.set_title(title)
         self.ios_nav.set_back_visible(
-            self.theme_manager.current_theme != ThemeManager.CLASSIC
-            and not self.sidebar_enabled())
+            self.theme_manager.current_theme != ThemeManager.CLASSIC)
         icons = {
             1: "toggles", 2: "wallpaper", 3: "hdd", 4: "gear",
             5: "app-indicator", 6: "check-circle", 7: "phone",

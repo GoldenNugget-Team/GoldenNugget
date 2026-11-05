@@ -249,10 +249,28 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         self.ios_pages.currentChanged.connect(self._update_shared_nav)
 
         ios_root = QtWidgets.QWidget(self)
-        # The pages live in a centred column capped at IOS_CONTENT_MAX_WIDTH:
-        # on a wide window full-bleed rows put a switch a screen away from
-        # its label.
-        ios_root_hbox = QtWidgets.QHBoxLayout(ios_root)
+        # The shared header spans the window's full width, like a title bar:
+        # the traffic-light buttons live over the window's left edge and the
+        # back capsule hangs directly under them, so the header must reach that
+        # edge on every window size (see ``LiquidNavBar``). Only the page
+        # *content* lives in the centred column capped at
+        # IOS_CONTENT_MAX_WIDTH — on a wide window full-bleed rows put a switch
+        # a screen away from its label.
+        ios_root_layout = QtWidgets.QVBoxLayout(ios_root)
+        ios_root_layout.setContentsMargins(0, 0, 0, 0)
+        ios_root_layout.setSpacing(0)
+        # The header is one surface with the window (LiquidNavBar paints the
+        # page background itself), so the wrapper carries no inset: the old
+        # 8px margin existed only to give a floating glass panel room for its
+        # rounded corners.
+        nav_wrap = QtWidgets.QWidget(ios_root)
+        nav_wrap.setObjectName("iosNavWrap")
+        nav_wrap_layout = QtWidgets.QVBoxLayout(nav_wrap)
+        nav_wrap_layout.setContentsMargins(0, 0, 0, 0)
+        nav_wrap_layout.setSpacing(0)
+        nav_wrap_layout.addWidget(self.ios_nav)
+        ios_root_layout.addWidget(nav_wrap)
+        ios_root_hbox = QtWidgets.QHBoxLayout()
         ios_root_hbox.setContentsMargins(0, 0, 0, 0)
         ios_root_hbox.setSpacing(0)
         ios_column = QtWidgets.QWidget(ios_root)
@@ -260,21 +278,11 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         ios_root_hbox.addStretch(0)
         ios_root_hbox.addWidget(ios_column, 1)
         ios_root_hbox.addStretch(0)
-        ios_root_layout = QtWidgets.QVBoxLayout(ios_column)
-        ios_root_layout.setContentsMargins(0, 0, 0, 0)
-        ios_root_layout.setSpacing(0)
-        # The header is one surface with the window (LiquidNavBar paints the
-        # page background itself), so the wrapper carries no inset: the old
-        # 8px margin existed only to give a floating glass panel room for its
-        # rounded corners.
-        nav_wrap = QtWidgets.QWidget(ios_column)
-        nav_wrap.setObjectName("iosNavWrap")
-        nav_wrap_layout = QtWidgets.QVBoxLayout(nav_wrap)
-        nav_wrap_layout.setContentsMargins(0, 0, 0, 0)
-        nav_wrap_layout.setSpacing(0)
-        nav_wrap_layout.addWidget(self.ios_nav)
-        ios_root_layout.addWidget(nav_wrap)
-        ios_root_layout.addWidget(self.ios_pages, 1)
+        ios_column_layout = QtWidgets.QVBoxLayout(ios_column)
+        ios_column_layout.setContentsMargins(0, 0, 0, 0)
+        ios_column_layout.setSpacing(0)
+        ios_column_layout.addWidget(self.ios_pages, 1)
+        ios_root_layout.addLayout(ios_root_hbox, 1)
         from src.gui.liquid.dock import LiquidDock as BottomNavigation
         self.bottom_navigation = BottomNavigation(self, ios_root)
 
@@ -463,21 +471,11 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         unmapped parent, which on several platforms renders them transparent
         and stuttering. Called from main_app right after widget.show().
         """
-        # Both choices use the modern pages; Sidebar enables their navigation
-        # panel. ui/theme is saved during construction, so it cannot serve as
-        # the first-run completion marker.
+        # The first-launch interface picker ("Sidebar / Modern") is gone with
+        # the sidebar mode; drop a stale marker so nothing re-asks for it.
         if not self.settings.value("ui/interface_choice_done", False, type=bool):
-            from src.gui.interface_picker import InterfacePickerDialog
-            picker = InterfacePickerDialog(self)
-            picker.exec()
-            if picker.choice is not None:
-                show_sidebar = picker.choice == "classic"
-                self.set_sidebar_enabled(show_sidebar)
-                switch = self.ios_settings.sidebar_switch
-                with QtCore.QSignalBlocker(switch):
-                    switch.setChecked(show_sidebar)
-                self.settings.setValue("ui/interface_choice_done", True)
-                self._sync_settings()
+            self.settings.setValue("ui/interface_choice_done", True)
+            self._sync_settings()
 
         # First launch: remind the user to back up the device before tweaking
         # (keeps asking until they confirm a backup was made)

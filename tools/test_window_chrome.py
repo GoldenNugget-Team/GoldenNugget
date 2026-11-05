@@ -476,10 +476,14 @@ def test_title_label():
     print("window name next to the buttons")
     window, chrome, header, *_ = make_window()
     QApplication.processEvents()
-    check("hidden while the header names the page", chrome.title.isHidden())
+    # The header is the title bar on the pages that show one: the frosted strip
+    # stands down beside it (it would blur the header and swallow its clicks).
+    check("the strip stands down while the header is up", chrome._strip.isHidden())
+    check("the version label yields to the header", chrome.version.isHidden())
     header.hide()
     QApplication.processEvents()
     check("shown when the header goes away", not chrome.title.isHidden())
+    check("the strip comes back on headerless pages", not chrome._strip.isHidden())
     header.show()
     QApplication.processEvents()
     check("hidden again once the header is back", chrome.title.isHidden())
@@ -490,6 +494,11 @@ def test_title_label():
     check("the label follows the window title",
           chrome.title.text() == "GoldenNugget Mobile" and
           not chrome.title.isHidden())
+    # The strip comes back UNDER the chrome: a strip raised above the traffic
+    # lights frosts them out and swallows their clicks (home page regression).
+    check("the buttons float above the re-shown strip",
+          window.children().index(chrome.controls) >
+          window.children().index(chrome._strip))
     window.setWindowTitle("")
     QApplication.processEvents()
     check("an empty title is never drawn", chrome.title.isHidden())

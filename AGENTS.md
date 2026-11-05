@@ -363,13 +363,16 @@ used to cost 0.3-0.5 s on its own:
 - **TEMP: Classic UI removed** — `src/qt/mainwindow.ui` is deleted (the
   generated `mainwindow_ui.py` stays committed and keeps working at runtime),
   the Settings "iOS-style Interface" switch is hidden, `ThemeManager.load_theme`
-  always returns `IOS`. The first-launch `InterfacePickerDialog` now chooses
-  **Sidebar / Modern** within the modern pages, by setting `ui/show_sidebar`;
-  `ui/interface_choice_done` records completion independently of `ui/theme`
-  (which is saved during window construction). Restore the legacy chrome when Classic comes back:
-  recreate `mainwindow.ui`, unhide the switch in `settings.py`, revert
-  `load_theme` to read `ui/theme`. Keep the first-run sidebar choice separate
-  from the legacy chrome mode.
+  always returns `IOS`. There is **no sidebar mode**: the optional
+  `ui/show_sidebar` navigation panel, the Settings switch, the first-launch
+  `InterfacePickerDialog` and its preview code are all gone — `ui/interface_choice_done`
+  is only stamped so an old install is never asked again (and the Modern home
+  always carries the bottom dock). Restore the sidebar (and, with it, the
+  picker) when Classic comes back: recreate `mainwindow.ui`, unhide the
+  switches in `settings.py`, revert `load_theme` to read `ui/theme`, and
+  re-add `sidebar_enabled`/`set_sidebar_enabled` in `main_window_mixins`
+  (the classic sidebar widget itself is still parked and alive for that).
+  Keep the first-run sidebar choice separate from the legacy chrome mode.
 - Old `src/gui/ios/theme_manager.py` (`CLASSIC`/`IOS`) is layout-only
   (Classic vs iOS-style chrome) and stays untouched side-by-side.
 - Theme UI lives in Settings → **Appearance** (`src/gui/ios/settings.py`):

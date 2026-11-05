@@ -60,21 +60,7 @@ class AwesomeUIIntegration(unittest.TestCase):
                     window.show()
                     APP.processEvents()
                     self.assertTrue(window.ui.sidebar.isHidden())
-                    self.assertFalse(window.ios_settings.sidebar_switch.isChecked())
-                    self.assertFalse(window.sidebar_enabled())
                     window.set_ios_page(4, animate=False)
-                    switch = window.ios_settings.sidebar_switch
-                    switch.setChecked(True)
-                    APP.processEvents()
-                    self.assertTrue(window.ui.sidebar.isVisible())
-                    self.assertTrue(settings.value('ui/show_sidebar', False, type=bool))
-                    self.assertEqual(window.ios_pages.currentIndex(), 4)
-                    window.apply_theme(window.theme_manager.current_theme)
-                    self.assertTrue(window.ui.sidebar.isVisible())
-                    switch.setChecked(False)
-                    APP.processEvents()
-                    self.assertTrue(window.ui.sidebar.isHidden())
-                    self.assertFalse(settings.value('ui/show_sidebar', True, type=bool))
                     self.assertEqual(window.ios_pages.currentIndex(), 4)
                     for index, name in ((0, 'homePageBtn'), (4, 'settingsPageBtn'),
                                         (12, 'presetsPageBtn'), (6, 'applyPageBtn'),
@@ -128,23 +114,19 @@ class AwesomeUIIntegration(unittest.TestCase):
                     self.assertIn(ColorThemeManager.instance().colors.bg_secondary,
                                   window.ui.sidebar.styleSheet())
                     self.assertEqual(len(window.ui.sidebar._items), len(NavigationSidebar.ITEM_NAMES))
-                    # Construction already saved ui/theme. First-run interface
-                    # selection must still appear and persist the sidebar choice.
+                    window.ui.sidebar.hide()
+                    APP.processEvents()
+                    # Construction already saved ui/theme. The first-run
+                    # interface picker is gone with the sidebar mode: the
+                    # prompt is consumed without asking anything.
                     settings.setValue('home_widget', 'presets')
                     settings.setValue('backup_prompt_done', True)
-                    for choice, show_sidebar in (('classic', True), ('ios', False)):
-                        settings.remove('ui/interface_choice_done')
-                        with patch('src.gui.interface_picker.InterfacePickerDialog') as picker, \
-                             patch.object(sys, 'argv', ['GoldenNugget', '--test-mode']):
-                            picker.return_value.choice = choice
-                            window.run_first_launch_prompts()
-                            self.assertEqual(window.sidebar_enabled(), show_sidebar)
-                            self.assertEqual(window.ios_settings.sidebar_switch.isChecked(), show_sidebar)
-                            self.assertEqual(window.ui.sidebar.isHidden(), not show_sidebar)
-                            self.assertEqual(window.ios_home.apply_btn.isHidden(), show_sidebar)
-                            self.assertTrue(settings.value('ui/interface_choice_done', False, type=bool))
-                            window.run_first_launch_prompts()
-                            picker.assert_called_once_with(window)
+                    settings.remove('ui/interface_choice_done')
+                    with patch.object(sys, 'argv', ['GoldenNugget', '--test-mode']):
+                        window.run_first_launch_prompts()
+                    self.assertTrue(settings.value('ui/interface_choice_done', False, type=bool))
+                    self.assertTrue(window.ui.sidebar.isHidden())
+                    self.assertFalse(window.ios_home.apply_btn.isHidden())
                     if os.environ.get('GOLDENNUGGET_UI_SCREENSHOT'):
                         path = Path(os.environ['GOLDENNUGGET_UI_SCREENSHOT'])
                         with patch('src.gui.main_window_mixins._hidden_feature_names', return_value=set()):

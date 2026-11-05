@@ -546,9 +546,24 @@ class WindowChrome(QObject):
     def _sync_title(self):
         """Show the window name only while no header names the page."""
         header = self._header
-        visible = (header is None or not header.isVisible()) and \
-            bool(self.title.text())
-        self.title.setVisible(visible)
+        header_names_page = header is not None and header.isVisible()
+        # The shared header is the title bar on the pages that show one: it
+        # already reserves room for the buttons (set_leading_inset), so the
+        # frosted strip stands down instead of blurring it and swallowing its
+        # clicks. The home page has no header, so there the strip — and the
+        # window name and version label pinned to its corners — stay as they
+        # always were.
+        self.title.setVisible(not header_names_page and
+                              bool(self.title.text()))
+        self.version.setVisible(not header_names_page)
+        self._strip.setVisible(not header_names_page)
+        if not header_names_page:
+            # Re-showing the strip must not float it over its own chrome:
+            # re-raise in the _relayout order (strip below buttons/name).
+            self._strip.raise_()
+            self.controls.raise_()
+            self.title.raise_()
+            self.version.raise_()
 
     def _retheme(self):
         self.title.setStyleSheet(t("window_title"))

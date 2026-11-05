@@ -97,14 +97,9 @@ class IOSSettingsPage(QWidget):
         accent_row.addWidget(self._accent_picker)
         self.content_layout.addWidget(accent_row_card)
 
-        self.sidebar_switch = self._make_switch(
-            QCoreApplication.translate("Nugget", "Show Sidebar"),
-            self.window.settings.value("ui/show_sidebar", False, type=bool),
-            self._on_sidebar_toggled,
-        )
-
-        # TEMP: Classic UI removed — the "iOS-style Interface" switch is hidden;
-        # the app is pinned to the iOS-style interface until Classic returns.
+        # TEMP: Classic UI removed — the "iOS-style Interface" and "Show
+        # Sidebar" switches are gone with them; the app is pinned to the
+        # sidebar-less iOS interface until Classic returns.
 
         # HotLoad safety rules
         self.content_layout.addWidget(
@@ -443,9 +438,6 @@ class IOSSettingsPage(QWidget):
     def _style_label(self, label, key):
         label.setProperty('theme_style_key', key)
         label.setStyleSheet(t(key))
-
-    def _on_sidebar_toggled(self, checked):
-        self.window.set_sidebar_enabled(checked)
 
     def _on_incompatible_tweaks_toggled(self, checked):
         from src.gui.ios.tweaks import IOSSectionContent
