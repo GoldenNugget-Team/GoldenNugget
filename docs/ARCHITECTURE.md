@@ -705,7 +705,7 @@ Local transfer/inspection modules:
 | `settings.py` | re-export of the Qt-free `src.utils.settings.Settings` store (JSON + read-only legacy migration); writes to org `GoldenNugget`, reads through to legacy `Nugget` |
 | `preset_manager.py` | export/import/apply of tweak presets (`PRESET_VERSION=2`; serializes all tweaks except PosterBoard; statusbar uses cffi base64). `export_preset(..., include=)` performs a **partial export** — filters the preset's tweaks to a given subset of `TweakID`s and marks the metadata as `partial` with the `included` list |
 | `plist_handler.py` / `xml_handler.py` | plist key writes; namespace-aware XML/caml value setters matching on `nuggetId`/`id` (hardened `eval` for `nuggetOffset` equations) |
-| `video_handler.py` | ffmpeg/opencv video→CAML conversion for video wallpapers (400-frame limit) |
+| `video_handler.py` | ffmpeg/opencv video→CAML conversion for video wallpapers (400-frame limit; decodes every `<values>` key image on-device so exports are fitted into a 512 MiB decoded-pixel budget — fps capped at 30, frames skipped/downscaled with the loop duration preserved; the "Ignore Posterboard Frame Limit" switch exports verbatim) |
 | `files_handler.py` / `path_handler.py` | bundled-resource access, Windows path fixes |
 | `web_request_handler.py` | update checks against the GitHub releases API |
 | `nugget_logger.py` / `aar.py` | logging setup; `.aar` assembly (`wrap_in_aar`) |

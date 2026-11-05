@@ -39,6 +39,30 @@ def set_ignore_frame_limit(value: bool):
     global ignore_pb_frame_limit
     ignore_pb_frame_limit = value
 
+# Guards for the frame-sequence export (issue #86). A CAKeyframeAnimation on
+# "contents" keeps EVERY key image decoded in memory on the device, so the
+# wallpaper renderer's footprint is
+#   frames x frame_width x frame_height x 4 bytes (RGBA)
+# no matter how small the JPEGs are on disk — a 300-frame 1080x1920 export
+# decodes to ~2.5 GB. Over the budget the wallpaper extension is jetsammed:
+# it falls back to a still frame, blinks black for ~1 s when the extension
+# respawns (repeatedly for about a minute after a cold boot), and settles
+# only once the animation has been evicted or cached. The exporter therefore
+# keeps every export inside the decoded-pixel budget: it caps the frame rate,
+# and skips/downscales frames as needed. Duration is always preserved; a
+# "linear" calculation mode cross-fades between the remaining frames.
+# The "Ignore Posterboard Frame Limit" switch skips all of this and exports
+# the source verbatim (user override).
+FRAME_LIMIT = 400          # hard source-frame count cap (legacy switch behaviour)
+MAX_SOURCE_FPS = 30
+MIN_OUTPUT_FPS = 10
+MAX_SEQUENCE_DECODED_BYTES = 512 * 1024 * 1024
+JPEG_QUALITY = 85
+# All supported iPhone screen classes are @3x: rendering a frame larger than
+# the document at device scale times the depth scale wastes memory on pixels
+# that can never reach the screen. 390x844 * 3 * 1.3 -> 1521x3292 max.
+DEVICE_SCALE = 3
+
 def convert_to_mov(input_file: str, output_file: str = None):
     _ensure_video_libs()
     # if there is no output file specified, create a temp file then return contents
@@ -74,7 +98,6 @@ def create_caml(video_path: str, output_file: str, auto_reverses: bool, calculat
     cam = cv2.VideoCapture(video_path)
     assets_path = os.path.join(output_file, "assets")
     frame_count = int(cam.get(cv2.CAP_PROP_FRAME_COUNT))
-    FRAME_LIMIT = 400
     reverse = 0
     if auto_reverses:
         reverse = 1
@@ -89,9 +112,58 @@ def create_caml(video_path: str, output_file: str, auto_reverses: bool, calculat
         print ('Error: Creating directory of data')
     
     # frame
-    currentframe = 0
-    width = int(cam.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    source_width = int(cam.get(cv2.CAP_PROP_FRAME_WIDTH))
+    source_height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = cam.get(cv2.CAP_PROP_FPS)
+    # The whole loop keeps its playback duration: sampling every Nth frame
+    # keeps N times the per-frame display time (linear calculation mode then
+    # cross-fades between the sampled frames).
+    duration = frame_count / fps if fps > 0 else 0
+    
+    # Memory-fit adaptation (issue #86): decide downscale + frame stride so
+    # the full decoded sequence stays inside MAX_SEQUENCE_DECODED_BYTES.
+    downscale = 1.0
+    stride = 1
+    if not ignore_pb_frame_limit:
+        max_w = doc_width * DEVICE_SCALE * bounds_scale
+        max_h = doc_height * DEVICE_SCALE * bounds_scale
+        if source_width > max_w or source_height > max_h:
+            # Render-relevant ceiling: the picture is scaled down to cover the
+            # document on the device, so pixels beyond this width/height are
+            # never shown and would only burn render memory.
+            downscale = min(max_w / source_width, max_h / source_height)
+        if fps > MAX_SOURCE_FPS:
+            stride = max(1, round(fps / MAX_SOURCE_FPS))
+        frame_bytes = round(source_width * downscale) * round(source_height * downscale) * 4
+        samples = (frame_count + stride - 1) // stride
+        if frame_bytes * samples > MAX_SEQUENCE_DECODED_BYTES:
+            stride = max(stride, -(-frame_count // max(1, MAX_SEQUENCE_DECODED_BYTES // frame_bytes)))
+        if fps > 0:
+            # Prefer fluid motion over native sharpness: below the output-fps
+            # floor a stepping animation stutters, so trade pixels for frames
+            # instead (fit the budget with the floor stride by downscaling).
+            floor_stride = max(1, int(fps // MIN_OUTPUT_FPS))  # keeps fps/stride >= MIN_OUTPUT_FPS
+            if fps / stride < MIN_OUTPUT_FPS:
+                floor_samples = -(-frame_count // floor_stride)
+                allowed_pixels = (MAX_SEQUENCE_DECODED_BYTES // floor_samples) // 4
+                current_pixels = round(source_width * downscale) * round(source_height * downscale)
+                if allowed_pixels < current_pixels:
+                    downscale *= (allowed_pixels / current_pixels) ** 0.5
+                stride = floor_stride
+    if downscale < 1.0:
+        width = max(1, round(source_width * downscale))
+        height = max(1, round(source_height * downscale))
+    else:
+        width, height = source_width, source_height
+    print(f"Export: {source_width}x{source_height} @ {fps:.1f} fps, {frame_count} frames -> "
+          f"stride {stride}, scale {downscale:.2f} -> {width}x{height}, "
+          f"{-(-frame_count // stride)} output frames")
+    if stride > 1 or downscale < 1.0:
+        update_label(QCoreApplication.tr(
+            'Source: {0}x{1}, {2:.1f} fps, {3} frames - exporting {4} frames at {5:.1f} fps ({6}x{7}) '
+            'to stay inside the device memory budget').format(
+            source_width, source_height, fps, frame_count, -(-frame_count // stride),
+            fps / stride if stride else 0, width, height))
     # Depth plane geometry: the package document must be the logical screen
     # (matching the background/foreground packages) or PosterKit 27 refuses the
     # floating view and collapses it into the foreground view. The animated
@@ -104,8 +176,6 @@ def create_caml(video_path: str, output_file: str, auto_reverses: bool, calculat
 
     with open(os.path.join(output_file, "main.caml"), "w") as caml:
         # write caml header
-        fps = cam.get(cv2.CAP_PROP_FPS)
-        duration = frame_count / fps
         caml.write(f"""<?xml version="1.0" encoding="UTF-8"?>
 
 <caml xmlns="http://www.apple.com/CoreAnimation/1.0">
@@ -121,26 +191,30 @@ def create_caml(video_path: str, output_file: str, auto_reverses: bool, calculat
 		<animations>
 		  <animation type="CAKeyframeAnimation" calculationMode="{calculationMode}" keyPath="contents" beginTime="1e-100" duration="{duration}" removedOnCompletion="0" repeatCount="inf" repeatDuration="0" speed="1" timeOffset="0" autoreverses="{reverse}">
 		    <values>\n""")
-        while(True):
+        source_index = 0
+        while True:
             # reading from frame 
             ret,frame = cam.read() 
+            if not ret:
+                break
         
-            if ret: 
+            if source_index % stride == 0:
                 # if video is still left continue creating images 
-                name = 'assets/' + str(currentframe) + '.jpg'
+                name = 'assets/' + str(source_index) + '.jpg'
                 if update_label:
                     update_label(QCoreApplication.tr('Creating {0}...').format(name))
                 print('Creating...' + name)
         
                 # writing the extracted images
-                cv2.imwrite(os.path.join(output_file.removeprefix(u"\\\\?\\"), name), frame)
+                if downscale < 1.0:
+                    frame = cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
+                cv2.imwrite(os.path.join(output_file.removeprefix(u"\\\\?\\"), name), frame,
+                            [cv2.IMWRITE_JPEG_QUALITY, JPEG_QUALITY])
                 caml.write(f"\t\t\t<CGImage src=\"{name}\"/>\n")
         
-                # increasing counter so that it will
-                # show how many frames are created
-                currentframe += 1
-            else:
-                break
+            # increasing counter so that it will
+            # show how many frames are created
+            source_index += 1
         caml.write("""		    </values>
 		  </animation>
 		</animations>
