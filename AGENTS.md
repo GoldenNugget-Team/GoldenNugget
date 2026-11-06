@@ -862,6 +862,15 @@ backup in the persistent app-data store
   reuses `_known_backup_encryption` instead of opening a second lockdown
   session, and `perform_protective_backup` auto-resolves `include_keychain`
   from the same query unless it is pinned explicitly.
+- **Windows-safe encrypted-manifest prune shim**
+  (`_install_encrypted_manifest_prune_shim` in `src/restore/protective.py`,
+  issue #87): upstream `Mobilebackup2Service.prune_backup_manifest` (10.7.1)
+  keeps a `NamedTemporaryFile(delete=True)` OPEN while re-opening the same
+  path by name — on Windows that is `PermissionError: [Errno 13]` (temp files
+  get `O_TEMPORARY`), invisible on POSIX so mac/CI never saw it. The shim
+  replaces the whole classmethod: `delete=False`, close before use, `unlink`
+  in `finally`. Regression suite: `tools/test_encrypted_manifest_prune.py`.
+  Drop the shim when a pymobiledevice3 release carries the upstream fix.
 - iOS 27+ apply: prompts for password via QInputDialog if encryption is enabled and `use_encrypted_backup` is set
 - Phase 3 passes the password to `mb.restore(password=backup_password)`
 
