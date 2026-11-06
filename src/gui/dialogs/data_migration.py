@@ -68,7 +68,12 @@ def _desaturated(path: str, size: int) -> QPixmap:
 class _MigrationThread(QThread):
     """Runs the move off the GUI thread so the bar keeps painting."""
 
-    progress = Signal(int, int, str)
+    # Byte counts cross a QMetaCallEvent as C++ ints when declared Signal(int):
+    # a multi-gigabyte backup cache overflows 2**31 and PySide raises
+    # OverflowError (with no traceback) during the delivery, surfacing through
+    # sys.excepthook on the QThread as one crash report per progress tick. The
+    # args ride as doubles instead, exact far beyond any byte count.
+    progress = Signal(float, float, str)
     completed = Signal(object)
 
     def __init__(self, plan: MigrationPlan, parent=None):
@@ -83,7 +88,7 @@ class _MigrationThread(QThread):
         result = run_migration(
             self._plan,
             on_progress=lambda moved, total, label: self.progress.emit(
-                moved, total, label),
+                float(moved), float(total), label),
             should_cancel=lambda: self._cancelled,
         )
         self.completed.emit(result)
@@ -219,7 +224,7 @@ class DataMigrationDialog(QDialog):
         self._thread.completed.connect(self._on_completed)
         self._thread.start()
 
-    def _on_progress(self, moved: int, total: int, label: str) -> None:
+    def _on_progress(self, moved: float, total: float, label: str) -> None:
         total = max(total, 1)
         self.progress.setValue(int(1000 * moved / total))
         self.status.setText(QCoreApplication.translate("Nugget", "Moving {0}…").format(label))
