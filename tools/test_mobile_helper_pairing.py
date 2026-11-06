@@ -16,9 +16,11 @@ Run: python tools/test_mobile_helper_pairing.py
 import asyncio
 import plistlib
 import sys
+import tempfile
 import unittest
 from contextlib import asynccontextmanager
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -60,7 +62,7 @@ class FakeLockdown:
 
 def fake_session(lockdown):
     @asynccontextmanager
-    async def session(_udid):
+    async def session(_udid, **_kwargs):
         yield lockdown
     return session
 
@@ -160,6 +162,186 @@ class ReadPairingRecord(unittest.TestCase):
         self.assertEqual(record, {})
         # Nothing is invented from a session that never confirmed trust.
         self.assertEqual(lockdown.asked, [])
+
+
+class PairingFileOnThePhone(unittest.TestCase):
+    """The record already on the phone is only replaced when it is ours."""
+
+    def test_no_record_is_replaced(self):
+        self.assertEqual(mh.pairing_file_action(None), "replace")
+        self.assertEqual(mh.pairing_file_action(b""), "replace")
+
+    def test_an_old_lockdown_record_is_replaced(self):
+        record = mh.complete_pairing_record(dict(HOST_RECORD), UDID)
+        self.assertEqual(mh.pairing_file_action(mh.pairing_record_xml(record)),
+                         "replace")
+
+    def test_a_damaged_file_is_replaced(self):
+        self.assertEqual(mh.pairing_file_action(b"not a plist"), "replace")
+
+    def test_the_app_own_remote_pairing_record_is_kept(self):
+        rp = {"identifier": "AAAA", "private_key": b"rp-key", "public_key": b"rp-pub"}
+        self.assertEqual(mh.pairing_file_action(plistlib.dumps(rp)), "keep")
+
+
+# The record pymobiledevice3 caches after pair-setup on the lockdown link: the
+# Ed25519 key pair (plus a remote-unlock key the phone does not need).
+REMOTE_HOST_RECORD = {
+    "public_key": b"p" * 32,
+    "private_key": b"k" * 32,
+    "remote_unlock_host_key": "",
+}
+
+# The host identifier the device registered during pair-setup. pymobiledevice3
+# keeps it out of its own record (it re-derives the UUIDv3 of the hostname), so
+# the export has to add it to the file the phone receives.
+HOST_ID = "9EE571A7-D873-4828-988F-0F58653FFE59"
+
+
+def fake_remote_pairing_service(record, *, first_pairing=False, closed=None):
+    """A ``RemotePairingLockdownService`` that pairs without a device."""
+    from pymobiledevice3.exceptions import RemotePairingCompletedError
+
+    class FakeService:
+        identifier = HOST_ID
+        handshake_info = {"peerDeviceInfo": {
+            "name": "Test iPhone", "model": "iPhone17,1",
+            "identifier": UDID}}
+
+        def __init__(self):
+            self.pair_record = record
+
+        @classmethod
+        async def create(cls, lockdown):
+            return cls()
+
+        async def connect(self, autopair=True):
+            if first_pairing:
+                # A first pairing ends with the endpoint closing the link.
+                raise RemotePairingCompletedError()
+
+        async def close(self):
+            if closed is not None:
+                closed.append(True)
+
+    return FakeService
+
+
+class RemotePairingExport(unittest.TestCase):
+    def test_the_mobile_record_carries_identifier_and_key_pair(self):
+        parsed = plistlib.loads(mh.mobile_remote_pairing_xml(
+            REMOTE_HOST_RECORD, HOST_ID))
+        self.assertEqual(parsed, {
+            "identifier": HOST_ID,
+            "private_key": b"k" * 32,
+            "public_key": b"p" * 32,
+        })
+
+    def test_a_record_without_a_private_key_is_refused(self):
+        with self.assertRaises(NuggetException):
+            mh.mobile_remote_pairing_xml(
+                {k: v for k, v in REMOTE_HOST_RECORD.items() if k != "private_key"},
+                HOST_ID)
+
+    def test_a_record_without_an_identifier_is_refused(self):
+        with self.assertRaises(NuggetException):
+            mh.mobile_remote_pairing_xml(REMOTE_HOST_RECORD, "  ")
+
+    def test_export_pairs_over_lockdown_and_writes_the_mobile_record(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp) / "out.mobiledevicepairing"
+            closed = []
+            fake = fake_remote_pairing_service(
+                dict(REMOTE_HOST_RECORD), first_pairing=True, closed=closed)
+            lockdown = FakeLockdown(dict(HOST_RECORD))
+            with patch.object(mh, "lockdown_session", fake_session(lockdown)), \
+                    patch("pymobiledevice3.remote.tunnel_service."
+                          "RemotePairingLockdownService", fake):
+                info = asyncio.run(
+                    mh.export_remote_pairing_file(str(dest), udid=UDID))
+
+            parsed = plistlib.loads(dest.read_bytes())
+            self.assertEqual(parsed["identifier"], HOST_ID)
+            self.assertEqual(parsed["private_key"], b"k" * 32)
+            self.assertEqual(parsed["public_key"], b"p" * 32)
+            self.assertEqual(info["path"], str(dest))
+            self.assertEqual(info["name"], "Test iPhone")
+            self.assertEqual(info["model"], "iPhone17,1")
+            self.assertEqual(info["udid"], UDID)
+            # The service is closed on both outcomes, pairing or not.
+            self.assertEqual(closed, [True])
+
+    def test_an_already_paired_device_does_not_need_a_second_pair_setup(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp) / "out.mobiledevicepairing"
+            fake = fake_remote_pairing_service(dict(REMOTE_HOST_RECORD))
+            with patch.object(mh, "lockdown_session",
+                              fake_session(FakeLockdown(dict(HOST_RECORD)))), \
+                    patch("pymobiledevice3.remote.tunnel_service."
+                          "RemotePairingLockdownService", fake):
+                info = asyncio.run(
+                    mh.export_remote_pairing_file(str(dest), udid=UDID))
+            self.assertTrue(dest.exists())
+        self.assertEqual(info["path"], str(dest))
+
+
+class FakeHouse:
+    """The house_arrest calls ``send_pairing_to_app`` makes, and nothing else."""
+
+    def __init__(self, existing=None):
+        self.files = {} if existing is None else {
+            f"Documents/{mh.PAIRING_FILE_NAME}": existing}
+        self.written: dict[str, bytes] = {}
+        self.closed = False
+
+    async def send_command(self, bundle_id, command):
+        self.vend = (bundle_id, command)
+
+    async def listdir(self, _path):
+        return ["Documents"]
+
+    async def mkdir(self, _path):
+        pass
+
+    async def get_file_contents(self, path):
+        if path not in self.files:
+            raise FileNotFoundError(path)
+        return self.files[path]
+
+    async def set_file_contents(self, path, data):
+        self.written[path] = data
+
+    async def close(self):
+        self.closed = True
+
+
+class Delivery(unittest.TestCase):
+    def _send(self, house):
+        lockdown = FakeLockdown(dict(HOST_RECORD), values={"UniqueDeviceID": UDID})
+        with patch.object(mh, "lockdown_session", fake_session(lockdown)), \
+                patch.object(mh, "HouseArrestService", lambda **_kw: house):
+            return asyncio.run(mh.send_pairing_to_app(
+                UDID, b"<plist/>", bundle_id="com.example.app"))
+
+    def test_an_app_pairing_record_is_not_overwritten(self):
+        rp = {"identifier": "AAAA", "private_key": b"rp-key", "public_key": b"rp-pub"}
+        house = FakeHouse(plistlib.dumps(rp))
+        self.assertEqual(self._send(house), "kept")
+        self.assertEqual(house.written, {})
+        self.assertTrue(house.closed)
+
+    def test_our_record_replaces_an_old_lockdown_one(self):
+        house = FakeHouse(mh.pairing_record_xml(
+            mh.complete_pairing_record(dict(HOST_RECORD), UDID)))
+        self.assertEqual(self._send(house), "delivered")
+        self.assertEqual(
+            house.written[f"Documents/{mh.PAIRING_FILE_NAME}"], b"<plist/>")
+        self.assertTrue(house.closed)
+
+    def test_a_fresh_container_gets_the_record(self):
+        house = FakeHouse(None)
+        self.assertEqual(self._send(house), "delivered")
+        self.assertIn(f"Documents/{mh.PAIRING_FILE_NAME}", house.written)
 
 
 if __name__ == "__main__":

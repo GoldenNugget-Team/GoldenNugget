@@ -554,9 +554,60 @@ def _install_device_link_recv_timeout():
     install_recv_timeout()
 
 
+def _install_encrypted_manifest_prune_shim():
+    """Windows-safe rewrite of ``Mobilebackup2Service.prune_backup_manifest``
+    (issue #87: apply failed on Windows + encrypted backup).
+
+    Upstream wraps the decrypted manifest in ``tempfile.NamedTemporaryFile``
+    with ``delete=True`` and NEVER closes it inside the ``with`` block, then
+    ``_decrypt_backup_manifest_db`` reopens the very same path by name
+    (``decrypted_manifest_path.write_bytes(...)``). On Windows a temp file is
+    created with ``O_TEMPORARY`` and re-opening it while still open fails with
+    ``PermissionError: [Errno 13] Permission denied`` — POSIX never sees this,
+    which is why every mac/CI run passes and only Windows users hit it.
+
+    Same steps, with the temp file closed before use and removed in a
+    ``finally`` (``delete=False`` + explicit ``unlink``). Once the fix lands in
+    a pymobiledevice3 release we can drop this shim and the version pin guard
+    below keeps working: the shim replaces the whole classmethod, so a patched
+    upstream simply loses its Windows-only failure mode.
+    """
+    import tempfile
+    from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service
+
+    def prune_backup_manifest(cls, device_directory, filter_callback, password=""):
+        manifest_db_path = device_directory / "Manifest.db"
+        if not cls._is_encrypted_backup(device_directory):
+            return cls._prune_manifest_db(manifest_db_path, filter_callback)
+
+        tmp = tempfile.NamedTemporaryFile(suffix=".sqlite3", delete=False)
+        decrypted_manifest_path = Path(tmp.name)
+        tmp.close()
+        try:
+            manifest_key = cls._decrypt_backup_manifest_db(
+                device_directory, password, decrypted_manifest_path)
+            allowed_file_ids = cls._prune_manifest_db(
+                decrypted_manifest_path, filter_callback)
+            cls._encrypt_backup_manifest_db(
+                decrypted_manifest_path, manifest_db_path, manifest_key)
+            return allowed_file_ids
+        finally:
+            try:
+                decrypted_manifest_path.unlink(missing_ok=True)
+            except OSError:
+                # Windows can keep the file handle alive for a beat after the
+                # last reader closed it; the temp dir is a browser of one-time
+                # files and a leaked .sqlite3 there is harmless.
+                pass
+
+    Mobilebackup2Service.prune_backup_manifest = classmethod(prune_backup_manifest)
+
+
 _install_device_link_verbose()
 _install_device_link_contents_shim()
 _install_device_link_recv_timeout()
+_install_encrypted_manifest_prune_shim()
+
 
 
 def is_protective_device_file(device_name: str, include_photos: bool = True,

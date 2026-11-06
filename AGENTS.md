@@ -2,6 +2,50 @@
 
 > Full codebase documentation: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
+## Linux Releases & the glibc Floor (CI + compile.py)
+
+**The released x86_64 Linux bundle must start on glibc >= 2.34** (Ubuntu 22.04,
+Debian 12, RHEL 9, Mint 21). Users reported "GoldenNugget doesn't work on
+Linux" for every release built after the Python 3.15 swap because
+`actions/setup-python` installs the RUNNER-NATIVE CPython: its `libpython`,
+`lib-dynload` extension modules and the libraries PyInstaller copies from the
+host (libxkbcommon, libmvec, libuuid, …) all demanded GLIBC_2.38/2.39, while
+every shipping wheel sat far lower (PySide6 x86_64 = manylinux_2_34). The
+bundle then died at start on older distros with
+`GLIBC_2.38 not found … required by libpython3.15.so.1.0`.
+
+The guarantee is structural, enforced by CI:
+
+- **build-linux runs INSIDE `quay.io/pypa/manylinux_2_34_x86_64`** (AlmaLinux
+  9 / glibc 2.34). Everything PyInstaller collects from the build environment
+  is therefore ≤ 2.34 by construction. Python comes from
+  **`uv python install 3.15`** (python-build-standalone, glibc 2.17 target),
+  NOT from setup-python — do not reintroduce it in the Linux jobs.
+- **`tools/check_glibc_floor.py` gates the result** (`--floor 2.34`
+  default): it parses each ELF's `.gnu.version_r` (no `strings`-style text
+  sniffs — they false-positive and false-negative) and fails CI when any
+  bundled file would not load on the floor distro. The ARM job keeps
+  `--floor 2.39` because PySide6's aarch64 wheel is manylinux_2_39 — the
+  native `ubuntu-24.04-arm` runner stays there on purpose.
+- **compile.py removes `libgcc_s.so.1` from the bundle** (post-build, Linux
+  only): it is a manylinux-policy whitelisted SYSTEM runtime (gcc-12-base on
+  Debian, libgcc on RHEL — universally present), and bundling the build
+  container's copy pushed the floor to 2.35 for nothing.
+- **compile.py adds `src/gui/liquid/assets`** to the bundle (all platforms):
+  dock/notifications/experience load `more.svg`/`bell.svg`/`usb.svg` from
+  `Path(__file__).parent/'assets'` at runtime, PyInstaller's analysis follows
+  only imports, and every release to date rendered those buttons icon-less
+  (Qt warnings "Cannot open file …/liquid/assets/*.svg" in a frozen app).
+  It is a real bug on EVERY platform, not just Linux.
+- PySide6 6.12's own wheels define the 2.34 floor; if a bumped dependency
+  raises it (e.g. PySide6 6.13+ aarch64-style), decide DELIBERATELY: bump the
+  floor + `DEFAULT_FLOOR` in the gate together, never silently.
+
+Verified end to end (Nov 2026): a container-built bundle passes the gate (0
+offenders) and launches (`GoldenNugget launched.`) on Ubuntu 22.04 with a
+minimal desktop stack, where both released 9.6.2 and 9.7.5 die with
+`GLIBC_2.38 not found` before any window exists.
+
 This document describes the background threads, async backup/restore operations, and error handling used in GoldenNugget.
 
 ## Backend is Qt-free (hard rule, `src/utils/`)
@@ -458,27 +502,55 @@ navigating to Settings. The module is deliberately split in two:
 Settings → Device → **"GoldenNugget Mobile Helper"** sideloads the on-device
 port (`GoldenNugget-Team/GoldenNugget-mobile`, bundle id
 `com.awesomenull.goldennugget`) onto the connected iPhone and delivers its
-pairing record:
+**RemotePairing** pairing record — the transport the app needs on iOS 26.4+.
+The pairing section is a single button, **"Send Remote Pairing"**.
 
 - Device logic (`mobile_helper.py`) is the only consumer allowed to pair with a
   device whose record is not known yet — everything still goes through
-  `lockdown_session`. `read_pairing_record()` returns the record **the host
-  already holds** (no re-pair), **completed** with the keys the host record
-  cannot carry: it is keyed by its file name, so it has no `UDID`, and older
-  records omit `WiFiMACAddress` — both are read from the live device
-  (`complete_pairing_record`). The mobile app's lockdown parser
-  (`Vendor/MinimuxerCommon/PairingFile.swift`) requires all ten keys and
-  rejects the file otherwise. `pairing_record_xml()` dumps it as an
-  **XML plist**: the mobile app's importer (`PairingRecord.accept`) only parses
-  UTF-8 text plists — a binary plist is silently refused there — and refuses
-  (instead of writing a dead file) when a `UDID` is still missing. Offline
-  suite: `tools/test_mobile_helper_pairing.py`.
-- Delivery rides `HouseArrestService` (`VendDocuments`): the record must land
+  `lockdown_session`.
+- **The export is RemotePairing** (`export_remote_pairing_file()`). It is
+  host-initiated and **promptless**: pair-setup runs on
+  `com.apple.dt.remotepairingdeviced.lockdown`, i.e. over the lockdown link
+  that is already trusted, so there is no Wi-Fi pairing, no PIN, no on-device
+  Trust dialog and no **Settings → Developer → Paired Macs** step (the flow
+  iLoader/AltStore use). pymobiledevice3 exposes it as
+  `RemotePairingLockdownService`; a first pairing ends with
+  `RemotePairingCompletedError` (the endpoint closes the link) and a later
+  export pair-verifies with the cached key pair instead. `mobile_remote_pairing_xml()`
+  writes the app's three keys: the key pair from the service's cached record
+  plus `service.identifier` — the UUIDv3-of-hostname the device stores as the
+  host's `accountID`, which pymobiledevice3 keeps out of its own record.
+  `alt_irk` is **not** written: it is the device's mDNS key, only needed for
+  Bonjour discovery, and the phone reaches the device over the tunnel where
+  pair-verify uses the key pair alone.
+- Delivery rides `HouseArrestService` (`VendContainer`): the record must land
   exactly at `Documents/pairingfile.mobiledevicepairing` (`AppPaths.pairingFile`
   on the app side) — filename and location are contract, not convenience.
-  `AppNotInstalledError` is translated into a save-to-disk fallback, same
-  `save_pairing` flow used by the explicit "Save to Disk…" action (the manual
-  AirDrop route when the app is not installed yet).
+  `AppNotInstalledError` is translated into a save-to-disk prompt: the XML is
+  already in hand, so the fallback is a plain write (the manual AirDrop route
+  when the app is not installed yet).
+- **The phone's own record is never overwritten.** On iOS 17+ the app's setup
+  guide pairs itself over RemotePairing and writes an `.rppairing` record
+  (`identifier`/`private_key`/`public_key`) to the same path; that record uses
+  a transport a desktop lockdown record cannot provide, and replacing it left
+  the app unpaired (`InvalidVPN` on iOS 26.4+ — the transport check rejects a
+  userspace utun VPN). `send_pairing_to_app()` reads the file first and
+  `pairing_file_action()` keeps an app-generated record ("kept"); only a
+  missing, damaged or old lockdown record is replaced ("delivered"), and the
+  dialog reports which happened.
+- The **lockdown** helpers (`read_pairing_record()`, `pairing_record_xml()`,
+  `export_pairing_file()`) are still there for older systems and other
+  callers, but no longer have a button. `read_pairing_record()` returns the
+  record **the host already holds** (no re-pair), **completed** with the keys
+  the host record cannot carry: it is keyed by its file name, so it has no
+  `UDID`, and older records omit `WiFiMACAddress` — both are read from the live
+  device (`complete_pairing_record`). The mobile app's lockdown parser
+  (`Vendor/MinimuxerCommon/PairingFile.swift`) requires all ten keys and
+  rejects the file otherwise. `pairing_record_xml()` dumps it as an **XML
+  plist**: the mobile app's importer (`PairingRecord.accept`) only parses UTF-8
+  text plists — a binary plist is silently refused there — and refuses
+  (instead of writing a dead file) when a `UDID` is still missing. Offline
+  suite: `tools/test_mobile_helper_pairing.py`.
 - IPA installation goes through `InstallationProxyService.install_from_local`
   on a background async-loop QThread (pattern of `FetchAppsThread`) for
   **already-signed** IPAs. Latest-release downloads ride QtNetwork
@@ -1010,16 +1082,35 @@ from `src.utils.paths`):
 - Retry logic: 3 attempts with backoff `min(2**attempt, 15)`s — actual delays are 2s and 4s
 - Used in all backup/restore operations
 
-### Global Crash Handler (src/exceptions/crash_handler.py)
-- `install_crash_handler()` sets `sys.excepthook` (plus a `sys.unraisablehook`
-  fallback) and is called once at `main_app` import, before the window is built.
-- `CrashHandlerApp` is a `QApplication` subclass whose `notify()` routes
-  exceptions raised inside Qt event handlers/slots to the same handler —
-  PySide6 would otherwise print and drop them.
+### Global Crash Handler (split: src/exceptions/crash_handler.py + src/gui/crash_ui.py)
+- **The Qt-free core** owns classification (`_classify`), the report/issue-body
+  builders, the startup banner, the faulthandler dump and
+  `sys.excepthook` + `threading.excepthook` (plain worker threads) + a
+  `sys.unraisablehook` fallback. It presents through a pluggable presenter
+  (`set_presenter`) and prints to stderr when there is none (CLI / early
+  startup); installed once at `main_app` import, before the window is built.
+- **The GUI half** (`src/gui/crash_ui.py`) owns `CrashDialog`, `CrashHandlerApp`
+  (whose `notify` guard routes Qt event-handler/slot exceptions the core would
+  otherwise never see), `show_error_dialog` / `report_error` (the presenter),
+  the Qt message handler and `install_crash_handler()`, which installs both
+  halves. GUI code that needs the dialog imports it from
+  `src.gui.crash_ui` — never from the core.
 - On an uncaught exception it shows a `CrashDialog` with a **"Copy Error"**
-  button (copies the full traceback to the clipboard) and a **"Continue"**
-  button that dismisses the dialog and lets the session keep running (no
-  data-loss exit). `KeyboardInterrupt` is still allowed to exit normally.
+  button (copies the full traceback to the clipboard) and a **"Restart App"**
+  button; `KeyboardInterrupt` still exits normally.
+- **NEVER build/exec a dialog from a worker thread — the handler is
+  thread-aware by contract.** A crash reported off the GUI thread (exception
+  escaping a QThread run(), a slot PySide executed in the emitter's thread)
+  must not instantiate `QWidget`/`NSWindow` there: on macOS that is an instant
+  `NSInternalInconsistencyException` ("NSWindow should only be instantiated
+  on the main thread!") aborting the whole process — the crash handler itself
+  used to BE that abort. The core's `_handle_crash` checks
+  `_on_main_thread()` and never runs `os.execv` for a worker-thread crash;
+  the GUI's `show_error_dialog` / `_on_gui_thread()` post a thread-safe
+  `_CrashEvent` into `CrashHandlerApp.event()` (via `QApplication.postEvent`)
+  where the dialog is built and exec'd. Keep new callers of
+  `show_error_dialog` on that contract; a widget may only be created after
+  `_on_gui_thread()` says yes (or after a queued event).
 - Never raises: the crash handler safely falls back to stderr if no
   `QApplication` exists yet.
 
@@ -1029,6 +1120,15 @@ from `src.utils.paths`):
   reuses `_known_backup_encryption` instead of opening a second lockdown
   session, and `perform_protective_backup` auto-resolves `include_keychain`
   from the same query unless it is pinned explicitly.
+- **Windows-safe encrypted-manifest prune shim**
+  (`_install_encrypted_manifest_prune_shim` in `src/restore/protective.py`,
+  issue #87): upstream `Mobilebackup2Service.prune_backup_manifest` (10.7.1)
+  keeps a `NamedTemporaryFile(delete=True)` OPEN while re-opening the same
+  path by name — on Windows that is `PermissionError: [Errno 13]` (temp files
+  get `O_TEMPORARY`), invisible on POSIX so mac/CI never saw it. The shim
+  replaces the whole classmethod: `delete=False`, close before use, `unlink`
+  in `finally`. Regression suite: `tools/test_encrypted_manifest_prune.py`.
+  Drop the shim when a pymobiledevice3 release carries the upstream fix.
 - iOS 27+ apply: prompts for password via QInputDialog if encryption is enabled and `use_encrypted_backup` is set
 - Phase 3 passes the password to `mb.restore(password=backup_password)`
 
