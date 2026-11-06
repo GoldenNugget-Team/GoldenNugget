@@ -288,7 +288,7 @@ jobs:
           installed=0
           for attempt in 1 2 3 4; do
             if uv pip install --python .build-env/bin/python -U pip setuptools wheel \
-              && uv pip install --python .build-env/bin/python --retries 5 --timeout 60 -r requirements.txt; then
+              && UV_HTTP_TIMEOUT=60 uv pip install --python .build-env/bin/python -r requirements.txt; then
               installed=1
               break
             fi
