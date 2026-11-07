@@ -1,6 +1,6 @@
 ![Artboard][NuggetLogo]
 
-# GoldenNugget
+# GoldenNugget Legacy Support
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 
 [Download](https://github.com/GoldenNugget-Team/GoldenNugget/releases/latest) · [Wiki](https://github.com/GoldenNugget-Team/GoldenNugget/wiki) · [Report a bug](https://github.com/GoldenNugget-Team/GoldenNugget/issues/new/choose) · [Discussions](https://github.com/GoldenNugget-Team/GoldenNugget/discussions)
@@ -8,9 +8,7 @@
 > [!WARNING]
 > **Back up your device before applying tweaks.** GoldenNugget can cause data loss, boot loops, or other unexpected device problems. Use this project at your own risk; the authors are not responsible for damage to your device or data. See the [full disclaimer](docs/DISCLAIMER.md).
 
-Unlock your device's full potential, with iOS 27 support!
-
-Customize your device with animated wallpapers, disable pesky daemons, and more!
+Attempt to make GoldenNugget on older iOS versions
 
 Make sure you have installed the [requirements](#requirements) if you are on Windows or Linux.
 
