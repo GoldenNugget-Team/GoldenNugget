@@ -22,6 +22,9 @@ if [[ "$(git -C "$build_root/libusb-1.0.30" rev-parse HEAD)" != "$libusb_commit"
 fi
 (
   cd "$build_root/libusb-1.0.30"
+  # The git tree has no generated ./configure (that ships only in the
+  # dist tarball); bootstrap it from configure.ac first.
+  autoreconf --install --force
   export CFLAGS="-arch arm64 -arch x86_64 -mmacosx-version-min=14.4"
   export LDFLAGS="$CFLAGS"
   ./configure --prefix="$build_root/install" --disable-static --disable-dependency-tracking
