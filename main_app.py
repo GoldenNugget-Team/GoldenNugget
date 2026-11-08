@@ -45,6 +45,25 @@ from src.gui.logger import get_logger, setup_logging
 install_crash_handler()
 print("[init] CrashHandler installed")
 
+# Win: start background thread IMMEDIATELY to kill "Entry Point Not Found"
+# dialog that appears during DLL load (before Qt event loop spins).
+if sys.platform == 'win32':
+    import ctypes
+    import threading
+    import time
+    user32 = ctypes.windll.user32
+    def _watch_bad_dialog():
+        for _ in range(50):  # ~10s max
+            hwnd = user32.FindWindowW(None, "Entry Point Not Found")
+            if hwnd:
+                pid = ctypes.c_ulong()
+                user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+                if pid.value == os.getpid():
+                    user32.PostMessageW(hwnd, 0x0010, 0, 0)  # WM_CLOSE
+                    break
+            time.sleep(0.2)
+    threading.Thread(target=_watch_bad_dialog, daemon=True).start()
+
 
 def _current_ios(dm) -> tuple:
     """(version, model) of the currently selected device, or (None, None)."""
@@ -196,25 +215,6 @@ def main() -> int:
 
     from src.gui.bootstrap import restore_selected_preset
     restore_selected_preset(settings, logger)
-
-    # Win: auto-dismiss the "Entry Point Not Found" modal if qopensslbackend
-    # fires before QT_TLS_BACKEND=schannel takes effect (dev machines only).
-    if sys.platform == 'win32':
-        import ctypes
-        import threading
-        import time
-        user32 = ctypes.windll.user32
-        def _watch_bad_dialog():
-            for _ in range(50):  # ~10s max
-                hwnd = user32.FindWindowW(None, "Entry Point Not Found")
-                if hwnd:
-                    pid = ctypes.c_ulong()
-                    user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
-                    if pid.value == os.getpid():
-                        user32.PostMessageW(hwnd, 0x0010, 0, 0)  # WM_CLOSE
-                        break
-                time.sleep(0.2)
-        threading.Thread(target=_watch_bad_dialog, daemon=True).start()
 
     # Import the main window module while the device-manager preload is still
     # running: the GUI import graph no longer pulls in pymobiledevice3, so the
