@@ -11,6 +11,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        submodules: recursive
 
       - name: Setup Python via uv
         uses: astral-sh/setup-uv@v7

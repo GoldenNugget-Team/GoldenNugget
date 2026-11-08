@@ -764,10 +764,10 @@ applies immediately, and persists as `ui/show_sidebar` in the app settings.
 Application-specific pages, safety dialogs, restore progress and device logic
 remain owned by GoldenNugget; they compose the shared controls.
 
-Update the library with `python3 tools/sync_awesomeui.py` (optional `--source
-/path/to/awesomeUI`), then verify with `--check`. The manifest records working-tree
-SHA-256 hashes as well as the source commit. Runtime and frozen builds use the
-checked-in copy, with no sibling-checkout or pip-install requirement. PyInstaller
+Update the library on the submodule's `python` branch (patch there, bump the
+pointer in GoldenNugget: `git -C awesomeui pull && git add awesomeui`).
+Runtime and frozen builds use the submodule checkout, with no sibling-checkout
+or pip-install requirement. PyInstaller
 collects the statically imported modules and ships the upstream license. Include
 `awesomeui/controls.py` when running translation extraction; its original
 translation contexts are preserved.

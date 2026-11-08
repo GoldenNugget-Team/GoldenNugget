@@ -45,6 +45,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
+        submodules: recursive
       - name: Install universal Python 3.15
         run: |
           curl --fail --location --retry 3 --output "$RUNNER_TEMP/python.pkg" \
@@ -93,6 +94,7 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: "14.4"
     steps:
       - uses: actions/checkout@v5
+        submodules: recursive
       - uses: actions/download-artifact@v7
         with:
           name: macOS-Qt-universal2
@@ -192,6 +194,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        submodules: recursive
 
       - name: Setup Python via uv
         uses: astral-sh/setup-uv@v7
@@ -256,6 +259,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        submodules: recursive
 
       - name: Install Rust + engine build dependencies
         run: |
@@ -338,6 +342,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        submodules: recursive
 
       # uv manages the toolchain itself (python-build-standalone), the same
       # channel the x86_64 container build uses below — no runner-native CPython.
