@@ -23,7 +23,9 @@ fi
 (
   cd "$build_root/libusb-1.0.30"
   # The git tree has no generated ./configure (that ships only in the
-  # dist tarball); bootstrap it from configure.ac first.
+  # dist tarball); bootstrap it from configure.ac first. The runner has
+  # no autotools preinstalled.
+  command -v autoreconf >/dev/null || brew install autoconf automake libtool
   autoreconf --install --force
   export CFLAGS="-arch arm64 -arch x86_64 -mmacosx-version-min=14.4"
   export LDFLAGS="$CFLAGS"
