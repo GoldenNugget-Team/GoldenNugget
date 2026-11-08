@@ -64,6 +64,12 @@ if sys.platform == 'win32':
             time.sleep(0.2)
     threading.Thread(target=_watch_bad_dialog, daemon=True).start()
 
+# Force-load the correct OpenSSL early (when phone NOT connected, first HTTPS
+# request would load qopensslbackend with wrong PATH OpenSSL; phone-connected
+# path loads cryptography/ssl early via DeviceMonitorThread).
+import ssl
+_ = ssl.OPENSSL_VERSION
+
 
 def _current_ios(dm) -> tuple:
     """(version, model) of the currently selected device, or (None, None)."""
