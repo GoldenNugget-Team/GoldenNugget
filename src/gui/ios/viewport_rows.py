@@ -26,7 +26,7 @@ class ViewportRows(QObject):
         content.installEventFilter(self)
 
     def wrap(self, card):
-        from src.gui.liquid.cards import prepare_card
+        from awesomeui.liquid.cards import prepare_card
         prepare_card(card)
         row = _ViewportRow(card, self)
         self._rows.append(row)

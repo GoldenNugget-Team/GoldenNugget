@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtWidgets import QApplication
 
+import src.gui.widgets  # noqa: F401  (configures awesomeUI's host theme)
 from src.gui.ios.operation_result import OperationResultCard, result_text
 from src.gui.theme import ColorThemeManager
 from src.gui.thread_workers.apply_worker import ApplyThread

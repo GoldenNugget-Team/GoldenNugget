@@ -14,13 +14,13 @@ from PySide6.QtWidgets import (
 
 from src.gui.ios.compat import device_family, is_tweak_compatible
 from src.gui.ios.components import (
-    IOSCard,
     IOSSearchEmpty,
     IOSSearchField,
     IOSSectionHeader,
     IOSSegmentedFilter,
-    IOSSwitch,
     IOSValueRow,
+    LiquidCard,
+    LiquidSwitch,
     NumberInputDialog,
     TextInputDialog,
 )
@@ -291,7 +291,7 @@ class IOSSectionContent(QWidget):
             if tweak_id not in tweaks:
                 return
             tweak = tweaks[tweak_id]
-            card = IOSCard()
+            card = LiquidCard()
             if tweak_id == TweakID.ForceSolariumFallback:
                 self.force_solarium_fallback_card = card
             if not is_compatible(tweak_id):
@@ -311,7 +311,7 @@ class IOSSectionContent(QWidget):
             if description:
                 text_layout.addWidget(description_label(description))
             row_layout.addLayout(text_layout, 1)
-            switch = IOSSwitch(tweak.enabled)
+            switch = LiquidSwitch(tweak.enabled)
             spec = SPECS_BY_ID.get(tweak_id)
             if tweak_id == TweakID.DisableSystemAperture:
                 def select_aperture(checked):
@@ -364,15 +364,15 @@ class IOSSectionContent(QWidget):
                 switch.setToolTip(description)
                 card.setToolTip(description)
 
-            from src.gui.liquid.selection_card import bind_selection_card
+            from awesomeui.liquid.selection_card import bind_selection_card
             bind_selection_card(card, switch)
             (target or layout).addWidget(card)
             self._search_rows.append((card, tweak_id, title, description, is_compatible(tweak_id)))
 
         def make_value_card(tweak_id,title,description,initial):
-            from src.gui.liquid.value_entry import GlassValueEntry
+            from awesomeui.liquid.value_entry import GlassValueEntry
             tweak=tweaks[tweak_id]
-            card=IOSCard()
+            card=LiquidCard()
             card_layout=QHBoxLayout(card)
             text_layout=QVBoxLayout()
             label=QLabel(title)
@@ -385,7 +385,7 @@ class IOSSectionContent(QWidget):
             card_layout.addLayout(text_layout,1)
             row=GlassValueEntry(title)
             row.setAccessibleDescription(description)
-            switch=IOSSwitch(tweak.enabled)
+            switch=LiquidSwitch(tweak.enabled)
             switch.setAccessibleName(self.tr('Enable value: {0}').format(title))
             switch._value_editor=row
             spec=SPECS_BY_ID.get(tweak_id)
@@ -410,7 +410,7 @@ class IOSSectionContent(QWidget):
             card_layout.addWidget(switch)
             card_layout.addWidget(self._make_favorite_button(tweak_id,title))
             card_layout.addWidget(self._make_info_button(tweak_id,title))
-            from src.gui.liquid.selection_card import bind_selection_card
+            from awesomeui.liquid.selection_card import bind_selection_card
             bind_selection_card(card,switch)
             return card,row
 
@@ -487,14 +487,14 @@ class IOSSectionContent(QWidget):
             control.toggled.connect(confirm)
             row.set_display_value('Disabled' if tweak.state is False else 'Enabled')
             def edit():
-                from src.gui.liquid.choice_editor import ChoiceDialog
+                from awesomeui.liquid.choice_editor import ChoiceDialog
                 dialog=ChoiceDialog([('Disabled',False,True,None),('Enabled',True,True,None)],tweak.state)
                 def save():
                     if not row.isEnabled():
                         return
                     tweak.set_state(dialog.get_value())
                     row.set_display_value('Enabled' if tweak.state else 'Disabled')
-                from src.gui.liquid.value_editor import ValueEditor
+                from awesomeui.liquid.value_editor import ValueEditor
                 old=getattr(self,'_value_editor_panel',None)
                 if old is not None:
                     from shiboken6 import isValid
@@ -560,7 +560,7 @@ class IOSSectionContent(QWidget):
             body.addWidget(line)
             self._category_lines.append(line)
             layout.addWidget(group)
-            from src.gui.liquid.cards import ControlGrid
+            from awesomeui.liquid.cards import ControlGrid
             grid = ControlGrid()
             body.addLayout(grid)
             start = len(self._search_rows)
@@ -660,7 +660,7 @@ class IOSSectionContent(QWidget):
         self._apply_search()
 
     def _make_favorite_button(self, tweak_id, title):
-        from src.gui.liquid.controls import FavoriteButton
+        from awesomeui.liquid.controls import FavoriteButton
         button = FavoriteButton(self)
         button.setFixedSize(44, 44)
         button.setCheckable(True)
@@ -770,7 +770,7 @@ class IOSSectionContent(QWidget):
             empty_label = "No app override" if is_bundle else "Empty"
             display = value if value else QCoreApplication.translate("Nugget", empty_label)
             row.set_display_value(display)
-        from src.gui.liquid.value_editor import ValueEditor
+        from awesomeui.liquid.value_editor import ValueEditor
         old=getattr(self,'_value_editor_panel',None)
         if old is not None:
             from shiboken6 import isValid
@@ -798,7 +798,7 @@ class IOSSectionContent(QWidget):
             tweaks[tweak_id].set_value(value, toggle_enabled=False)
             display = self.tr("Remove override") if spec is not None and spec.reset_value is not None and value == spec.reset_value else _fmt_number(value)
             row.set_display_value(display)
-        from src.gui.liquid.value_editor import ValueEditor
+        from awesomeui.liquid.value_editor import ValueEditor
         old=getattr(self,'_value_editor_panel',None)
         if old is not None:
             from shiboken6 import isValid

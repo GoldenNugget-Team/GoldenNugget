@@ -16,11 +16,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from awesomeui.controls import _auto_retheme
+from awesomeui.liquid.controls import LiquidSwitch
 from src.gui.theme import t
-from src.gui.widgets import (
-    IOSSwitch,
-    _auto_retheme,
-)
 
 
 def _tr(text):
@@ -55,7 +53,7 @@ class DeveloperPanel(QWidget):
         self.reload_label = QLabel(_tr("Auto Reload (For changes)"))
         actions.addWidget(self.reload_label)
         enabled = not self._packaged and window.settings.value('developer_auto_reload', False, type=bool)
-        self.reload_switch = IOSSwitch(enabled, self)
+        self.reload_switch = LiquidSwitch(enabled, self)
         self.reload_switch.setAccessibleName(_tr("Automatically restart after source changes"))
         self.reload_switch.setToolTip(_tr("Restart after local code or UI assets change. Waits for active device operations to finish."))
         self.reload_switch.setEnabled(not self._packaged)

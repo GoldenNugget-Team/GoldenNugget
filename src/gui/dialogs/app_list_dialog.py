@@ -37,9 +37,7 @@ from PySide6.QtWidgets import (
 )
 
 from src.gui.theme import ColorThemeManager, t, theme_icon
-from src.gui.widgets import (
-    IOSSearchField,
-)
+from src.gui.widgets import IOSSearchField
 
 
 class FetchAppsThread(QThread):

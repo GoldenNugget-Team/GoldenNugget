@@ -2,7 +2,12 @@
 from PySide6.QtCore import QCoreApplication, Qt
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout
 
-from src.gui.ios.components import IOSCard, IOSSwitch, IOSValueRow, decimals_for_step
+from src.gui.ios.components import (
+    IOSValueRow,
+    LiquidCard,
+    LiquidSwitch,
+    decimals_for_step,
+)
 from src.gui.theme import t
 from src.tweaks.registry import SPECS_BY_ID, Kind
 from src.tweaks.tweaks import TweakID, tweaks
@@ -53,7 +58,7 @@ class TweakRowFactory:
         if tweak_id not in tweaks:
             return
         tweak = tweaks[tweak_id]
-        card = IOSCard()
+        card = LiquidCard()
         if tweak_id == TweakID.ForceSolariumFallback:
             self.page.force_solarium_fallback_card = card
         if not self.compatible(tweak_id):
@@ -71,7 +76,7 @@ class TweakRowFactory:
         if description:
             text_layout.addWidget(self.description_label(description))
         row_layout.addLayout(text_layout, 1)
-        switch = IOSSwitch(tweak.enabled)
+        switch = LiquidSwitch(tweak.enabled)
         spec = SPECS_BY_ID.get(tweak_id)
         if tweak_id == TweakID.DisableSystemAperture:
 
@@ -125,7 +130,7 @@ class TweakRowFactory:
         if not self.compatible(tweak_id):
             return
         tweak = tweaks[tweak_id]
-        card = IOSCard()
+        card = LiquidCard()
         card_layout = QHBoxLayout(card)
         card_layout.setContentsMargins(14, 8, 14, 8)
         card_layout.setSpacing(10)
@@ -154,7 +159,7 @@ class TweakRowFactory:
         if not self.compatible(tweak_id):
             return
         tweak = tweaks[tweak_id]
-        card = IOSCard()
+        card = LiquidCard()
         card_layout = QHBoxLayout(card)
         card_layout.setContentsMargins(14, 8, 14, 8)
         card_layout.setSpacing(10)

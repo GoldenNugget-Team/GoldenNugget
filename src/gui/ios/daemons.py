@@ -23,13 +23,13 @@ from PySide6.QtWidgets import (
 
 from src.controllers.favorites import TweakFavorites
 from src.gui.ios.components import (
-    IOSCard,
     IOSSearchEmpty,
     IOSSearchField,
     IOSSectionHeader,
     IOSSegmentedFilter,
     IOSSettingsAction,
-    IOSSwitch,
+    LiquidCard,
+    LiquidSwitch,
 )
 from src.gui.theme import ColorThemeManager, t, theme_icon, theme_pixmap
 from src.tweaks.daemon_descriptions import DAEMON_DESCRIPTIONS
@@ -219,7 +219,7 @@ class IOSDaemonsContent(QWidget):
         layout.addWidget(IOSSectionHeader(
             QCoreApplication.translate("Nugget", "Configuration")
         ))
-        master_card = IOSCard()
+        master_card = LiquidCard()
         master_row = QHBoxLayout(master_card)
         master_row.setContentsMargins(16, 12, 16, 12)
         master_row.setSpacing(_ROW_SPACING)
@@ -237,7 +237,7 @@ class IOSDaemonsContent(QWidget):
         master_detail.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px;")
         master_text.addWidget(master_detail)
         master_row.addLayout(master_text, 1)
-        self.master_switch = IOSSwitch(self.daemons_tweak.enabled)
+        self.master_switch = LiquidSwitch(self.daemons_tweak.enabled)
         self.master_switch.toggled.connect(self._on_master_toggled)
         master_row.addWidget(self.master_switch)
         _reserve_action_space(master_row)
@@ -344,7 +344,7 @@ class IOSDaemonsContent(QWidget):
         self._screen_time_card = None
         self.screen_time_tweak = tweaks.get(TweakID.ClearScreenTimeAgentPlist)
         if self.screen_time_tweak is not None:
-            card = IOSCard()
+            card = LiquidCard()
             self._screen_time_card = card
             card.setProperty("searchText", "Screen Time ScreenTimeAgent clear plist")
             row_layout = QHBoxLayout(card)
@@ -365,7 +365,7 @@ class IOSDaemonsContent(QWidget):
             self._daemon_labels.append(detail)
             text.addWidget(detail)
             row_layout.addLayout(text, 1)
-            self.screen_time_switch = IOSSwitch(self.screen_time_tweak.enabled)
+            self.screen_time_switch = LiquidSwitch(self.screen_time_tweak.enabled)
             self.screen_time_switch.toggled.connect(self._on_screen_time_toggled)
             row_layout.addWidget(self.screen_time_switch)
             _reserve_action_space(row_layout)
@@ -471,12 +471,12 @@ class IOSDaemonsContent(QWidget):
             separator.setFixedHeight(1)
             self._category_lines.append(separator)
             group_layout.addWidget(separator)
-            from src.gui.liquid.cards import ControlGrid, prepare_card
+            from awesomeui.liquid.cards import ControlGrid, prepare_card
             grid = ControlGrid()
             group_layout.addLayout(grid)
             if title == REPORTS_CATEGORY:
                 self._analytics_group = group
-                master = IOSCard()
+                master = LiquidCard()
                 row = QHBoxLayout(master)
                 row.setContentsMargins(16, 12, 16, 12)
                 row.setSpacing(_ROW_SPACING)
@@ -489,7 +489,7 @@ class IOSDaemonsContent(QWidget):
                 text.addWidget(label)
                 text.addWidget(self._analytics_count_label)
                 row.addLayout(text, 1)
-                self.analytics_switch = IOSSwitch(False)
+                self.analytics_switch = LiquidSwitch(False)
                 self.analytics_switch.toggled.connect(self._toggle_all_analytics)
                 row.addWidget(self.analytics_switch)
                 _reserve_action_space(row)
@@ -566,7 +566,7 @@ class IOSDaemonsContent(QWidget):
         from src.gui.ios.feature_news import control_title
         title = control_title(title)
         information = information or self.tr(DAEMON_DESCRIPTIONS.get(daemon.name, ""))
-        card = IOSCard()
+        card = LiquidCard()
         card.setProperty("searchText", " ".join([title, information, daemon.name, *daemon.value]))
         card.setProperty("sortTitle", title.removeprefix(self.tr("Disable ")).casefold())
         row_layout = QHBoxLayout(card)
@@ -597,14 +597,14 @@ class IOSDaemonsContent(QWidget):
         dangerous = any(key in self.daemons_tweak.never_enable for key in daemon.value)
         if dangerous:
             value = False
-        switch = IOSSwitch(value)
+        switch = LiquidSwitch(value)
         switch.toggled.connect(
             lambda checked, d=daemon: self._on_daemon_toggled(d, checked)
         )
         from src.gui.ios.feature_news import add_new_badge
         add_new_badge(row_layout, "daemon:" + daemon.name, card)
         row_layout.addWidget(switch)
-        from src.gui.liquid.controls import FavoriteButton
+        from awesomeui.liquid.controls import FavoriteButton
         favorite = FavoriteButton(self)
         favorite.setFixedSize(_FAVORITE_SIZE, _FAVORITE_SIZE)
         favorite.setCheckable(True)
@@ -653,7 +653,7 @@ class IOSDaemonsContent(QWidget):
             self._forced_notes.append(note)
             row_layout.insertWidget(row_layout.indexOf(switch), note)
 
-        from src.gui.liquid.selection_card import bind_selection_card
+        from awesomeui.liquid.selection_card import bind_selection_card
         bind_selection_card(card,switch, favorite_feedback=True)
         row = self._viewport_rows.wrap(card)
         row.setParent(self._rows)

@@ -9,9 +9,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from awesomeui.liquid.controls import LiquidCard
 from src.devicemanagement.device_capabilities import device_text
 from src.gui.theme import ColorThemeManager, t, theme_pixmap
-from src.gui.widgets import IOSCard
 
 
 def result_text(success, error, reset_pages=None, preview=None):
@@ -44,7 +44,7 @@ def result_text(success, error, reset_pages=None, preview=None):
     return "\n".join(lines)
 
 
-class OperationResultCard(IOSCard):
+class OperationResultCard(LiquidCard):
     def __init__(self, open_logs, dismiss, parent=None):
         super().__init__(parent)
         self._success = True

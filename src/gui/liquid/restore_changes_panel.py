@@ -19,12 +19,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from awesomeui.liquid.controls import GlassCheckBox, GlassPanel, LiquidButton
+from awesomeui.liquid.placement import reveal_sheet, sheet_rect
 from src.gui.ios.feature_icons import FEATURE_ICONS
 from src.gui.theme import ColorThemeManager, theme_icon, theme_pixmap
 from src.utils.pages import Page, get_resettable_pages
-
-from .controls import GlassCheckBox, GlassPanel, LiquidButton
-from .placement import reveal_sheet, sheet_rect
 
 
 class RestoreSectionCard(QPushButton):

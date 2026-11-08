@@ -1,13 +1,9 @@
 from PySide6.QtCore import QCoreApplication, Qt, QTimer
 from PySide6.QtWidgets import QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget
 
+from awesomeui.controls import IOSSectionHeader
+from awesomeui.liquid.controls import LiquidActionButton, LiquidCard, LiquidDangerButton
 from src.gui.theme import ColorThemeManager, t
-from src.gui.widgets import (
-    IOSCard,
-    IOSDangerButton,
-    IOSPrimaryButton,
-    IOSSectionHeader,
-)
 
 
 class IOSApplyPage(QWidget):
@@ -39,7 +35,7 @@ class IOSApplyPage(QWidget):
         self.apply_header = IOSSectionHeader(QCoreApplication.translate("Nugget", "Apply Tweaks"))
         content_layout.addWidget(self.apply_header)
 
-        self.apply_card = apply_card = IOSCard()
+        self.apply_card = apply_card = LiquidCard()
         apply_layout = QVBoxLayout(apply_card)
         apply_layout.setContentsMargins(16, 12, 16, 12)
         apply_layout.setSpacing(8)
@@ -54,7 +50,7 @@ class IOSApplyPage(QWidget):
         self.apply_desc = apply_desc
         apply_layout.addWidget(apply_desc)
 
-        self.apply_btn = IOSPrimaryButton(QCoreApplication.translate(
+        self.apply_btn = LiquidActionButton(QCoreApplication.translate(
             "Nugget", "Apply Tweaks"))
         self.apply_btn.setToolTip(QCoreApplication.translate(
             "Nugget", "Apply all enabled tweaks and restart the device."))
@@ -77,7 +73,7 @@ class IOSApplyPage(QWidget):
         self.remove_header = IOSSectionHeader(QCoreApplication.translate("Nugget", "Restore Defaults"))
         content_layout.addWidget(self.remove_header)
 
-        self.remove_card = remove_card = IOSCard()
+        self.remove_card = remove_card = LiquidCard()
         remove_layout = QVBoxLayout(remove_card)
         remove_layout.setContentsMargins(16, 12, 16, 12)
         remove_layout.setSpacing(8)
@@ -90,7 +86,7 @@ class IOSApplyPage(QWidget):
         self.remove_desc = remove_desc
         remove_layout.addWidget(remove_desc)
 
-        self.remove_btn = IOSDangerButton(QCoreApplication.translate(
+        self.remove_btn = LiquidDangerButton(QCoreApplication.translate(
             "Nugget", "Restore Defaults"))
         self.remove_btn.setToolTip(QCoreApplication.translate(
             "Nugget", "Restore the stock values for the selected tweak pages."))

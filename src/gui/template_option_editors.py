@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from src.gui.liquid.choice_editor import GlassComboBox
+from awesomeui.liquid.choice_editor import GlassComboBox
 from src.tweaks.posterboard.template_options.picker_option import PickerOption
 from src.tweaks.posterboard.template_options.remove_option import RemoveOption
 from src.tweaks.posterboard.template_options.replace_option import ReplaceOption

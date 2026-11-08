@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, Optional
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtCore import QCoreApplication
 
+from awesomeui.controls import IOSSectionHeader
 from src.controllers.video_handler import set_ignore_frame_limit
 from src.devicemanagement.constants import Version
 from src.devicemanagement.device_capabilities import device_text
@@ -30,6 +31,7 @@ from src.gui.thread_workers.apply_worker import (
     set_sudo_pwd,
 )
 from src.gui.version import App_Build, App_Version
+from src.gui.widgets import IOSCollapsibleSection
 from src.tweaks.tweaks import TweakID, tweaks
 from src.utils.alerts import AlertIcon
 
@@ -904,7 +906,7 @@ class NavigationMixin(_WindowBase):
 
 
     def _page_section_targets(self, page):
-        from src.gui.widgets import IOSCollapsibleSection, IOSSectionHeader
+
         scrolls = page.findChildren(QtWidgets.QScrollArea)
         headers = page.findChildren(IOSCollapsibleSection) + page.findChildren(IOSSectionHeader)
         for widget in headers:
@@ -919,7 +921,7 @@ class NavigationMixin(_WindowBase):
                 yield widget.property("navigationTitle") or widget.text(), widget
 
     def _jump_to_page_section(self, page, name):
-        from src.gui.widgets import IOSCollapsibleSection
+
         for label, target in self._page_section_targets(page):
             if label != name:
                 continue
@@ -936,7 +938,7 @@ class NavigationMixin(_WindowBase):
                     bar = area.verticalScrollBar()
                     target = max(0, min(bar.maximum(), position - 12))
                     if hasattr(self, 'liquid'):
-                        from src.gui.liquid.motion import animate
+                        from awesomeui.liquid.motion import animate
                         animate(area, bar.value(), target, lambda value: bar.setValue(round(value)), duration=320)
                     else:
                         bar.setValue(target)

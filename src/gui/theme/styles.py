@@ -144,12 +144,12 @@ STYLES = {
     """,
 
     "card": """
-        IOSCard {{
+        LiquidCard {{
             background-color: {bg_secondary};
             border-radius: 14px;
             border: 1px solid {border};
         }}
-        IOSCard QLabel {{ background-color: transparent; }}
+        LiquidCard QLabel {{ background-color: transparent; }}
     """,
 
     "nav_bar": """
@@ -515,7 +515,7 @@ STYLES = {
         QPushButton#cancelBtn:hover {{ background-color: {surface_hover}; }}
     """,
 
-    # IOSSwitch paints its own track/knob (it animates the knob position and
+    # LiquidSwitch paints its own track/knob (it animates the knob position and
     # fades the track color), so there is no switch stylesheet here.
 
     "row_title": "color: {text_primary}; font-size: 15px; background-color: transparent;",
@@ -794,12 +794,12 @@ STYLES = {
     """,
 
     "home_tile": """
-        IOSCard {{
+        LiquidCard {{
             background-color: {bg_tertiary};
             border-radius: 14px;
             border: 1px solid transparent;
         }}
-        IOSCard QLabel {{ background-color: transparent; }}
+        LiquidCard QLabel {{ background-color: transparent; }}
     """,
 
     "home_tile_title": (

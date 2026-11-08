@@ -16,17 +16,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from src.gui.liquid.choice_editor import GlassComboBox as QComboBox  # noqa: F811 (intentional: swap in glass combos)
+from awesomeui.liquid.choice_editor import GlassComboBox as QComboBox  # noqa: F811 (intentional: swap in glass combos)
+from awesomeui.liquid.controls import LiquidActionButton, LiquidCard, LiquidSwitch
 from src.gui.theme import ColorThemeManager, t, theme_pixmap
-from src.gui.widgets import (
-    IOSCard,
-    IOSPrimaryButton,
-    IOSSwitch,
-)
 from src.tweaks.tweaks import TweakID, tweaks
 
 
-class TendieRow(IOSCard):
+class TendieRow(LiquidCard):
     """One installed ``.tendies`` wallpaper as a full-width list row.
 
     Left: the preview thumbnail. Middle: the wallpaper name plus a caption
@@ -69,7 +65,7 @@ class TendieRow(IOSCard):
         self.convert_switch = None
         self.convert_lbl = None
         if tweaks[TweakID.PosterBoard].tendie_needs_conversion(tendie):
-            self.convert_switch = IOSSwitch(
+            self.convert_switch = LiquidSwitch(
                 tweaks[TweakID.PosterBoard].tendie_convert_enabled(tendie), self)
             self.convert_switch.setToolTip(QCoreApplication.translate(
                 "Nugget",
@@ -106,7 +102,7 @@ class TendieRow(IOSCard):
         self.del_btn.clicked.connect(lambda: page._delete_tendie(tendie))
         inner.addWidget(self.del_btn)
 
-        # IOSCard.__init__ already connected _retheme to theme_changed; restyle
+        # LiquidCard.__init__ already connected _retheme to theme_changed; restyle
         # now that the child widgets exist.
         self._retheme()
         self._update_conversion_ui()
@@ -184,7 +180,7 @@ class IOSPosterboardPage(QWidget):
         layout.setSpacing(0)
 
         # Reset PosterBoard card
-        reset_card = IOSCard()
+        reset_card = LiquidCard()
         reset_layout = QVBoxLayout(reset_card)
         reset_layout.setContentsMargins(16, 12, 16, 12)
         reset_layout.setSpacing(8)
@@ -416,7 +412,7 @@ class IOSPosterboardPage(QWidget):
         return self._tendies_scroll
 
     def _create_download_card(self) -> QWidget:
-        card = IOSCard()
+        card = LiquidCard()
         card.setCursor(Qt.PointingHandCursor)
         card.setMinimumHeight(88)
         card.mousePressEvent = lambda e: self.open_wallpaper_downloader()
@@ -447,7 +443,7 @@ class IOSPosterboardPage(QWidget):
         return card
 
     def _create_import_row(self) -> QWidget:
-        card = IOSCard()
+        card = LiquidCard()
         card.setCursor(Qt.PointingHandCursor)
         card.setMinimumHeight(88)
         card.mousePressEvent = lambda e: self.show_add_tendies_dialog()
@@ -537,14 +533,14 @@ class IOSPosterboardPage(QWidget):
         calc_row.addWidget(self.calc_mode_drp, 1)
         v_layout.addLayout(calc_row)
 
-        export_btn = IOSPrimaryButton(QCoreApplication.translate("Nugget", "Export Video Loop (.tendies)"))
+        export_btn = LiquidActionButton(QCoreApplication.translate("Nugget", "Export Video Loop (.tendies)"))
         export_btn.clicked.connect(self.on_export_video_clicked)
         v_layout.addWidget(export_btn)
 
         ext_row = QHBoxLayout()
-        discover_btn = IOSPrimaryButton(QCoreApplication.translate("Nugget", "Discover Wallpapers"))
+        discover_btn = LiquidActionButton(QCoreApplication.translate("Nugget", "Discover Wallpapers"))
         discover_btn.clicked.connect(self.on_discover_wallpapers)
-        help_btn = IOSPrimaryButton(QCoreApplication.translate("Nugget", "Help"))
+        help_btn = LiquidActionButton(QCoreApplication.translate("Nugget", "Help"))
         help_btn.clicked.connect(self.on_help)
         ext_row.addWidget(discover_btn)
         ext_row.addWidget(help_btn)

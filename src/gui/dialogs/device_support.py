@@ -10,15 +10,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from awesomeui.liquid.controls import LiquidCard
 from src.controllers.hotload import HotLoad
 from src.devicemanagement.device_capabilities import device_os_text
 from src.devicemanagement.passcode_support import current_passcode_theme_reason
 from src.gui.ios.compat import compatibility_reasons
 from src.gui.theme import ColorThemeManager, t
-from src.gui.widgets import (
-    IOSCard,
-    IOSCollapsibleSection,
-)
+from src.gui.widgets import IOSCollapsibleSection
 from src.tweaks.registry import SPECS
 from src.tweaks.tweak_names import TweakID
 
@@ -148,7 +146,7 @@ class DeviceSupportDialog(QDialog):
         scroll.setWidget(content)
         layout.addWidget(scroll, 1)
 
-        device = IOSCard()
+        device = LiquidCard()
         device_layout = QVBoxLayout(device)
         device_layout.setContentsMargins(16, 16, 16, 16)
         device_layout.setSpacing(10)
@@ -182,7 +180,7 @@ class DeviceSupportDialog(QDialog):
         counts.setSpacing(10)
         for key, text in (("available", QT_TRANSLATE_NOOP("Nugget", "Available")), ("unavailable", QT_TRANSLATE_NOOP("Nugget", "Unavailable")),
                           ("blocked", QT_TRANSLATE_NOOP("Nugget", "Safety Restrictions"))):
-            card = IOSCard()
+            card = LiquidCard()
             column = QVBoxLayout(card)
             column.setContentsMargins(12, 12, 12, 12)
             column.setSpacing(4)
@@ -252,7 +250,7 @@ class DeviceSupportDialog(QDialog):
         return label
 
     def _entry_card(self, title, entries):
-        card = IOSCard()
+        card = LiquidCard()
         layout = QVBoxLayout(card)
         layout.setContentsMargins(16, 14, 16, 14)
         layout.setSpacing(8)

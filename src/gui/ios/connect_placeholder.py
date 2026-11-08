@@ -8,10 +8,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from awesomeui.liquid.controls import LiquidActionButton
 from src.gui.theme import ColorThemeManager, t, theme_pixmap
-from src.gui.widgets import (
-    IOSPrimaryButton,
-)
 
 
 class ConnectDevicePlaceholder(QWidget):
@@ -69,7 +67,7 @@ class ConnectDevicePlaceholder(QWidget):
         self._steps.setTextFormat(Qt.PlainText)
         layout.addWidget(self._steps, 0, Qt.AlignHCenter)
 
-        self._refresh_btn = IOSPrimaryButton(
+        self._refresh_btn = LiquidActionButton(
             QCoreApplication.translate("Nugget", "Check connection"), self)
         self._refresh_btn.setMinimumWidth(240)
         self._refresh_btn.clicked.connect(self._refresh)

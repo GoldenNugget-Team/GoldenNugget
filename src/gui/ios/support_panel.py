@@ -18,12 +18,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from awesomeui.liquid.controls import LiquidCard
 from src.gui.credits import CREDIT_AVATAR_SOURCES, CREDIT_AVATARS, CREDITS
 from src.gui.ios.contributor_media import TRANSLATIONS_REPOSITORY, ContributorMedia
 from src.gui.theme import ColorThemeManager, t, theme_pixmap
-from src.gui.widgets import (
-    IOSCard,
-)
 
 
 def _tr(text):
@@ -46,7 +44,7 @@ class ContributorCredit(QWidget):
         """)
 
 
-class _ProfileCard(IOSCard):
+class _ProfileCard(LiquidCard):
     """A developer tile drawn with the same liquid-glass treatment as the home tiles.
 
     The glass (translucent fill, sheen, rim and pointer reflection) comes from
@@ -66,7 +64,7 @@ class _ProfileCard(IOSCard):
             self.shift(1.0)
 
 
-class SupportPanel(IOSCard):
+class SupportPanel(LiquidCard):
     def __init__(self, parent=None, links=None):
         super().__init__(parent)
         self.setProperty('silentHoverAudio',True)
@@ -93,7 +91,7 @@ class SupportPanel(IOSCard):
         for (role, name, url), portrait in zip(CREDITS[:len(portraits)], portraits):
             team.addWidget(self._profile(role, name, url, portrait), 1)
         layout.addLayout(team)
-        credits = IOSCard(self)
+        credits = LiquidCard(self)
         credits_layout = QVBoxLayout(credits)
         credits_layout.setContentsMargins(20, 18, 20, 18)
         credits_layout.setSpacing(16)

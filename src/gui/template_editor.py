@@ -1,7 +1,7 @@
 """Qt editor for template selections; archive metadata stays in the model."""
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from src.gui.liquid.choice_editor import GlassComboBox
+from awesomeui.liquid.choice_editor import GlassComboBox
 from src.gui.template_option_editors import (
     bind_previews as bind_option_previews,
 )

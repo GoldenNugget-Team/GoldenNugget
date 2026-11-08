@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from awesomeui.liquid.controls import LiquidActionButton, LiquidCard
 from src.devicemanagement.constants import normalize_udid
 from src.devicemanagement.device_capabilities import device_os_name
 from src.devicemanagement.passcode_support import current_passcode_theme_reason
@@ -33,10 +34,6 @@ from src.devicemanagement.storage_info import format_device_capacity
 from src.gui.ios.feature_icons import FEATURE_ICONS
 from src.gui.ios.nugget_logo import NuggetLogo
 from src.gui.theme import ColorThemeManager, t, theme_icon, theme_pixmap
-from src.gui.widgets import (
-    IOSCard,
-    IOSPrimaryButton,
-)
 
 
 def _restyle(widget, sheet):
@@ -125,7 +122,7 @@ class _StorageThread(QThread):
         return None
 
 
-class _TileCard(IOSCard):
+class _TileCard(LiquidCard):
     """A home feature tile with a stationary hover outline."""
 
     def __init__(self, parent=None):
@@ -485,7 +482,7 @@ class IOSHomePage(QWidget):
         actions.setContentsMargins(0, 0, 0, 0)
         actions.setSpacing(12)
 
-        self.apply_btn = apply_btn = IOSPrimaryButton(QCoreApplication.translate("Nugget", "Apply Tweaks"))
+        self.apply_btn = apply_btn = LiquidActionButton(QCoreApplication.translate("Nugget", "Apply Tweaks"))
         apply_btn.clicked.connect(self.open_apply_classic)
         actions.addWidget(apply_btn, 1)
 
@@ -494,7 +491,7 @@ class IOSHomePage(QWidget):
         from src.gui.ios.restore_progress import RestoreProgressCard
         self.progress_card = RestoreProgressCard(self, compact=True)
         layout.addWidget(self.progress_card)
-        self.operation_status_btn = IOSPrimaryButton(self.tr("Restore Status"))
+        self.operation_status_btn = LiquidActionButton(self.tr("Restore Status"))
         self.operation_status_btn.clicked.connect(self.open_apply_classic)
         self.operation_status_btn.hide()
         layout.addWidget(self.operation_status_btn)
@@ -1119,7 +1116,7 @@ class IOSHomePage(QWidget):
         self.statusbar_card.setVisible(visible)
         self.cards_grid.reflow()
 
-    def _make_card(self, title: str, subtitle: str, page_index: int) -> IOSCard:
+    def _make_card(self, title: str, subtitle: str, page_index: int) -> LiquidCard:
         """One home feature tile: a big themed icon with the name below it."""
         card = _TileCard()
         card.setProperty('liquidHomeCard',True)
@@ -1133,7 +1130,7 @@ class IOSHomePage(QWidget):
         card_layout.setAlignment(Qt.AlignHCenter)
 
         icon_res = FEATURE_ICONS.get(title, ":/icon/compass.svg")
-        from src.gui.liquid.controls import MagnifyingArtwork
+        from awesomeui.liquid.controls import MagnifyingArtwork
         icon_lbl = MagnifyingArtwork(card)
         icon_lbl.setFixedSize(140, 128)
         icon_lbl.setAlignment(Qt.AlignCenter)
@@ -1165,7 +1162,7 @@ class IOSHomePage(QWidget):
         card.setCursor(Qt.PointingHandCursor)
         return card
 
-    def _make_mobile_row(self) -> IOSCard:
+    def _make_mobile_row(self) -> LiquidCard:
         """The GoldenNugget Mobile compact row: opens the helper dialog.
 
         Same one-line shape as _make_catalog_row() — this entry has no page
@@ -1201,7 +1198,7 @@ class IOSHomePage(QWidget):
         self._paint_mobile_row()
         return card
 
-    def _make_catalog_row(self) -> IOSCard:
+    def _make_catalog_row(self) -> LiquidCard:
         """The Community Catalog entry: icon, name and caption on one line."""
         card = _TileCard()
         card.setProperty('liquidCatalog',True)

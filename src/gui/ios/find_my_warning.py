@@ -2,12 +2,12 @@
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
+from awesomeui.liquid.controls import LiquidCard
 from src.devicemanagement.device_capabilities import device_text
 from src.gui.theme import ColorThemeManager, t, theme_pixmap
-from src.gui.widgets import IOSCard
 
 
-class FindMyWarningCard(IOSCard):
+class FindMyWarningCard(LiquidCard):
     def __init__(self, window, parent=None):
         self._content_ready = False
         super().__init__(parent)

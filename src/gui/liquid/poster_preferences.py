@@ -3,6 +3,12 @@ from copy import deepcopy
 from PySide6.QtGui import QColor, QIcon, QPixmap
 from PySide6.QtWidgets import QHBoxLayout, QLabel
 
+from awesomeui.liquid.cards import prepare_card
+from awesomeui.liquid.choice_editor import ChoiceDialog
+from awesomeui.liquid.controls import LiquidButton
+from awesomeui.liquid.selection_card import bind_selection_card
+from awesomeui.liquid.value_editor import ValueEditor
+from awesomeui.liquid.value_entry import GlassValueEntry
 from src.gui.ios.components import NumberInputDialog, TextInputDialog
 from src.gui.theme import ColorThemeManager
 from src.gui.widgets import IOSCard, IOSSwitch
@@ -14,13 +20,6 @@ from src.tweaks.posterboard.preference_controls import (
 )
 from src.tweaks.registry import Kind
 from src.tweaks.tweaks import tweaks
-
-from .cards import prepare_card
-from .choice_editor import ChoiceDialog
-from .controls import LiquidButton
-from .selection_card import bind_selection_card
-from .value_editor import ValueEditor
-from .value_entry import GlassValueEntry
 
 
 def render_poster_flag(content,spec,target):
@@ -223,7 +222,7 @@ def render_poster_preferences(content, spec, target):
         def pick_color():
             prefix='Home Screen:customizationConfiguration._tintColorStyle.'
             seed=QColor.fromHsvF(float(current(prefix+'_hue',.5)),float(current(prefix+'_saturation',1.0)),1.0,float(current(prefix+'_alpha',1.0)))
-            from .color_editor import ColorPickerDialog
+            from awesomeui.liquid.color_editor import ColorPickerDialog
             dialog=ColorPickerDialog(seed,allow_brightness=False)
             def save():
                 if not tint.isEnabled():

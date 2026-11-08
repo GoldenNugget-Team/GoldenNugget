@@ -11,18 +11,15 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from awesomeui.controls import IOSSectionHeader
+from awesomeui.liquid.cards import ControlGrid, prepare_card
+from awesomeui.liquid.controls import LiquidCard, LiquidSwitch
+from awesomeui.liquid.selection_card import bind_selection_card
+from awesomeui.liquid.value_entry import GlassValueEntry
 from src.controllers.settings import Settings
 from src.devicemanagement.device_capabilities import device_os_name
 from src.gui.ios.components import NumberInputDialog, TextInputDialog
-from src.gui.liquid.cards import ControlGrid, prepare_card
-from src.gui.liquid.selection_card import bind_selection_card
-from src.gui.liquid.value_entry import GlassValueEntry
 from src.gui.theme import ColorThemeManager, t, theme_icon
-from src.gui.widgets import (
-    IOSCard,
-    IOSSectionHeader,
-    IOSSwitch,
-)
 from src.tweaks.status_bar.status_setter import StatusBarItem
 from src.tweaks.tweaks import TweakID, tweaks
 
@@ -315,7 +312,7 @@ class IOSStatusBarPage(QWidget):
         return header
 
     def _make_master_control(self):
-        card = IOSCard()
+        card = LiquidCard()
         row = QHBoxLayout(card)
         row.setContentsMargins(16, 12, 16, 12)
         row.setSpacing(12)
@@ -332,7 +329,7 @@ class IOSStatusBarPage(QWidget):
         text.addWidget(title)
         text.addWidget(detail)
         row.addLayout(text, 1)
-        self.enabled_switch = IOSSwitch(self.status_manager.enabled)
+        self.enabled_switch = LiquidSwitch(self.status_manager.enabled)
         self.enabled_switch.setAccessibleName(title.text())
         self.enabled_switch.toggled.connect(self._on_enabled_toggled)
         row.addWidget(self.enabled_switch)
@@ -382,7 +379,7 @@ class IOSStatusBarPage(QWidget):
             return
         from shiboken6 import isValid
 
-        from src.gui.liquid.value_editor import ValueEditor
+        from awesomeui.liquid.value_editor import ValueEditor
         old = getattr(self, '_value_editor_panel', None)
         if old is not None and isValid(old):
             old.close()
@@ -406,7 +403,7 @@ class IOSStatusBarPage(QWidget):
         self._ios27_note.setStyleSheet(
             f"background-color: transparent; color: {c.text_secondary}; font-size: 14px;")
         for widget, _ in self._rows:
-            if not isinstance(widget, IOSCard):
+            if not isinstance(widget, LiquidCard):
                 continue
             # Style labels inside cards (switch rows, text rows, number rows)
             row = widget.findChild(QHBoxLayout)
@@ -437,10 +434,10 @@ class IOSStatusBarPage(QWidget):
         self.enabled_switch.blockSignals(False)
         master_card = self.enabled_switch.parentWidget()
         for card, _ in self._rows:
-            if isinstance(card, IOSCard):
+            if isinstance(card, LiquidCard):
                 card.setEnabled(card is master_card or self.status_manager.enabled)
                 entry = card.findChild(StatusValueEntry)
-                switch = card.findChild(IOSSwitch)
+                switch = card.findChild(LiquidSwitch)
                 if entry is not None and switch is not None:
                     self._sync_value_enabled(entry, switch.isChecked())
 
@@ -469,7 +466,7 @@ class IOSStatusBarPage(QWidget):
 
     def _make_switch(self, title: str, checked: bool, on_toggled, survives_ios27: bool = False, compact=False):
         c = ColorThemeManager.instance().colors
-        card = IOSCard()
+        card = LiquidCard()
         card.setProperty('liquidCompactCard', compact)
         row = QHBoxLayout(card)
         row.setContentsMargins(16, 12, 16, 12)
@@ -478,7 +475,7 @@ class IOSStatusBarPage(QWidget):
         label.setWordWrap(True)
         label.setStyleSheet(f"color: {c.text_primary}; font-size: 15px;")
         row.addWidget(label, 1)
-        switch = IOSSwitch(checked)
+        switch = LiquidSwitch(checked)
         switch.toggled.connect(on_toggled)
         row.addWidget(switch)
         row.addSpacing(56)
@@ -488,7 +485,7 @@ class IOSStatusBarPage(QWidget):
     def _make_text_row(self, title: str, overridden: bool, current: str, setter, unsetter, survives_ios27: bool = False,
                        pattern: str = None, placeholder: str = None):
         c = ColorThemeManager.instance().colors
-        card = IOSCard()
+        card = LiquidCard()
         row = QHBoxLayout(card)
         row.setContentsMargins(16, 12, 16, 12)
         row.setSpacing(12)
@@ -503,7 +500,7 @@ class IOSStatusBarPage(QWidget):
         value_lbl.setText(self._text_display(current, overridden))
         row.addWidget(value_lbl)
 
-        switch = IOSSwitch(overridden)
+        switch = LiquidSwitch(overridden)
         switch.toggled.connect(lambda checked: self._on_text_row_toggled(checked, setter, unsetter, label, value_lbl, card.property("overrideValue")))
         row.addWidget(switch)
 
@@ -546,7 +543,7 @@ class IOSStatusBarPage(QWidget):
                 return
             card = value_lbl.parentWidget()
             card.setProperty("overrideValue", value)
-            switch = card.findChild(IOSSwitch)
+            switch = card.findChild(LiquidSwitch)
             switch.blockSignals(True)
             switch.setChecked(True)
             switch.blockSignals(False)
@@ -556,7 +553,7 @@ class IOSStatusBarPage(QWidget):
 
     def _make_number_row(self, title: str, overridden: bool, current: int, setter, unsetter, min_val: int, max_val: int, survives_ios27: bool = False, network_type: bool = False):
         c = ColorThemeManager.instance().colors
-        card = IOSCard()
+        card = LiquidCard()
         row = QHBoxLayout(card)
         row.setContentsMargins(16, 12, 16, 12)
         row.setSpacing(12)
@@ -571,7 +568,7 @@ class IOSStatusBarPage(QWidget):
         value_lbl.setText((_network_label(current) if network_type else str(current)) if overridden else QCoreApplication.translate("Nugget", "Default"))
         row.addWidget(value_lbl)
 
-        switch = IOSSwitch(overridden)
+        switch = LiquidSwitch(overridden)
         def toggle(checked):
             self._on_number_row_toggled(checked, setter, unsetter, value_lbl, card.property("overrideValue"))
             if network_type and checked:
@@ -595,7 +592,7 @@ class IOSStatusBarPage(QWidget):
         values = list(NETWORK_TYPES)
         if current not in values:
             values.append(current)
-        from src.gui.liquid.choice_editor import ChoiceDialog
+        from awesomeui.liquid.choice_editor import ChoiceDialog
         dialog = ChoiceDialog([(_network_label(value), value, True, None) for value in values], current, self)
         def save():
             if not value_lbl.isEnabled():
@@ -603,7 +600,7 @@ class IOSStatusBarPage(QWidget):
             value = dialog.get_value()
             setter(value)
             card.setProperty("overrideValue", value)
-            switch = card.findChild(IOSSwitch)
+            switch = card.findChild(LiquidSwitch)
             switch.blockSignals(True)
             switch.setChecked(True)
             switch.blockSignals(False)
@@ -629,7 +626,7 @@ class IOSStatusBarPage(QWidget):
             setter(value)
             card = value_lbl.parentWidget()
             card.setProperty("overrideValue", value)
-            switch = card.findChild(IOSSwitch)
+            switch = card.findChild(LiquidSwitch)
             switch.blockSignals(True)
             switch.setChecked(True)
             switch.blockSignals(False)

@@ -14,6 +14,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from awesomeui.controls import IOSSectionHeader
+from awesomeui.liquid.controls import LiquidActionButton, LiquidCard, LiquidSwitch
 from src.controllers.preset_manager import PresetManager
 from src.gui.ios.preset_menu import (
     delete_preset_flow,
@@ -26,12 +28,6 @@ from src.gui.ios.preset_menu import (
     save_preset_flow,
 )
 from src.gui.theme import ColorThemeManager, t
-from src.gui.widgets import (
-    IOSCard,
-    IOSPrimaryButton,
-    IOSSectionHeader,
-    IOSSwitch,
-)
 
 
 class IOSPresetsPage(QWidget):
@@ -65,19 +61,19 @@ class IOSPresetsPage(QWidget):
         self._intro.setWordWrap(True)
         self._layout.addWidget(self._intro)
 
-        autosave_card = IOSCard()
+        autosave_card = LiquidCard()
         autosave_layout = QHBoxLayout(autosave_card)
         autosave_layout.setContentsMargins(16, 10, 16, 10)
         self._autosave_label = QLabel(QCoreApplication.translate(
             "Nugget", "Save tweaks automatically"))
         autosave_layout.addWidget(self._autosave_label, 1)
-        self.autosave_switch = IOSSwitch(
+        self.autosave_switch = LiquidSwitch(
             self.window.device_manager.pref_manager.tweak_autosave)
         self.autosave_switch.toggled.connect(self._on_autosave_toggled)
         autosave_layout.addWidget(self.autosave_switch)
         self._layout.addWidget(autosave_card)
 
-        catalog_card = IOSCard()
+        catalog_card = LiquidCard()
         catalog_layout = QHBoxLayout(catalog_card)
         catalog_layout.setContentsMargins(16, 10, 16, 10)
         self._catalog_label = QLabel(QCoreApplication.translate(
@@ -87,7 +83,7 @@ class IOSPresetsPage(QWidget):
         catalog_layout.addWidget(self._mini_button("Browse Catalog", self._browse_catalog))
         self._layout.addWidget(catalog_card)
 
-        editor = IOSCard()
+        editor = LiquidCard()
         editor_layout = QVBoxLayout(editor)
         editor_layout.setContentsMargins(16, 12, 16, 12)
         editor_layout.setSpacing(8)
@@ -148,7 +144,7 @@ class IOSPresetsPage(QWidget):
         self.refresh()
 
     def _button(self, text, handler):
-        button = IOSPrimaryButton(QCoreApplication.translate("Nugget", text))
+        button = LiquidActionButton(QCoreApplication.translate("Nugget", text))
         button.clicked.connect(handler)
         return button
 

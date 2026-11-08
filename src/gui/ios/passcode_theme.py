@@ -35,17 +35,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from awesomeui.controls import IOSSectionHeader
+from awesomeui.liquid.choice_editor import GlassComboBox as QComboBox
+from awesomeui.liquid.controls import LiquidActionButton, LiquidCard
 from src.devicemanagement.passcode_support import (
     current_passcode_theme_reason,
     passcode_theme_unavailable_reason,
 )
-from src.gui.liquid.choice_editor import GlassComboBox as QComboBox
 from src.gui.theme import ColorThemeManager
-from src.gui.widgets import (
-    IOSCard,
-    IOSPrimaryButton,
-    IOSSectionHeader,
-)
 
 # NOTE: ``src.airlift`` and ``src.devicemanagement.session`` are imported lazily
 # inside PasscodeThemeWriteThread.run(). Together they pull the whole
@@ -243,14 +240,14 @@ class IOSPasscodeThemePage(QWidget):
         self._theme_card_box.setSpacing(8)
         self.content_layout.addLayout(self._theme_card_box)
 
-        self._choose_btn = IOSPrimaryButton(QCoreApplication.translate("Nugget", "Choose .passthm…"))
+        self._choose_btn = LiquidActionButton(QCoreApplication.translate("Nugget", "Choose .passthm…"))
         self._choose_btn.clicked.connect(self.choose_theme_dialog)
         self.content_layout.addWidget(self._choose_btn)
 
         # ---- Options ------------------------------------------------------
         self.content_layout.addWidget(IOSSectionHeader(QCoreApplication.translate("Nugget", "Options")))
 
-        options_card = IOSCard()
+        options_card = LiquidCard()
         options_layout = QVBoxLayout(options_card)
         options_layout.setContentsMargins(16, 12, 16, 12)
         options_layout.setSpacing(12)
@@ -278,7 +275,7 @@ class IOSPasscodeThemePage(QWidget):
         self._device_lbl.setWordWrap(True)
         self.content_layout.addWidget(self._device_lbl)
 
-        self._write_btn = IOSPrimaryButton(QCoreApplication.translate("Nugget", "Write Theme to Device"))
+        self._write_btn = LiquidActionButton(QCoreApplication.translate("Nugget", "Write Theme to Device"))
         self._write_btn.clicked.connect(self.start_write)
         self.content_layout.addWidget(self._write_btn)
 
@@ -410,7 +407,7 @@ class IOSPasscodeThemePage(QWidget):
                 widget.deleteLater()
         if not has_theme:
             return
-        card = IOSCard()
+        card = LiquidCard()
         row = QHBoxLayout(card)
         row.setContentsMargins(12, 12, 12, 12)
         row.setSpacing(12)

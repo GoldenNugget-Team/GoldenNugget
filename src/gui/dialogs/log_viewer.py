@@ -38,14 +38,12 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from awesomeui.controls import _auto_retheme
+from awesomeui.liquid.choice_editor import GlassComboBox as QComboBox
+from awesomeui.liquid.controls import LiquidSwitch
 from src.controllers.nugget_logger import get_log_path
-from src.gui.liquid.choice_editor import GlassComboBox as QComboBox
 from src.gui.theme import t
-from src.gui.widgets import (
-    IOSSearchField,
-    IOSSwitch,
-    _auto_retheme,
-)
+from src.gui.widgets import IOSSearchField
 
 # Newest slice of the log that is ever held in memory. The rotating handler
 # writes up to 16 MiB per file, and the interesting part of a long session
@@ -186,7 +184,7 @@ class LogViewerDialog(QDialog):
         self._level_combo.currentIndexChanged.connect(self._reapply)
         filters.addWidget(self._level_combo)
 
-        self._follow = IOSSwitch(True, self)
+        self._follow = LiquidSwitch(True, self)
         self._follow.setToolTip(
             QCoreApplication.translate("Nugget", "Keep scrolling to the newest lines as they are written"))
         self._follow.toggled.connect(self._on_follow_toggled)

@@ -28,6 +28,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from awesomeui.controls import IOSSearchEmpty, IOSSectionHeader, IOSSettingsAction
+from awesomeui.liquid.choice_editor import GlassComboBox as QComboBox
+from awesomeui.liquid.controls import LiquidCard, LiquidSwitch
 from src.controllers.hotload import HotLoad
 from src.controllers.preset_manager import PresetManager
 from src.controllers.video_handler import set_ignore_frame_limit
@@ -44,19 +47,10 @@ from src.gui.ios.preset_menu import (
     rollback_preset_flow,
     save_preset_flow,
 )
-from src.gui.liquid.choice_editor import GlassComboBox as QComboBox
 from src.gui.pages.main.settings import available_languages
 from src.gui.theme import AccentPicker, ColorThemeManager, t, theme_icon
 from src.gui.thread_workers.apply_worker import ResetPairingThread
-from src.gui.widgets import (
-    IOSCard,
-    IOSCollapsibleSection,
-    IOSSearchEmpty,
-    IOSSearchField,
-    IOSSectionHeader,
-    IOSSettingsAction,
-    IOSSwitch,
-)
+from src.gui.widgets import IOSCollapsibleSection, IOSSearchField
 from src.tweaks.tweaks import TweakID, tweaks
 
 
@@ -117,7 +111,7 @@ class IOSSettingsPage(QWidget):
         # --- Appearance ---
         self.content_layout.addWidget(IOSSectionHeader(QCoreApplication.translate("Nugget", "Appearance")))
 
-        accent_row_card = IOSCard()
+        accent_row_card = LiquidCard()
         accent_row = QHBoxLayout(accent_row_card)
         accent_row.setContentsMargins(16, 12, 16, 12)
         accent_row.setSpacing(12)
@@ -276,7 +270,7 @@ class IOSSettingsPage(QWidget):
         if not getattr(sys, 'frozen', False):
             from src.gui.ios.developer import DeveloperPanel
             self.content_layout.addWidget(IOSSectionHeader(self.tr("Developer")))
-            developer_card = IOSCard()
+            developer_card = LiquidCard()
             developer_layout = QVBoxLayout(developer_card)
             developer_layout.setContentsMargins(4, 4, 4, 4)
             self.developer_panel = DeveloperPanel(self.window, developer_card)
@@ -480,8 +474,8 @@ class IOSSettingsPage(QWidget):
             if content._inner is not None:
                 content.rebuild()
 
-    def _make_switch(self, title: str, checked: bool, on_toggled) -> IOSSwitch:
-        card = IOSCard()
+    def _make_switch(self, title: str, checked: bool, on_toggled) -> LiquidSwitch:
+        card = LiquidCard()
         row = QHBoxLayout(card)
         row.setContentsMargins(16, 12, 16, 12)
         row.setSpacing(12)
@@ -491,7 +485,7 @@ class IOSSettingsPage(QWidget):
         label.setWordWrap(True)
         row.addWidget(label, 1)
 
-        switch = IOSSwitch(checked)
+        switch = LiquidSwitch(checked)
         switch.toggled.connect(on_toggled)
         row.addWidget(switch)
         self.content_layout.addWidget(card)
@@ -670,7 +664,7 @@ class IOSSettingsPage(QWidget):
             return QCoreApplication.translate("Nugget", "Default (system drive)")
 
     def _make_backup_location_row(self):
-        card = IOSCard()
+        card = LiquidCard()
         row = QVBoxLayout(card)
         row.setContentsMargins(16, 12, 16, 12)
         row.setSpacing(8)
@@ -741,7 +735,7 @@ class IOSSettingsPage(QWidget):
         from src.gui.dialogs.data_migration import migration_pending
         if not migration_pending():
             return
-        card = IOSCard()
+        card = LiquidCard()
         row = QVBoxLayout(card)
         row.setContentsMargins(16, 12, 16, 12)
         row.setSpacing(8)
@@ -794,7 +788,7 @@ class IOSSettingsPage(QWidget):
 
     def _make_text_row(self, title: str, current: str, on_submit):
         c = self._tm.colors
-        card = IOSCard()
+        card = LiquidCard()
         row = QHBoxLayout(card)
         row.setContentsMargins(16, 12, 16, 12)
         row.setSpacing(12)
@@ -840,7 +834,7 @@ class IOSSettingsPage(QWidget):
         self.window._sync_settings()
 
     def _make_language_row(self):
-        card = IOSCard()
+        card = LiquidCard()
         row = QHBoxLayout(card)
         row.setContentsMargins(16, 12, 16, 12)
         row.setSpacing(12)
@@ -902,7 +896,7 @@ class IOSSettingsPage(QWidget):
             self._on_pb_rebuild,
         )
 
-        ids_card = IOSCard()
+        ids_card = LiquidCard()
         ids_layout = QVBoxLayout(ids_card)
         ids_layout.setContentsMargins(16, 12, 16, 12)
         ids_layout.setSpacing(8)
@@ -927,7 +921,7 @@ class IOSSettingsPage(QWidget):
         self._refresh_saved_ids()
 
     def _make_label_row(self, title: str, value: str):
-        card = IOSCard()
+        card = LiquidCard()
         row = QHBoxLayout(card)
         row.setContentsMargins(16, 12, 16, 12)
         row.setSpacing(12)
@@ -950,7 +944,7 @@ class IOSSettingsPage(QWidget):
     def _make_history_section(self):
         self.content_layout.addWidget(IOSSectionHeader(
             QCoreApplication.translate("Nugget", "Operation History")))
-        card = IOSCard()
+        card = LiquidCard()
         layout = QVBoxLayout(card)
         layout.setContentsMargins(16, 12, 16, 12)
         self.history_list = QListWidget()
@@ -1214,7 +1208,7 @@ class IOSSettingsPage(QWidget):
         hint_row.addWidget(autosave_hint, 1)
         self.content_layout.addLayout(hint_row)
 
-        card = IOSCard()
+        card = LiquidCard()
         presets_layout = QVBoxLayout(card)
         presets_layout.setContentsMargins(16, 12, 16, 12)
         presets_layout.setSpacing(8)

@@ -204,8 +204,9 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
 
         # Shared reusable header: one instance for every iOS subpage,
         # reconfigured on page change (title / back / right action).
-        from src.gui.widgets import IOSNavBar
-        self.ios_nav = IOSNavBar("", on_back=self._go_back)
+        from awesomeui.liquid.navigation import LiquidNavBar
+
+        self.ios_nav = LiquidNavBar("", on_back=self._go_back)
         self._ios_page_titles = {
             0: "GoldenNugget",
             1: QtCore.QCoreApplication.translate("Nugget", "Tweaks"),
@@ -484,7 +485,7 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
 
     def _apply_global_stylesheet(self):
         """Re-apply the global stylesheet using the current color theme."""
-        from src.gui.liquid.overlay import liquid_overlay_css
+        from awesomeui.liquid.overlay import liquid_overlay_css
         # One stylesheet for the whole window: the base template plus the
         # liquid overlay (inputs/scrollbars/sliders). Composing them here keeps
         # the tree polished once — a second setStyleSheet after startup would

@@ -41,11 +41,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from src.gui.liquid.choice_editor import GlassComboBox as QComboBox
+from awesomeui.liquid.choice_editor import GlassComboBox as QComboBox
 from src.gui.theme import ColorThemeManager
-from src.gui.widgets import (
-    IOSSearchField,
-)
+from src.gui.widgets import IOSSearchField
 from src.tweaks.tweaks import TweakID, tweaks
 
 CARD_W = 150

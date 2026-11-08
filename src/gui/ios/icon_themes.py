@@ -17,13 +17,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from awesomeui.liquid.controls import LiquidCard
 from src.gui.dialogs.app_list_dialog import AppListExportDialog
 from src.gui.dialogs.confirmation import ask_confirmation
 from src.gui.dialogs.icon_pack_downloader import IconPackDownloaderDialog
 from src.gui.theme import ColorThemeManager, t, theme_icon
-from src.gui.widgets import (
-    IOSCard,
-)
 from src.tweaks.icon_themes.icon_theme import IconTheme
 from src.tweaks.tweaks import TweakID, tweaks
 
@@ -106,7 +104,7 @@ class IOSIconThemesPage(QWidget):
         footer = QWidget(self)
         footer_layout = QVBoxLayout(footer)
         footer_layout.setContentsMargins(16, 8, 16, 16)
-        maintenance = IOSCard(footer)
+        maintenance = LiquidCard(footer)
         maintenance_layout = QVBoxLayout(maintenance)
         maintenance_layout.setContentsMargins(16, 12, 16, 12)
         maintenance_layout.setSpacing(8)
@@ -210,7 +208,7 @@ class IOSIconThemesPage(QWidget):
 
     def _create_theme_card(self, theme: IconTheme) -> QWidget:
         c = self._c
-        card = IOSCard()
+        card = LiquidCard()
         row = QHBoxLayout(card)
         row.setContentsMargins(12, 12, 12, 12)
         row.setSpacing(12)

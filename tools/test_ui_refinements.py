@@ -26,7 +26,7 @@ from PySide6.QtWidgets import (
 
 from src.gui.dialogs.confirmation import ConfirmationDialog
 from src.gui.dialogs.reset_dialog import ResetDialog
-from src.gui.ios.components import IOSSearchField, IOSSummaryDialog, IOSSwitch
+from src.gui.ios.components import IOSSearchField, IOSSummaryDialog, LiquidSwitch
 from src.gui.ios.operation_result import OperationResultCard
 from src.gui.ios.settings import IOSSettingsPage
 from src.gui.ios.support_panel import CommunityLinks, SupportPanel
@@ -168,7 +168,7 @@ class UIRefinementTests(unittest.TestCase):
         supervision_card = QWidget()
         page = SimpleNamespace(
             window=SimpleNamespace(device_manager=SimpleNamespace(pref_manager=preferences)),
-            supervision_switch=IOSSwitch(True, supervision_card), organization_card=QWidget())
+            supervision_switch=LiquidSwitch(True, supervision_card), organization_card=QWidget())
         for skip_setup, supervised in ((False, True), (True, False), (True, True)):
             preferences.skip_setup = skip_setup
             preferences.supervised = supervised

@@ -4,7 +4,7 @@ from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QWidget
 
-from .motion import animate
+from awesomeui.liquid.motion import animate
 
 
 class DockFlight(QWidget):

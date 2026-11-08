@@ -3,8 +3,8 @@ from PySide6.QtCore import QCoreApplication, Qt, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
 
+from awesomeui.liquid.controls import LiquidActionButton, LiquidCard
 from src.gui.theme import ColorThemeManager, t
-from src.gui.widgets import IOSCard, IOSPrimaryButton
 from src.tweaks.tweaks import TweakID, tweaks
 
 BATTER_BUILDER_URL = "https://github.com/GoldenNugget-Team/GoldenNugget-TemplateBuilder/releases/latest"
@@ -41,7 +41,7 @@ class IOSTemplatesPage(QWidget):
         self.templates_layout.setAlignment(Qt.AlignTop)
         self._templates_scroll.setWidget(content)
 
-        import_btn = IOSPrimaryButton(QCoreApplication.translate("Nugget", "  Import Templates (.batter)"))
+        import_btn = LiquidActionButton(QCoreApplication.translate("Nugget", "  Import Templates (.batter)"))
         import_btn.clicked.connect(self.show_add_templates_dialog)
         self.templates_import_btn = import_btn
         self.templates_layout.addWidget(import_btn)
@@ -60,7 +60,7 @@ class IOSTemplatesPage(QWidget):
     def _create_builder_card(self) -> QWidget:
         """A row that opens Batter Builder's download page, for people who
         want to make a template of their own instead of writing JSON."""
-        card = IOSCard()
+        card = LiquidCard()
         card.setCursor(Qt.PointingHandCursor)
         card.setMinimumHeight(88)
         card.mousePressEvent = lambda e: self.open_batter_builder()

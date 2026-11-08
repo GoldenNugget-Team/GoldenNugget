@@ -13,10 +13,9 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QIcon, QPainter
 from PySide6.QtWidgets import QApplication, QLabel, QScrollArea, QVBoxLayout, QWidget
 
+from awesomeui.liquid.controls import GlassPanel, LiquidButton
+from awesomeui.liquid.placement import reveal_panel
 from src.gui.theme import ColorThemeManager, theme_pixmap
-
-from .controls import GlassPanel, LiquidButton
-from .placement import reveal_panel
 
 
 class BellButton(LiquidButton):

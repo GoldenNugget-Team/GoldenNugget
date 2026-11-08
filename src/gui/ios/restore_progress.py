@@ -12,10 +12,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from awesomeui.liquid.controls import LiquidCard
 from src.devicemanagement.device_capabilities import device_text
 from src.gui.ios.feature_icons import FEATURE_ICONS
 from src.gui.theme import ColorThemeManager, t, theme_pixmap
-from src.gui.widgets import IOSCard
 
 _STAGES = {
     "prepare": ("Preparing files", ":/icon/gear.svg"),
@@ -40,7 +40,7 @@ def _tr(text):
     return QCoreApplication.translate("RestoreProgress", text)
 
 
-class RestoreProgressCard(IOSCard):
+class RestoreProgressCard(LiquidCard):
     def __init__(self, parent=None, *, compact=False):
         super().__init__(parent)
         self._compact = compact

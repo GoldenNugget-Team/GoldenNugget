@@ -12,12 +12,17 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from awesomeui.liquid.controls import (
+    GlassPanel,
+    LiquidButton,
+    LiquidDangerButton,
+    PulseOverlay,
+)
+from awesomeui.liquid.motion import animate
+from awesomeui.liquid.reveal import DevicePeek, PageReveal
 from src.gui.theme import ColorThemeManager
 
-from .controls import GlassPanel, LiquidButton, LiquidDangerButton, PulseOverlay
-from .motion import animate
 from .panels import DeviceDrawer, RestoreDrawer, WorkspaceSettings
-from .reveal import DevicePeek, PageReveal
 
 _DEVICE_NAMES: dict | None = None
 
@@ -171,7 +176,7 @@ class LiquidExperience(QObject):
             button.setStyleSheet(f'QPushButton{{border:none;border-radius:13px;padding:6px 12px;color:{c.text_secondary};background:transparent;}} QPushButton:hover,QPushButton:checked{{color:{c.text_primary};background:{c.bg_tertiary};}}')
 
     def set_card_density(self,value):
-        from .cards import ControlGrid, configure_card
+        from awesomeui.liquid.cards import ControlGrid, configure_card
         self.window.settings.setValue('liquid/card_density',value)
         QApplication.instance().setProperty('liquid_card_density',value)
         for card in self.window.findChildren(GlassPanel):

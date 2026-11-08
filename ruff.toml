@@ -3,6 +3,8 @@
 # excepts, dict() calls, typing modernization, security model aimed at web
 # services). Selecting explicitly keeps the cheap true-bug rules on.
 target-version = "py315"
+# Git submodules are foreign codebases with their own conventions.
+extend-exclude = ["awesomeui", "i18n"]
 
 [lint]
 select = ["E4", "E7", "E9", "F", "I"]

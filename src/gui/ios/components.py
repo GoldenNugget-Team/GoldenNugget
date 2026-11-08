@@ -39,23 +39,24 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from src.gui.theme import ColorThemeManager, t, theme_pixmap
-from src.gui.widgets import (
-    IOSCard,
-    IOSCollapsibleSection,
-    IOSDangerButton,
-    IOSNavBar,
-    IOSPrimaryButton,
+from awesomeui.controls import (
     IOSSearchEmpty,
-    IOSSearchField,
     IOSSectionHeader,
     IOSSegmentedFilter,
     IOSSettingsAction,
     IOSSettingsRow,
-    IOSSwitch,
     IOSValueRow,
     _auto_retheme,
 )
+from awesomeui.liquid.controls import (
+    LiquidActionButton,
+    LiquidCard,
+    LiquidDangerButton,
+    LiquidSwitch,
+)
+from awesomeui.liquid.navigation import LiquidNavBar
+from src.gui.theme import ColorThemeManager, t, theme_pixmap
+from src.gui.widgets import IOSCollapsibleSection, IOSSearchField
 
 
 class TextInputDialog(QDialog):
@@ -275,7 +276,7 @@ class IOSSummaryDialog(QDialog):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.NoFrame)
         scroll.setStyleSheet("background: transparent; border: none;")
-        summary = IOSCard()
+        summary = LiquidCard()
         summary_layout = QVBoxLayout(summary)
         summary_layout.setContentsMargins(16, 16, 16, 16)
         summary_layout.setSpacing(12)

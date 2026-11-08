@@ -9,11 +9,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from awesomeui.liquid.controls import LiquidCard
 from src.gui.theme import ColorThemeManager, t, theme_pixmap
 from src.gui.theme.theme_manager import connect_visible_theme
-from src.gui.widgets import (
-    IOSCard,
-)
 
 
 class ConfirmationDialog(QDialog):
@@ -47,7 +45,7 @@ class ConfirmationDialog(QDialog):
         scroll.setFrameShape(QFrame.NoFrame)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }")
-        card = IOSCard(scroll)
+        card = LiquidCard(scroll)
         body = QVBoxLayout(card)
         body.setContentsMargins(16, 16, 16, 16)
         body.setSpacing(8)
