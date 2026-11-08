@@ -201,15 +201,20 @@ def main() -> int:
     # fires before QT_TLS_BACKEND=schannel takes effect (dev machines only).
     if sys.platform == 'win32':
         import ctypes
+        import threading
+        import time
         user32 = ctypes.windll.user32
-        def _kill_bad_dialog():
-            hwnd = user32.FindWindowW(None, "Entry Point Not Found")
-            if hwnd and user32.GetWindowThreadProcessId(hwnd, None)[0] == os.getpid():
-                user32.PostMessageW(hwnd, 0x0010, 0, 0)  # WM_CLOSE
-        timer = QTimer(app)
-        timer.setInterval(200)
-        timer.timeout.connect(_kill_bad_dialog)
-        timer.start()
+        def _watch_bad_dialog():
+            for _ in range(50):  # ~10s max
+                hwnd = user32.FindWindowW(None, "Entry Point Not Found")
+                if hwnd:
+                    pid = ctypes.c_ulong()
+                    user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+                    if pid.value == os.getpid():
+                        user32.PostMessageW(hwnd, 0x0010, 0, 0)  # WM_CLOSE
+                        break
+                time.sleep(0.2)
+        threading.Thread(target=_watch_bad_dialog, daemon=True).start()
 
     # Import the main window module while the device-manager preload is still
     # running: the GUI import graph no longer pulls in pymobiledevice3, so the
