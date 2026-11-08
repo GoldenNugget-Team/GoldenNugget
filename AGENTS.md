@@ -109,7 +109,7 @@ anywhere (the GUI's accent/theme managers use the same `Settings` store now).
 
 **User data folder (`gnugget`) + the migration window.** The app used to keep
 everything under `GoldenNugget`; it is `gnugget` now (both brand names are
-accepted by `brand_dir`, the old ones only as *sources*). Existing installs are
+accepted by `brand_dir`, the old ones only as _sources_). Existing installs are
 moved once, at startup, by `src/gui/dialogs/data_migration.py`:
 `maybe_prompt_migration()` runs in `main_app.py` right after
 `configure_appearance` and **before** `Settings("settings")` is constructed, so
@@ -124,12 +124,12 @@ colour icon right, Migrate button under the bar); the move itself is Qt-free
   overwrites: an entry that already exists in the new folder is skipped and
   reported ("the user's current file wins"). Duplicate destinations across the
   two legacy trees are skipped the same way, the nested one winning.
-- The old *doubled* layout (`GoldenNugget/GoldenNugget/backup_cache`,
+- The old _doubled_ layout (`GoldenNugget/GoldenNugget/backup_cache`,
   `History`, `LastTheme`, `IconThemes`) is laid **over the top** of the new root
   instead of landing in a `gnugget/GoldenNugget/` subfolder.
 - The loose generic folders (`Application Support/PosterBoard`, `Backups`,
   `StatusBar`) move into `gnugget/<name>`; the cache folders (`Caches/
-  GoldenNugget`) move to `Caches/gnugget`.
+GoldenNugget`) move to `Caches/gnugget`.
 - Emptied legacy roots are removed afterwards; anything that was skipped or
   failed keeps its folder alive. A failed entry is reported per file and left
   in place.
@@ -155,7 +155,7 @@ returns the rule. Adding a backend prompt means adding a port here, never
 **Presentation lives in the GUI.** The CAML/tendie preview renderer is
 `src/gui/preview/` (`ca/`, `tendie_preview.py`); language switching is
 `src/gui/translator.py` + `src/gui/live_translation.py`; the template-option
-*models* stay in `src/tweaks/posterboard/template_options/` while their widgets
+_models_ stay in `src/tweaks/posterboard/template_options/` while their widgets
 are `src/gui/template_option_editors.py` (`create_interface`, `bind_previews`,
 `update_preview`). Keep model logic out of the editors and widget code out of
 the models.
@@ -182,7 +182,14 @@ handled by `WindowChrome`:
 
 - **Buttons** — close / minimize / zoom, painted by `WindowButton` and floated
   over the window's top-left corner (`CONTROLS_LEFT`, `CONTROLS_TOP`), raised on
-  every relayout so no page can ever cover them. The glyphs appear on hover and
+  every relayout so no page can ever cover them. The style follows the OS
+  (`CHROME_STYLE`, picked from `QGuiApplication.platformName()`) — **macOS**
+  keeps the traffic lights up there, while **Windows and Linux** get the
+  desktop's own caption-button look: right-aligned flat `44x32` buttons with
+  hover wash (`close` lights up native red), placed by `_relayout` in the
+  top-right corner (`FLAT_EDGE_INSET` 8px), the version label moves to the
+  top-left and `LiquidNavBar.set_trailing_inset` (`CONTROLS_TRAILING_INSET`)
+  reserves their room where mac reserves `set_leading_inset`. The glyphs appear on hover and
   the group greys out while the window is inactive (`isActiveWindow()`), which
   is why a `widget.grab()` screenshot always shows them grey.
 - **Name** — `WindowChrome.title` draws the window title where a title bar puts
@@ -350,7 +357,7 @@ used to cost 0.3-0.5 s on its own:
   on a lighter surface (e.g. the Home tiles on `bg_tertiary`). Always add
   `background-color: transparent;` to such label styles.
 - **Icons bigger than their viewBox**: use
-  `theme_pixmap(resource, color, size, dpr)` (scales the SVG *before* tinting, so
+  `theme_pixmap(resource, color, size, dpr)` (scales the SVG _before_ tinting, so
   11x11/16x16 sources stay crisp) instead of `theme_icon()`, which rasterizes at
   the intrinsic size and would be blurry. The Home feature tiles
   (`src/gui/ios/home.py`) are the reference use: large icons on seven
@@ -367,8 +374,12 @@ used to cost 0.3-0.5 s on its own:
   single source of truth. The font files ONLY live at `src/qt/fonts/`
   (`InterVariable.ttf` + `InterVariable-Italic.ttf`; they ship into the
   frozen app via `--add-data=src/qt:src/qt`).
-- `src/qt/mainwindow_ui.py` is generated from Qt Designer — do not edit;
-  theme the chrome via `_apply_global_stylesheet` instead.
+- The self-built shell stands in for the deleted Qt Designer file:
+  `self.ui` is `src/gui/app_shell.py::ShellUI` (parked device bar + sidebar
+  mount + content-stack slots; any attribute beyond the built ones resolves
+  lazily to an inert QWidget stub). Do not hand a raw `QWidget()` bag where
+  a widget attribute is used for real state (`text()`/`icon()`); park new
+  chrome widgets explicitly in `ShellUI`.
 - **The preset popup is a child widget, never a window.** `PresetPopup`
   (`src/gui/ios/preset_menu.py`) parents itself to the main window and draws
   over it with `raise_()`. Do **not** turn it into a top-level `Qt.Popup` or
@@ -404,18 +415,21 @@ used to cost 0.3-0.5 s on its own:
   until that fade-out finishes — guarded by `_allow_close`, or the recursive
   `close()` from `_finish_close` starts a second fade and the window never
   closes.
-- **TEMP: Classic UI removed** — `src/qt/mainwindow.ui` is deleted (the
-  generated `mainwindow_ui.py` stays committed and keeps working at runtime),
-  the Settings "iOS-style Interface" switch is hidden, `ThemeManager.load_theme`
-  always returns `IOS`. There is **no sidebar mode**: the optional
-  `ui/show_sidebar` navigation panel, the Settings switch, the first-launch
-  `InterfacePickerDialog` and its preview code are all gone — `ui/interface_choice_done`
-  is only stamped so an old install is never asked again (and the Modern home
-  always carries the bottom dock). Restore the sidebar (and, with it, the
-  picker) when Classic comes back: recreate `mainwindow.ui`, unhide the
-  switches in `settings.py`, revert `load_theme` to read `ui/theme`, and
-  re-add `sidebar_enabled`/`set_sidebar_enabled` in `main_window_mixins`
-  (the classic sidebar widget itself is still parked and alive for that).
+- **Classic UI is fully removed (was TEMP)** — `src/qt/mainwindow.ui` AND its
+  generated `mainwindow_ui.py` are deleted; `self.ui` is
+  `src/gui/app_shell.py::ShellUI`, the classic home/daemons pages are gone
+  (only `available_languages` survives under `src/gui/pages/`), and the
+  Settings "iOS-style Interface" switch is hidden with
+  `ThemeManager.load_theme` always returning `IOS`. There is **no sidebar
+  mode**: the optional `ui/show_sidebar` navigation panel, the Settings
+  switch, the first-launch `InterfacePickerDialog` and its preview code are
+  all gone — `ui/interface_choice_done` is only stamped so an old install is
+  never asked again (and the Modern home always carries the bottom dock).
+  The sidebar still builds (`NavigationSidebar`) because navigation/gating
+  code manages its items through the old `ui.<name>Btn` names, but it stays
+  parked/hidden. Reviving Classic means rebuilding the Designer stack from
+  scratch; the dead `CLASSIC` branches in `main_window_mixins` are
+  unreachable but retained.
   Keep the first-run sidebar choice separate from the legacy chrome mode.
 - Old `src/gui/ios/theme_manager.py` (`CLASSIC`/`IOS`) is layout-only
   (Classic vs iOS-style chrome) and stays untouched side-by-side.
@@ -603,6 +617,7 @@ The pairing section is a single button, **"Send Remote Pairing"**.
 
 Single source of truth for every plist-based tweak: id, section, title,
 plist location, key, default value, UI kind (switch/text/number).
+
 - `tweak_loader.load_plist_tweaks()` builds the runtime instances from the
   registry (daemons stay hand-defined there).
 - The iOS tweaks page (`src/gui/ios/tweaks.py`) renders its sections straight
@@ -840,6 +855,7 @@ from `src.utils.paths`):
   Kill switch: `GOLDENNUGGET_NO_BACKUP_CACHE=1`.
 
 ### `_apply_tweak_pass()`
+
 - Generates every tweak's files in a single pass and restores them together
 - iOS 27+: prompts for backup password if encryption is enabled (`use_encrypted_backup` pref)
 - Writes a `.GlobalPreferences.plist` copy to the HomeDomain path
@@ -1021,15 +1037,18 @@ from `src.utils.paths`):
   itself has no retry loop
 
 ### Live backup retention (src/restore/protective.py)
+
 - `prune_protective_backups()` keeps the newest `PROTECTIVE_KEEP_RUNS=1` run and
   deletes every older run outright (no age guard, no payload dedupe).
 
 ### `clean_backup_for_restore()` (src/restore/protective.py)
+
 - Prunes Manifest.db to protective files only (temp-table keep-set, single DELETE)
 - Removes orphaned payload files
 - Skipped for encrypted backups (device handles it)
 
 ### `_restore_protective_backup()` (src/restore/restore.py)
+
 - Restores the pruned backup after the security recovery
 - Retries up to **18 times, fixed 3s between attempts** (`max_retries = 18`), and
   only for results matching `_is_transient_restore_error` (SpringBoard /
@@ -1058,6 +1077,7 @@ from `src.utils.paths`):
 - Validates the extracted database before handing it to `update_database_file`
 
 ### `backup_posterboard_database()` (legacy)
+
 - Backs up the whole device and extracts the PosterBoard SQLite database.
   Full-device backup; only kept as a fallback (whole-device backup is what
   used to make the wizard fail with "Backup Failed!", especially on macOS).
@@ -1083,6 +1103,7 @@ from `src.utils.paths`):
 - Used in all backup/restore operations
 
 ### Global Crash Handler (split: src/exceptions/crash_handler.py + src/gui/crash_ui.py)
+
 - **The Qt-free core** owns classification (`_classify`), the report/issue-body
   builders, the startup banner, the faulthandler dump and
   `sys.excepthook` + `threading.excepthook` (plain worker threads) + a
@@ -1153,13 +1174,13 @@ update_label (UI)
 
 ## Key Retry Configurations
 
-| Operation | Max Retries | Backoff | Errors Handled |
-|-----------|-------------|---------|----------------|
-| Protective Backup connect | 5 | 2s, 4s, 8s, 15s | Connection |
-| PosterBoard Backup | 3 | 2s, 4s | Connection, Device Locked |
-| Phase 2 Sparse Restore | 2 | 25s once (if drop at 0%) | Transient |
-| Phase 3 Restore | 18 | 3s fixed | Transient (service not ready) |
-| InstallationProxy (AppDomain) | 3 | 2s, 4s, 8s | Any Exception |
+| Operation                     | Max Retries | Backoff                  | Errors Handled                |
+| ----------------------------- | ----------- | ------------------------ | ----------------------------- |
+| Protective Backup connect     | 5           | 2s, 4s, 8s, 15s          | Connection                    |
+| PosterBoard Backup            | 3           | 2s, 4s                   | Connection, Device Locked     |
+| Phase 2 Sparse Restore        | 2           | 25s once (if drop at 0%) | Transient                     |
+| Phase 3 Restore               | 18          | 3s fixed                 | Transient (service not ready) |
+| InstallationProxy (AppDomain) | 3           | 2s, 4s, 8s               | Any Exception                 |
 
 ## Data Flow Summary
 
@@ -1241,3 +1262,8 @@ from the home header button (`IOSHomePage._logs_btn` → `open_logs`).
   `QFontDatabase.systemFont(FixedFont)` reports a family whose
   `fixedPitch()` reads False on Windows; do not "simplify" it back.
 - Offline regression suite: `tools/test_log_viewer.py`.
+
+# Maintainer Notes
+
+NO hardcoded lines in tests or any other stuff.
+Example is "~/Projects/GoldenNugget" in test

@@ -126,7 +126,7 @@ def parse_sections(cache: Cache, load_addr: int):
         cmd, cmdsize = struct.unpack_from(endian + "II", cache.read(load_addr + off, 8), 0)
         body = cache.read(load_addr + off, cmdsize)
         if cmd == LC_SEGMENT_64:
-            segname = body[8:24].split(b"\0")[0].decode("ascii", "replace")
+            _segname = body[8:24].split(b"\0")[0].decode("ascii", "replace")
             nsects, = struct.unpack_from(endian + "I", body, 64)
             so = 72
             for _s in range(nsects):

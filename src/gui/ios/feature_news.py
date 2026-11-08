@@ -1,7 +1,9 @@
 """Shared presentation for recently added controls."""
 import re
-from PySide6.QtCore import QTimer, Qt
+
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import QLabel
+
 from src.controllers.feature_news import FeatureNews
 
 

@@ -12,7 +12,7 @@ lazy, so it imports fine; on 3.13 (and 3.12, 3.11, ...) annotations are
 evaluated when the ``def`` runs, so merely importing the module raised
 NameError -- the app died before its window was built.
 
-The dev virtualenv is 3.14, so running the test suite on 3.14 cannot see this
+The dev virtualenv is 3.15, so running the test suite on 3.15 cannot see this
 class of bug. This check is therefore static: it resolves the annotation
 expressions itself and fails on any file that would break on an older
 interpreter, so the crash cannot come back unnoticed.

@@ -1,20 +1,26 @@
 from copy import deepcopy
-from PySide6.QtGui import QColor, QPixmap, QIcon
+
+from PySide6.QtGui import QColor, QIcon, QPixmap
 from PySide6.QtWidgets import QHBoxLayout, QLabel
 
-from src.gui.widgets import IOSCard, IOSSwitch
 from src.gui.ios.components import NumberInputDialog, TextInputDialog
 from src.gui.theme import ColorThemeManager
-from src.tweaks.tweaks import tweaks
-from src.tweaks.registry import Kind
+from src.gui.widgets import IOSCard, IOSSwitch
 from src.tweaks.posterboard.device_overrides import OPTIONS, option_key
-from src.tweaks.posterboard.preference_controls import CLOCK_FONT_IDENTIFIERS, number_limits, POSTER_PRESETS
+from src.tweaks.posterboard.preference_controls import (
+    CLOCK_FONT_IDENTIFIERS,
+    POSTER_PRESETS,
+    number_limits,
+)
+from src.tweaks.registry import Kind
+from src.tweaks.tweaks import tweaks
+
 from .cards import prepare_card
+from .choice_editor import ChoiceDialog
 from .controls import LiquidButton
 from .selection_card import bind_selection_card
-from .value_entry import GlassValueEntry
 from .value_editor import ValueEditor
-from .choice_editor import ChoiceDialog
+from .value_entry import GlassValueEntry
 
 
 def render_poster_flag(content,spec,target):

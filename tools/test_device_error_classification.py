@@ -1,11 +1,12 @@
 """Backup errors must not be mistaken for a locked device."""
-from pathlib import Path
 import sys
 import unittest
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from pymobiledevice3.exceptions import PasswordRequiredError
+
 from src.exceptions.device_errors import is_device_locked_error
 
 

@@ -10,23 +10,22 @@ __lazy_modules__ = (
     "pymobiledevice3.services.mobile_config",
 )
 
+import asyncio
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from uuid import uuid4
-import asyncio
 
 from cryptography import x509
 from cryptography.hazmat.primitives.serialization import Encoding
 from pymobiledevice3.ca import create_keybag_file
-from pymobiledevice3.lockdown import LockdownClient
-
-from src.devicemanagement.session import lockdown_session
-from src.exceptions.nugget_exception import NuggetException
-from src.exceptions.device_errors import is_device_lock_required_error
-from src.devicemanagement.progress_status import OperationStatus
-
 from pymobiledevice3.exceptions import ConnectionTerminatedError
+from pymobiledevice3.lockdown import LockdownClient
 from pymobiledevice3.services.mobile_config import MobileConfigService
+
+from src.devicemanagement.progress_status import OperationStatus
+from src.devicemanagement.session import lockdown_session
+from src.exceptions.device_errors import is_device_lock_required_error
+from src.exceptions.nugget_exception import NuggetException
 
 # Canonical list of setup panes to mark as skipped. This is the single source of
 # truth for every skip-setup path:

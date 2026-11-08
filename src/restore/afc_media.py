@@ -36,38 +36,45 @@ __lazy_modules__ = (
     "pymobiledevice3.services.afc",
 )
 
-from src.devicemanagement.progress_status import OperationStatus
-from src.utils.async_disk import disk_call as _disk_io
-
 import asyncio
 import os
 import posixpath
 import sys
 import tempfile
-from pathlib import Path
-
-from src.controllers.archive_safety import safe_member
 import time
 from contextlib import AsyncExitStack, asynccontextmanager
+from pathlib import Path
 
-from src.devicemanagement.session import lockdown_session
-from pymobiledevice3.services.afc import MAXIMUM_READ_SIZE, AfcService, AfcError
 from pymobiledevice3.exceptions import AfcException, AfcFileNotFoundError
+from pymobiledevice3.services.afc import MAXIMUM_READ_SIZE, AfcError, AfcService
 
+from src.controllers.archive_safety import safe_member
+from src.devicemanagement.progress_status import OperationStatus
+from src.devicemanagement.session import lockdown_session
 from src.exceptions.device_errors import (
     is_connection_error,
     is_device_lock_required_error,
 )
 from src.exceptions.nugget_exception import NuggetException
+from src.utils.async_disk import disk_call as _disk_io
 from src.utils.log_util import log_info, log_warn
 
+from .afc_transport import BackupTransferResult, MediaEntry, service_concurrency
 from .media_store import (
-    AFC_MEDIA_DIRNAME, MEDIA_STATE_FILE, AFC_MEDIA_TREES,
-    afc_media_dir_for, _local_media_path, media_store_state, _media_inventory,
-    verified_media_state, media_store_verified, recovery_media_dir,
-    describe_media_store, _write_media_state, _invalidate_media_state,
+    AFC_MEDIA_DIRNAME,
+    AFC_MEDIA_TREES,
+    MEDIA_STATE_FILE,
+    _invalidate_media_state,
+    _local_media_path,
+    _media_inventory,
+    _write_media_state,
+    afc_media_dir_for,
+    describe_media_store,
+    media_store_state,
+    media_store_verified,
+    recovery_media_dir,
+    verified_media_state,
 )
-from .afc_transport import MediaEntry, BackupTransferResult, service_concurrency
 
 
 def afc_media_enabled(pref_enabled: bool = True) -> bool:
@@ -733,7 +740,6 @@ async def restore_media_via_afc(lockdown_client, media_root: str,
         raise NuggetException(f"Cannot read AFC media store ({root}): {e}") from e
 
     total_files = len(inventory)
-    total_bytes = sum(inventory.values())
     if not total_files:
         raise NuggetException(f"AFC media store has no photo/video payloads ({root})")
 

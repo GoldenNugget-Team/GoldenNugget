@@ -1,8 +1,8 @@
 """Small local history of apply/reset operations."""
-from datetime import datetime
 import json
 import os
 import tempfile
+from datetime import datetime
 
 from src.utils.i18n import QCoreApplication
 from src.utils.paths import app_data_dir

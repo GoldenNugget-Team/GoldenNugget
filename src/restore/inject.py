@@ -16,24 +16,25 @@ __lazy_modules__ = (
     "sqlite3",
 )
 
-from contextlib import closing
 import hashlib
 import logging
 import os
 import plistlib
 import sqlite3
 import time
+from contextlib import closing
 from contextvars import ContextVar
 from pathlib import Path
 from typing import Optional
 
-from src.utils.payload import install_payload
-from .mbfile import MBFileArchive, InvalidMBFile
-from src.exceptions.nugget_exception import NuggetException
-
 from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service
-from .preference_scope import is_preference_file as _is_preference_target
+
+from src.exceptions.nugget_exception import NuggetException
+from src.utils.payload import install_payload
 from src.utils.preference_reset import PreferenceKeyReset
+
+from .mbfile import InvalidMBFile, MBFileArchive
+from .preference_scope import is_preference_file as _is_preference_target
 
 _logger = logging.getLogger("GoldenNugget.inject")
 preference_delivery_warnings = ContextVar('preference_delivery_warnings', default=None)

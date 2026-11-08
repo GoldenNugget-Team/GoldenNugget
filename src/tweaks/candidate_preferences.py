@@ -60,8 +60,9 @@ class InstalledAppSuggestionsBlacklist(BasicPlistTweak):
             return
         if not udid:
             raise ValueError('Select a connected device before collecting its apps.')
-        from src.devicemanagement.session import lockdown_session
         from pymobiledevice3.services.installation_proxy import InstallationProxyService
+
+        from src.devicemanagement.session import lockdown_session
         async def fetch():
             async with lockdown_session(udid) as lockdown:
                 async with InstallationProxyService(lockdown=lockdown) as service:

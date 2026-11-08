@@ -41,11 +41,11 @@ import sys
 from pathlib import Path
 
 from pymobiledevice3.exceptions import AppNotInstalledError
-from pymobiledevice3.services.installation_proxy import InstallationProxyService
 from pymobiledevice3.services.house_arrest import HouseArrestService
+from pymobiledevice3.services.installation_proxy import InstallationProxyService
 
-from src.exceptions.nugget_exception import NuggetException
 from src.devicemanagement.session import lockdown_session
+from src.exceptions.nugget_exception import NuggetException
 
 log = logging.getLogger("GoldenNugget.mobile_helper")
 

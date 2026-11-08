@@ -1,20 +1,29 @@
 import os
 
-from PySide6.QtCore import Qt, QSize, QCoreApplication, QUrl
+from PySide6.QtCore import QCoreApplication, QSize, Qt, QUrl
+from PySide6.QtGui import QIcon, QImageReader, QPixmap
+from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QPushButton, QScrollArea, QToolButton, QStackedWidget,
-    QCheckBox, QComboBox
+    QCheckBox,
+    QComboBox,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QStackedWidget,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtGui import QPixmap, QIcon, QImageReader
-from src.gui.liquid.choice_editor import GlassComboBox as QComboBox
-from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 
-from src.gui.widgets import (
-    IOSCard, IOSPrimaryButton, IOSSwitch,
-)
+from src.gui.liquid.choice_editor import GlassComboBox as QComboBox  # noqa: F811 (intentional: swap in glass combos)
 from src.gui.theme import ColorThemeManager, t, theme_pixmap
-from src.tweaks.tweaks import tweaks, TweakID
+from src.gui.widgets import (
+    IOSCard,
+    IOSPrimaryButton,
+    IOSSwitch,
+)
+from src.tweaks.tweaks import TweakID, tweaks
 
 
 class TendieRow(IOSCard):
@@ -595,9 +604,10 @@ class IOSPosterboardPage(QWidget):
         tweaks[TweakID.PosterBoard].calculationMode = 'linear' if index == 0 else 'discrete'
 
     def on_export_video_clicked(self):
-        import uuid
         import subprocess
+        import uuid
         from shutil import make_archive, rmtree
+
         from PySide6.QtWidgets import QFileDialog, QMessageBox
         directory = QFileDialog.getExistingDirectory(
             self.window, QCoreApplication.translate("Nugget", "Select Directory"), "",
@@ -641,6 +651,7 @@ class IOSPosterboardPage(QWidget):
 
     def show_add_tendies_dialog(self):
         from zipfile import BadZipFile
+
         from PySide6.QtWidgets import QFileDialog, QMessageBox
         selected_files, _ = QFileDialog.getOpenFileNames(
             self.window, QCoreApplication.translate("Nugget", "Select PosterBoard Files"), "", "Zip Files (*.tendies)"
@@ -715,7 +726,8 @@ class IOSPosterboardPage(QWidget):
     def _load_tendie_preview_by_name(self, card, icon_lbl, file_name):
         try:
             from src.controllers.wallpaper_api import (
-                find_wallpaper_by_name, cached_preview_path,
+                cached_preview_path,
+                find_wallpaper_by_name,
             )
             wp = find_wallpaper_by_name(file_name)
         except Exception:
@@ -774,7 +786,7 @@ class IOSPosterboardPage(QWidget):
             return False
 
     def _delete_tendie(self, tendie):
-        from src.tweaks.tweaks import tweaks, TweakID
+        from src.tweaks.tweaks import TweakID, tweaks
         if tendie in tweaks[TweakID.PosterBoard].tendies:
             tweaks[TweakID.PosterBoard].tendies.remove(tendie)
         self.refresh_tendies()
@@ -782,7 +794,12 @@ class IOSPosterboardPage(QWidget):
     def _reset_posterboard(self):
         c = ColorThemeManager.instance().colors
         from PySide6.QtWidgets import (
-            QDialog, QVBoxLayout, QLabel, QCheckBox, QDialogButtonBox, QMessageBox,
+            QCheckBox,
+            QDialog,
+            QDialogButtonBox,
+            QLabel,
+            QMessageBox,
+            QVBoxLayout,
         )
 
         dialog = QDialog(self.window)

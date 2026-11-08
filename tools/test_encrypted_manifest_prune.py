@@ -22,7 +22,6 @@ contract the shim promises:
 Run: ``python tools/test_encrypted_manifest_prune.py``
 """
 
-import os
 import sys
 import tempfile
 from pathlib import Path

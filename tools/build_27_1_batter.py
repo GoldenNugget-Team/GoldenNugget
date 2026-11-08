@@ -58,9 +58,9 @@ OUT_DIR = os.path.join(REPO, "community-batters")
 sys.path.insert(0, REPO)
 sys.path.insert(0, BUILDER)
 
-from batter_builder.model import Template, Tweak, Write, Control  # noqa: E402
-from batter_builder import rules  # noqa: E402
 from batter_builder import batter as batter_io  # noqa: E402
+from batter_builder import rules  # noqa: E402
+from batter_builder.model import Control, Template, Tweak, Write  # noqa: E402
 
 AUTHOR = "Jason"
 

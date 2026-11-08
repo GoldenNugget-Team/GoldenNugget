@@ -1,5 +1,5 @@
 """Background count for the home page's community-catalog badge."""
-from PySide6.QtCore import Signal, QThread
+from PySide6.QtCore import QThread, Signal
 
 
 class CatalogBadgeThread(QThread):

@@ -15,6 +15,7 @@ replaced by this safe, manifest-pruned restore of the protective cache.
 """
 
 import sys
+
 from restore_cache import main
 
 if __name__ == "__main__":

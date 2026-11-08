@@ -1,22 +1,27 @@
 """Offline conflict detection and preset exchange regressions (no device)."""
 import json
 import os
-from pathlib import Path
 import sys
 import tempfile
-from types import SimpleNamespace
 import unittest
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src' / 'qt'))
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
-from src.controllers.tweak_conflicts import find_conflicts, current_conflicts
 from src.controllers.preset_manager import PresetManager
-from src.tweaks.tweak_classes import BasicPlistTweak, AdvancedPlistTweak, CompanionKeyTweak, NullifyFileTweak
-from src.tweaks.tweak_names import TweakID
+from src.controllers.tweak_conflicts import current_conflicts, find_conflicts
 from src.tweaks.basic_plist_locations import FileLocation
+from src.tweaks.tweak_classes import (
+    AdvancedPlistTweak,
+    BasicPlistTweak,
+    CompanionKeyTweak,
+    NullifyFileTweak,
+)
+from src.tweaks.tweak_names import TweakID
 
 
 def enabled(tweak):
@@ -80,8 +85,9 @@ class Conflicts(unittest.TestCase):
 
     def test_warning_defaults_to_review_and_requires_explicit_continue(self):
         from PySide6.QtWidgets import QApplication, QWidget
+
         from src.gui.main_window_mixins import ApplyMixin
-        app = QApplication.instance() or QApplication([])
+        _app = QApplication.instance() or QApplication([])
         parent = QWidget()
         parent.device_manager = Mock()
         conflict = Mock()

@@ -18,7 +18,7 @@ import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
-from typing import Callable, Iterable, Optional
+from typing import Callable, Optional
 
 USBMUXD_SOCKET = "/var/run/usbmuxd"
 _BINARY_DIRS = ("/usr/bin", "/usr/sbin", "/usr/local/bin", "/usr/local/sbin", "/bin", "/sbin")

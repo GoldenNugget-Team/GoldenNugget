@@ -7,13 +7,13 @@ import copy
 import hashlib
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import tempfile
 import zipfile
+from pathlib import Path
 
-from src.controllers.archive_safety import checked_members, MAX_FILE_BYTES
+from src.controllers.archive_safety import MAX_FILE_BYTES, checked_members
 
 FORMAT = 'GoldenNugget portable preset'
 MANIFEST_LIMIT = 4 * 1024 ** 2

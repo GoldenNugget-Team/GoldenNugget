@@ -1,10 +1,22 @@
-from PySide6.QtWidgets import QDialog, QDialogButtonBox, QLabel, QVBoxLayout, QHBoxLayout, QWidget, QToolButton, QSizePolicy, QScrollArea, QFrame
-from PySide6.QtGui import QFont, QIcon, QPixmap, QDesktopServices
-from PySide6.QtCore import QCoreApplication, QSize, Qt, QUrl
-
 from webbrowser import open_new_tab
 
+from PySide6.QtCore import QCoreApplication, QSize, Qt, QUrl
+from PySide6.QtGui import QDesktopServices, QFont, QIcon, QPixmap
+from PySide6.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QScrollArea,
+    QSizePolicy,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
+)
+
 from src.controllers.web_request_handler import Nugget_Repo, get_latest_version
+
 
 class PBHelpDialog(QDialog):
     def __init__(self, parent=None):
@@ -42,8 +54,8 @@ class PBHelpDialog(QDialog):
 
 
 # App version
-from src.gui.version import App_Version, App_Build
-from src.gui.theme import ColorThemeManager, FONT_FAMILY, t
+from src.gui.theme import FONT_FAMILY, ColorThemeManager, t
+from src.gui.version import App_Build, App_Version
 
 
 class AboutProgramDialog(QDialog):

@@ -1,15 +1,23 @@
 import math
-from PySide6.QtCore import QObject, Qt, QEvent, QTimer, QPoint, QRect, QRectF
-from PySide6.QtGui import QColor, QPainter, QPen, QIcon
 from pathlib import Path
-from PySide6.QtWidgets import (QApplication, QAbstractButton, QLineEdit, QComboBox,
-                              QLabel, QHBoxLayout, QGraphicsOpacityEffect, QDialog, QWidget)
-from src.gui.theme import ColorThemeManager
-from .controls import LiquidButton, LiquidDangerButton, PulseOverlay, GlassPanel
-from .panels import DeviceDrawer, WorkspaceSettings, RestoreDrawer, PhoneRender
-from .motion import animate
-from .reveal import DevicePeek, PageReveal
 
+from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QRectF, Qt, QTimer
+from PySide6.QtGui import QColor, QIcon, QPainter, QPen
+from PySide6.QtWidgets import (
+    QAbstractButton,
+    QApplication,
+    QComboBox,
+    QDialog,
+    QLineEdit,
+    QWidget,
+)
+
+from src.gui.theme import ColorThemeManager
+
+from .controls import GlassPanel, LiquidButton, LiquidDangerButton, PulseOverlay
+from .motion import animate
+from .panels import DeviceDrawer, RestoreDrawer, WorkspaceSettings
+from .reveal import DevicePeek, PageReveal
 
 _DEVICE_NAMES: dict | None = None
 
@@ -362,11 +370,12 @@ class LiquidExperience(QObject):
     def load_preset(self, name):
         import json
         from pathlib import Path
+
+        from src.gui.dialogs.confirmation import ask_confirmation
         from src.gui.ios.compat import compatibility_reasons
+        from src.gui.ios.preset_menu import load_preset_flow
         from src.tweaks.registry import SPECS
         from src.tweaks.tweaks import tweaks
-        from src.gui.ios.preset_menu import load_preset_flow
-        from src.gui.dialogs.confirmation import ask_confirmation
         pm=self.window.preset_manager
         try:
             data=json.loads(Path(pm.get_preset_path(name)).read_text()).get('tweaks',{})

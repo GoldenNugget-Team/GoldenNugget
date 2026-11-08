@@ -32,8 +32,8 @@ import tempfile
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.exceptions.nugget_exception import NuggetException
-from src.tweaks.posterboard import posterboard_tweak as posterboard_tweak_mod
 from src.tweaks.posterboard import pb_config_manager as pb_mod
+from src.tweaks.posterboard import posterboard_tweak as posterboard_tweak_mod
 from src.tweaks.posterboard.pb_config_manager import (
     DB_FILE_NAME,
     POSTERBOARD_TABLES,

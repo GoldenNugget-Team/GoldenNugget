@@ -14,21 +14,32 @@ import os
 import tempfile
 from collections import deque
 
-from PySide6.QtCore import Qt, QCoreApplication, QUrl, QTimer, QStandardPaths
+from PySide6.QtCore import QCoreApplication, QStandardPaths, Qt, QTimer, QUrl
 from PySide6.QtGui import QPixmap
-from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply, QNetworkDiskCache
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QLabel, QPushButton,
-    QScrollArea, QGridLayout, QWidget, QFrame,
+from PySide6.QtNetwork import (
+    QNetworkAccessManager,
+    QNetworkDiskCache,
+    QNetworkReply,
+    QNetworkRequest,
 )
-
-from src.gui.dialogs.confirmation import ask_confirmation
+from PySide6.QtWidgets import (
+    QDialog,
+    QFrame,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.controllers.icon_themes_api import (
-    catalog_url, parse_catalog, DownloadableTheme,
+    DownloadableTheme,
+    catalog_url,
+    parse_catalog,
 )
-from src.tweaks.tweaks import tweaks, TweakID
+from src.gui.dialogs.confirmation import ask_confirmation
 from src.gui.theme import ColorThemeManager
+from src.tweaks.tweaks import TweakID, tweaks
 
 CARD_W = 180
 CARD_H = 250

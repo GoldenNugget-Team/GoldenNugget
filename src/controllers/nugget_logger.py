@@ -19,10 +19,9 @@ import logging
 import os
 import sys
 from datetime import datetime
+from logging.handlers import RotatingFileHandler
 
 from src.utils.paths import app_data_dir
-
-from logging.handlers import RotatingFileHandler
 
 _active_log_path: str | None = None
 _file_handler: logging.Handler | None = None

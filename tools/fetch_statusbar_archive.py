@@ -29,7 +29,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pymobiledevice3.usbmux import list_devices  # noqa: E402
 
 from src.restore.statusbar_fetch import (  # noqa: E402
-    describe, dump_path, targeted_statusbar_archive_fetch)
+    describe,
+    dump_path,
+    targeted_statusbar_archive_fetch,
+)
 
 
 async def main() -> int:

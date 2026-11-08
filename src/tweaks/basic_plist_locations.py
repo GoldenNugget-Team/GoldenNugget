@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class FileLocation(Enum):
     # Feature Flags
     featureflags = "/var/preferences/FeatureFlags/Global.plist"

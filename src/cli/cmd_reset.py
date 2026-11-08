@@ -60,8 +60,14 @@ def _resolve_pages(args, dm) -> list:
 
 def run(args) -> int:
     from src.cli.common import (
-        bootstrap, make_device_manager, load_prefs, ensure_device,
-        print_status, print_alert, describe_device)
+        bootstrap,
+        describe_device,
+        ensure_device,
+        load_prefs,
+        make_device_manager,
+        print_alert,
+        print_status,
+    )
 
     settings = bootstrap()
     dm = make_device_manager(settings)

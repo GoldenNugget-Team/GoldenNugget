@@ -2,17 +2,25 @@
 import ast
 import logging
 import os
-from pathlib import Path
 import sys
 import time
+from pathlib import Path
 
 from PySide6.QtCore import QCoreApplication, QTimer
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget
-
-from src.gui.widgets import (
-    IOSSwitch, _auto_retheme,
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
 )
+
 from src.gui.theme import t
+from src.gui.widgets import (
+    IOSSwitch,
+    _auto_retheme,
+)
 
 
 def _tr(text):

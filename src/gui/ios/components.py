@@ -1,32 +1,61 @@
 from PySide6.QtCore import (
-    Qt, QCoreApplication, Signal as pyqtSignal, QSize, QRectF, QLocale,
-    QPropertyAnimation, QEasingCurve, Property, QEvent, QRegularExpression, QTimer,
+    Property,
+    QCoreApplication,
+    QEasingCurve,
+    QEvent,
+    QLocale,
+    QPropertyAnimation,
+    QRectF,
+    QRegularExpression,
+    QSize,
+    Qt,
+    QTimer,
 )
-from PySide6.QtGui import QPainter, QColor, QIcon, QIntValidator, QDoubleValidator, QRegularExpressionValidator, QValidator
+from PySide6.QtCore import (
+    Signal as pyqtSignal,
+)
+from PySide6.QtGui import (
+    QColor,
+    QDoubleValidator,
+    QIcon,
+    QIntValidator,
+    QPainter,
+    QRegularExpressionValidator,
+    QValidator,
+)
 from PySide6.QtWidgets import (
-    QWidget, QHBoxLayout, QLabel, QPushButton, QFrame,
-    QSizePolicy, QDialog, QDialogButtonBox, QLineEdit,
-    QVBoxLayout, QScrollArea, QButtonGroup, QToolButton,
+    QButtonGroup,
+    QDialog,
+    QDialogButtonBox,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QScrollArea,
+    QSizePolicy,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
 )
 
-from src.gui.theme import t, ColorThemeManager, theme_pixmap
+from src.gui.theme import ColorThemeManager, t, theme_pixmap
 from src.gui.widgets import (
-    IOSSearchField,
-    IOSSegmentedFilter,
-    IOSSearchEmpty,
-    IOSSectionHeader,
     IOSCard,
     IOSCollapsibleSection,
-    IOSNavBar,
-    IOSValueRow,
-    IOSSettingsRow,
-    IOSSettingsAction,
-    IOSPrimaryButton,
     IOSDangerButton,
+    IOSNavBar,
+    IOSPrimaryButton,
+    IOSSearchEmpty,
+    IOSSearchField,
+    IOSSectionHeader,
+    IOSSegmentedFilter,
+    IOSSettingsAction,
+    IOSSettingsRow,
     IOSSwitch,
+    IOSValueRow,
     _auto_retheme,
 )
-
 
 
 class TextInputDialog(QDialog):

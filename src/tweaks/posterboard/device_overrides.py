@@ -1,14 +1,14 @@
-from pathlib import Path
 import logging
-import re
 import math
+import re
+from pathlib import Path
 
 from src.tweaks.tweak_classes import Tweak
-from .archive_editor import FILES, PosterArchive
-from .clock_opacity import set_clock_opacity
-from .clock_material import set_clock_material
-from .preference_controls import CLOCK_FONT_IDENTIFIERS, number_limits
 
+from .archive_editor import FILES, PosterArchive
+from .clock_material import set_clock_material
+from .clock_opacity import set_clock_opacity
+from .preference_controls import CLOCK_FONT_IDENTIFIERS, number_limits
 
 # Defaults only seed the controls; a field is written only when selected.
 OPTIONS = (

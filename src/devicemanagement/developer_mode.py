@@ -1,6 +1,7 @@
 """Read Developer Mode without inferring it from unrelated service errors."""
 import asyncio
 
+
 async def read_developer_mode(lockdown):
     value = await asyncio.wait_for(lockdown.get_value(
         domain="com.apple.security.mac.amfi", key="DeveloperModeStatus"), timeout=5)

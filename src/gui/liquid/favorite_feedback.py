@@ -1,4 +1,4 @@
-from PySide6.QtCore import Qt, QTimer, QVariantAnimation, QEasingCurve
+from PySide6.QtCore import QEasingCurve, QTimer, QVariantAnimation
 from PySide6.QtGui import QColor, QLinearGradient, QPainter, QPainterPath
 from PySide6.QtWidgets import QApplication, QLabel
 

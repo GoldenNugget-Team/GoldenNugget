@@ -7,9 +7,9 @@ renderer branches on ``Layer.type`` just like the TSX renderers do.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from collections.abc import Mapping
 from typing import Any, Dict, List, Optional
 
 

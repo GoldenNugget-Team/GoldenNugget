@@ -1,11 +1,11 @@
 """Compact device metrics beside the selected device preview."""
-from PySide6.QtCore import Qt, QRectF, Signal
-from PySide6.QtGui import QPainter, QColor, QPen, QFont, QPainterPath
-from PySide6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QProgressBar
+from PySide6.QtCore import QRectF, Qt, Signal
+from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QProgressBar, QVBoxLayout, QWidget
 
-from src.gui.ios.components import _auto_retheme
-from src.gui.theme import ColorThemeManager, theme_pixmap, t
 from src.devicemanagement.storage_info import format_device_capacity
+from src.gui.ios.components import _auto_retheme
+from src.gui.theme import ColorThemeManager, t, theme_pixmap
 
 
 class BatteryIndicator(QWidget):
@@ -123,11 +123,13 @@ class DeviceDetailsWidget(QWidget):
         self.update_info()
 
     def _update_selection_counts(self):
-        from src.tweaks.tweaks import tweaks, TweakID
-        from src.tweaks.registry import SPECS
         from src.gui.ios.compat import device_family, is_tweak_compatible
-        from src.tweaks.hidden import current_hidden_tweak_names, current_hidden_feature_names
-        from src.tweaks.registry import SECTION_FEATURES
+        from src.tweaks.hidden import (
+            current_hidden_feature_names,
+            current_hidden_tweak_names,
+        )
+        from src.tweaks.registry import SECTION_FEATURES, SPECS
+        from src.tweaks.tweaks import TweakID, tweaks
         manager = self.window.device_manager
         model, version = manager.get_current_device_model(), manager.get_current_device_version()
         hidden, features = current_hidden_tweak_names(), current_hidden_feature_names()
@@ -136,7 +138,7 @@ class DeviceDetailsWidget(QWidget):
                           and is_tweak_compatible(spec.id, version, device_family(model) == "iphone", model)
                           and spec.id in tweaks and tweaks[spec.id].enabled)
         daemons = tweaks.get(TweakID.Daemons)
-        from src.tweaks.daemons_tweak import Daemon, INTERFACE_KEYS
+        from src.tweaks.daemons_tweak import INTERFACE_KEYS, Daemon
         controls = [daemon for daemon in Daemon if all(key in INTERFACE_KEYS for key in daemon.value)]
         selected = daemons._filter_keys(daemons.value or {}) if daemons and daemons.enabled else {}
         daemon_count = sum(all(selected.get(key) is True for key in daemon.value) for daemon in controls)

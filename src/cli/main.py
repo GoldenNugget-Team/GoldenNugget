@@ -103,9 +103,19 @@ def _run_subcommand(name: str, argv: list) -> int:
 
 def _build_parser():
     import argparse
-    from src.cli import cmd_devices, cmd_tweaks, cmd_daemons, cmd_preset
-    from src.cli import cmd_apply, cmd_reset, cmd_hotload, cmd_backup
-    from src.cli import cmd_diagnostics, cmd_wallpaper
+
+    from src.cli import (
+        cmd_apply,
+        cmd_backup,
+        cmd_daemons,
+        cmd_devices,
+        cmd_diagnostics,
+        cmd_hotload,
+        cmd_preset,
+        cmd_reset,
+        cmd_tweaks,
+        cmd_wallpaper,
+    )
 
     parser = argparse.ArgumentParser(
         prog="GoldenNugget",

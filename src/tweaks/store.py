@@ -1,8 +1,8 @@
 """Tweak state ownership and subscriptions, independent of Qt."""
-from contextlib import contextmanager
-from collections.abc import Mapping
 import logging
 import weakref
+from collections.abc import Mapping
+from contextlib import contextmanager
 
 log = logging.getLogger("GoldenNugget.tweaks")
 

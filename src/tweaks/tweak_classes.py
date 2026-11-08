@@ -1,7 +1,7 @@
-from typing import Any, Optional, Callable
-from .store import default_changes
+from typing import Any, Callable, Optional
 
 from .basic_plist_locations import FileLocation
+from .store import default_changes
 
 _legacy_unsubscribe = None
 

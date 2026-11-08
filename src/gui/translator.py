@@ -2,15 +2,11 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QTranslator, QLibraryInfo, QLocale
+from PySide6.QtCore import QLibraryInfo, QLocale, QTranslator
 from PySide6.QtWidgets import QApplication
 
 from src.utils.settings import Settings
-
-if TYPE_CHECKING:
-    from src.qt.mainwindow_ui import Ui_Nugget
 
 
 class Translator:
@@ -38,7 +34,10 @@ class Translator:
     def set_default_locale(self, code: str):
         QLocale.setDefault(QLocale(code))
     def set_new_language(self, code: str, restart: bool = False):
-        from src.gui.live_translation import collect_translatable_ui, apply_translatable_ui
+        from src.gui.live_translation import (
+            apply_translatable_ui,
+            collect_translatable_ui,
+        )
         snapshot = collect_translatable_ui(self.app, self._disk_translations_path(), QLocale().name())
         if not code:
             self.settings.remove("locale_code")
@@ -107,7 +106,7 @@ class Translator:
         base = getattr(sys, "_MEIPASS", os.path.join(os.path.dirname(__file__), "..", ".."))
         return os.path.join(base, "src", "qt", "translations")
 
-    def fix_ui_for_rtl(self, ui: Ui_Nugget):
+    def fix_ui_for_rtl(self, ui: Ui_Nugget):  # noqa: F821 (name deleted with src/qt/mainwindow_ui.py; kept for pyside6-lupdate pin)  # pyright: ignore[reportUndefinedVariable]
         curr_locale = self.get_saved_locale_code()
         if curr_locale == "ar" or curr_locale == "ar_SA" or curr_locale == "ar_EG":
             # need to correct for stuff

@@ -2,7 +2,11 @@
 
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
-from src.gui.dialogs.preset_catalog import CatalogDialog, _device_context, refresh_template_list
+from src.gui.dialogs.preset_catalog import (
+    CatalogDialog,
+    _device_context,
+    refresh_template_list,
+)
 
 
 class IOSCatalogPage(QWidget):

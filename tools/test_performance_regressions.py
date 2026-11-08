@@ -1,21 +1,20 @@
 """Offline correctness checks for the performance changes (no device needed)."""
 import asyncio
 import copy
-from contextlib import closing
 import hashlib
-import io
 import json
 import os
-from pathlib import Path
 import plistlib
 import sqlite3
 import sys
 import tempfile
 import threading
 import unittest
+import zipfile
+from contextlib import closing
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
-import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -122,7 +121,10 @@ class PayloadTests(unittest.TestCase):
 
     def test_prune_inventory_and_inode_hint_remain_safe_after_injection(self):
         from src.restore.inject import inject_files_into_backup
-        from src.restore.protective import clean_backup_for_restore, verify_backup_payloads
+        from src.restore.protective import (
+            clean_backup_for_restore,
+            verify_backup_payloads,
+        )
         device = backup_fixture(self.root / "backup")
         row = ("HomeDomain", "Library/Preferences/kept.plist", b"keep", 0o100644, 501, 501)
         inject_files_into_backup(device.parent, "udid", [row])
@@ -156,7 +158,10 @@ class PayloadTests(unittest.TestCase):
         self.assertEqual((destination / 'Library/Preferences/payload').read_bytes(), b'content')
 
     def test_recovery_cleanup_cannot_target_a_master(self):
-        from src.restore.protective import discard_protective_working_copy, WORKING_COPY_PREFIX
+        from src.restore.protective import (
+            WORKING_COPY_PREFIX,
+            discard_protective_working_copy,
+        )
         master = self.root / 'master'
         master.mkdir()
         with self.assertRaises(ValueError):
@@ -169,7 +174,7 @@ class PayloadTests(unittest.TestCase):
         self.assertTrue(master.is_dir())
 
     def test_restore_view_is_independent_and_discards_cleanly(self):
-        from src.restore.protective import make_restore_view, discard_restore_view
+        from src.restore.protective import discard_restore_view, make_restore_view
         from src.utils.filecopy import clone_or_copy
         source, cloned = self.root / "source", self.root / "cloned"
         source.write_bytes(b"original")
@@ -347,6 +352,7 @@ class AfcPerformanceTests(unittest.IsolatedAsyncioTestCase):
     async def test_device_probes_are_independent_and_selection_order_is_stable(self):
         from contextlib import asynccontextmanager
         from unittest.mock import AsyncMock, Mock
+
         from src.devicemanagement.device_manager import DeviceManager
         manager = DeviceManager.__new__(DeviceManager)
         manager._test_mode = False
@@ -387,8 +393,9 @@ class GuiPerformanceTests(unittest.TestCase):
         cls.app = application()
 
     def test_background_work_keeps_events_alive_and_does_not_call_destroyed_owner(self):
-        from PySide6.QtCore import QObject, QEventLoop, QTimer
+        from PySide6.QtCore import QEventLoop, QObject, QTimer
         from shiboken6 import delete
+
         from src.gui.dialogs.file_task import start_file_task
         owner = QObject()
         release = threading.Event()
@@ -446,6 +453,7 @@ class GuiPerformanceTests(unittest.TestCase):
 
     def test_autosave_snapshot_is_immutable_and_shutdown_writes_latest_state(self):
         from PySide6.QtCore import QObject
+
         from src.gui.main_window_mixins import SettingsMixin
         class Manager:
             def __init__(self):
@@ -479,6 +487,7 @@ class GuiPerformanceTests(unittest.TestCase):
     def test_autosave_waits_for_quiet_period(self):
         from PySide6.QtCore import QObject
         from PySide6.QtTest import QTest
+
         from src.gui.main_window_mixins import SettingsMixin
         class Window(QObject, SettingsMixin):
             def __init__(self):
@@ -510,6 +519,7 @@ class RenderAndCacheTests(unittest.TestCase):
 
     def test_hsl_approximation_preserves_rgb_and_source_alpha(self):
         from PySide6.QtGui import QColor, QImage
+
         from src.gui.preview.ca.render import _hsl_blend
         for mode in (QImage.Format.Format_RGBA8888, QImage.Format.Format_ARGB32_Premultiplied):
             image = QImage(5, 3, mode)
@@ -539,8 +549,9 @@ class RenderAndCacheTests(unittest.TestCase):
         self.assertEqual(child.opacity, 1.0)
 
     def test_static_filter_cache_does_not_change_rendered_result(self):
-        from src.gui.preview.ca.models import CADocument, Filter, Layer, Size
         import importlib
+
+        from src.gui.preview.ca.models import CADocument, Filter, Layer, Size
         module = importlib.import_module('src.gui.preview.ca.render')
         child = Layer(id='child', size=Size(12, 12), backgroundColor='#e07030',
                       filters=[Filter(type='colorContrast', value=1.4)])
@@ -609,8 +620,8 @@ class RenderAndCacheTests(unittest.TestCase):
             self.assertEqual(list(Path(directory).iterdir()), [target])
 
     def test_icon_replacement_order_and_preset_metadata_invalidation(self):
-        from src.tweaks.icon_themes.icon_themes_tweak import IconThemesTweak
         from src.controllers.preset_manager import PresetManager
+        from src.tweaks.icon_themes.icon_themes_tweak import IconThemesTweak
         tweak = IconThemesTweak()
         a, b = SimpleNamespace(bundle_id='a'), SimpleNamespace(bundle_id='b')
         tweak.add_theme(a)

@@ -1,16 +1,23 @@
 """Explain the selected device's support using the same local rules as the UI."""
-from PySide6.QtCore import QCoreApplication, QT_TRANSLATE_NOOP, Qt
+from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication, Qt
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QScrollArea, QWidget,
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
 )
 
 from src.controllers.hotload import HotLoad
-from src.gui.ios.compat import compatibility_reasons
-from src.devicemanagement.passcode_support import current_passcode_theme_reason
 from src.devicemanagement.device_capabilities import device_os_text
+from src.devicemanagement.passcode_support import current_passcode_theme_reason
+from src.gui.ios.compat import compatibility_reasons
 from src.gui.theme import ColorThemeManager, t
 from src.gui.widgets import (
-    IOSCard, IOSCollapsibleSection,
+    IOSCard,
+    IOSCollapsibleSection,
 )
 from src.tweaks.registry import SPECS
 from src.tweaks.tweak_names import TweakID

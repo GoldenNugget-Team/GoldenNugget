@@ -1,6 +1,6 @@
 from PySide6.QtCore import QPoint, QRect
 from PySide6.QtGui import QRegion
-from PySide6.QtWidgets import QApplication
+
 from .motion import animate
 
 

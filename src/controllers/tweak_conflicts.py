@@ -1,16 +1,19 @@
 """Offline checks for contradictory plist selections, not a device safety audit."""
-from dataclasses import dataclass
-from copy import deepcopy
 import hashlib
 import plistlib
+from copy import deepcopy
+from dataclasses import dataclass
 
-from src.utils.i18n import QCoreApplication, QT_TRANSLATE_NOOP
-
-from src.tweaks.registry import SPECS_BY_ID
-from src.tweaks.tweak_classes import BasicPlistTweak, AdvancedPlistTweak, NullifyFileTweak
-from src.tweaks.tweak_names import TweakID
 from src.tweaks.candidate_preferences import InstalledAppSuggestionsBlacklist
+from src.tweaks.registry import SPECS_BY_ID
 from src.tweaks.store import ChangeBus
+from src.tweaks.tweak_classes import (
+    AdvancedPlistTweak,
+    BasicPlistTweak,
+    NullifyFileTweak,
+)
+from src.tweaks.tweak_names import TweakID
+from src.utils.i18n import QT_TRANSLATE_NOOP, QCoreApplication
 
 
 def _payload_digests(payload):
@@ -94,9 +97,9 @@ def find_conflicts(selections):
 
 def current_conflicts(manager):
     from src.controllers.hotload import HotLoad
-    from src.tweaks.tweak_loader import load_plist_tweaks, load_daemons
-    from src.tweaks.tweaks import tweaks
     from src.tweaks.store import selection_store
+    from src.tweaks.tweak_loader import load_daemons, load_plist_tweaks
+    from src.tweaks.tweaks import tweaks
     tweaks = selection_store(manager, tweaks)
     load_plist_tweaks()
     load_daemons()

@@ -4,10 +4,10 @@ The app ships a single dark palette (``DARK``); only the accent is a user
 choice, so these tests cover the accent lifecycle instead of a light/dark switch.
 """
 import os
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -15,12 +15,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src' / 'qt'))
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
 from PySide6.QtCore import QCoreApplication, QEvent
-from PySide6.QtGui import QPalette, QColor
+from PySide6.QtGui import QColor, QPalette
 from PySide6.QtTest import QSignalSpy
 from PySide6.QtWidgets import QApplication, QLabel
-from src.gui.theme import ColorThemeManager, DARK, ACCENT_PRESETS, STYLES, t
-
 from settings_sandbox import SettingsSandbox
+
+from src.gui.theme import ACCENT_PRESETS, DARK, STYLES, ColorThemeManager, t
 
 APP = QApplication.instance() or QApplication([])
 APP.setStyle('Fusion')
@@ -156,9 +156,9 @@ class Themes(unittest.TestCase):
             self.assertTrue(rendered.strip(), key)
 
     def test_swatch_numeric_dialog_and_about_follow_live_changes(self):
-        from src.gui.theme import AccentPicker
-        from src.gui.ios.components import NumberInputDialog
         from src.gui.dialogs.dialogs import AboutProgramDialog
+        from src.gui.ios.components import NumberInputDialog
+        from src.gui.theme import AccentPicker
         picker = AccentPicker()
         numeric = NumberInputDialog('Number', 1.5, 0, 10, step=.5)
         about = AboutProgramDialog()
@@ -182,11 +182,12 @@ class Themes(unittest.TestCase):
         new accent. Guards the lazy path: the previous accent must not survive
         on any page reached afterwards (the accent swatches keep their own
         preset colours by design)."""
-        from src.gui.translator import Translator
+        from PySide6.QtWidgets import QWidget
+
         from src.devicemanagement.device_manager import DeviceManager
         from src.gui.main_window import MainWindow
         from src.gui.theme import AccentPicker
-        from PySide6.QtWidgets import QWidget
+        from src.gui.translator import Translator
         dm = DeviceManager()
         dm.pref_manager.settings = self.settings
         with patch.object(MainWindow, 'refresh_devices'), patch.object(MainWindow, '_load_last_preset'), \
@@ -233,9 +234,9 @@ class Themes(unittest.TestCase):
             QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
 
     def test_settings_has_no_mode_switch_and_rethemes_without_editing_tweaks(self):
-        from src.gui.translator import Translator
         from src.devicemanagement.device_manager import DeviceManager
         from src.gui.main_window import MainWindow
+        from src.gui.translator import Translator
         from src.tweaks.tweaks import tweaks
         dm = DeviceManager()
         dm.pref_manager.settings = self.settings

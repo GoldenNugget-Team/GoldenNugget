@@ -5,13 +5,13 @@ __lazy_modules__ = (
     "traceback",
 )
 
-import sys
-import os
-import multiprocessing
-import runpy
-import warnings
-import traceback
 import logging
+import multiprocessing
+import os
+import runpy
+import sys
+import traceback
+import warnings
 
 # Add src/qt to path so resources_rc can be found
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src", "qt"))
@@ -24,8 +24,8 @@ os.environ.setdefault("QT_LOGGING_RULES", "qt.qpa.wayland.textinput=false")
 
 from PySide6.QtCore import QCoreApplication
 
-from src.gui.logger import setup_logging, get_logger
-from src.gui.crash_ui import install_crash_handler, CrashHandlerApp
+from src.gui.crash_ui import CrashHandlerApp, install_crash_handler
+from src.gui.logger import get_logger, setup_logging
 
 # Install the global crash handler as early as possible so any uncaught
 # exception during startup is also captured instead of silently killing the app.
@@ -108,6 +108,13 @@ def main() -> int:
     # 3. GUI STARTUP
     print("Starting GoldenNugget...")
 
+    # Host OS support gate — before PySide6 loads, so an unsupported host gets
+    # a plain tkinter message instead of a crash inside the Qt platform plugin.
+    from src.gui.os_gate import unsupported_reason, warn_and_exit
+    reason = unsupported_reason()
+    if reason:
+        warn_and_exit(reason)
+
     if "--test-mode" in sys.argv:
         print("TEST MODE ENABLED: Mock device will be created")
 
@@ -160,11 +167,14 @@ def main() -> int:
     # Backend strings go through the Qt-free i18n seam; hand it the real
     # translator now that the catalogs are installed.
     from PySide6.QtCore import QCoreApplication as _QtCoreApplication
+
     from src.utils import i18n
     i18n.install_translate(_QtCoreApplication.translate)
 
     # PosterBoard import dialogs live in the GUI; wire them into the model.
-    from src.gui.dialogs.posterboard_prompts import install as install_posterboard_prompts
+    from src.gui.dialogs.posterboard_prompts import (
+        install as install_posterboard_prompts,
+    )
     install_posterboard_prompts()
 
     from PySide6.QtGui import QIcon
@@ -259,7 +269,7 @@ def main() -> int:
     if app._startup_services._required_update_dialog is None:
         QTimer.singleShot(0, widget.run_first_launch_prompts)
 
-    from src.tweaks.tweaks import tweaks, TweakID
+    from src.tweaks.tweaks import TweakID, tweaks
     for arg in sys.argv:
         if arg.endswith('.tendies'):
             tweaks[TweakID.PosterBoard].add_tendie(arg)

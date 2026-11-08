@@ -3,9 +3,9 @@
 import argparse
 import hashlib
 import json
-from pathlib import Path
 import shutil
 import subprocess
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FILES = ('__init__.py', 'controls.py', 'theme.py', 'widgets.py', 'phone_frame.py',

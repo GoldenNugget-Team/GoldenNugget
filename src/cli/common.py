@@ -99,7 +99,7 @@ def describe_device(device) -> str:
 
 def load_core_tweaks():
     """Idempotently load the registry tweaks + daemons (like the GUI pages)."""
-    from src.tweaks.tweak_loader import load_plist_tweaks, load_daemons
+    from src.tweaks.tweak_loader import load_daemons, load_plist_tweaks
     load_plist_tweaks()
     load_daemons()
 

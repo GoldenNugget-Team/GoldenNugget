@@ -8,7 +8,7 @@ later ``Nugget apply`` (which starts from AutoSave) sees it.
 import argparse
 import sys
 
-from src.tweaks.registry import SPECS_BY_SECTION, SPECS_BY_ID, Kind, Section
+from src.tweaks.registry import SPECS_BY_ID, SPECS_BY_SECTION, Kind, Section
 
 _SECTION_ALIASES = {}
 for _member in Section:

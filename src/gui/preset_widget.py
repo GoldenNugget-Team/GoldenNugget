@@ -7,7 +7,12 @@ iOS-style home pages so the active state is always visible.
 
 from PySide6.QtCore import QCoreApplication, Qt
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
 )
 
 from src.gui.theme import ColorThemeManager

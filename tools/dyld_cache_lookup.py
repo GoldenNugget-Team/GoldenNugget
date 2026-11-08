@@ -54,7 +54,6 @@ from __future__ import annotations
 
 import argparse
 import struct
-import sys
 from pathlib import Path
 
 CHUNK = 64 * 1024 * 1024

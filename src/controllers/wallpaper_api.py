@@ -13,11 +13,11 @@ Two community sources are supported:
 Both return the same normalized shape so the UI can treat them identically.
 """
 
-from dataclasses import dataclass
 import hashlib
 import os
 import re
 import time
+from dataclasses import dataclass
 
 import requests
 

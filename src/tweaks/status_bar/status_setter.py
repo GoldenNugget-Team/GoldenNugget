@@ -3,6 +3,7 @@ from enum import Enum
 
 from .status_bar_c.status_setter import ffi
 
+
 class StatusBarItem(Enum):
     TimeStatusBarItem = 0
     DateStatusBarItem = 1

@@ -3,10 +3,10 @@ import ast
 import hashlib
 import json
 import os
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,11 +15,11 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
 from PySide6.QtCore import QCoreApplication, QEvent
 from PySide6.QtWidgets import QApplication
-from awesomeui import Sidebar
-from src.gui.widgets import NavigationSidebar
-from src.gui.theme import ColorThemeManager
-
 from settings_sandbox import SettingsSandbox
+
+from awesomeui import Sidebar
+from src.gui.theme import ColorThemeManager
+from src.gui.widgets import NavigationSidebar
 
 APP = QApplication.instance() or QApplication([])
 
@@ -38,9 +38,9 @@ class AwesomeUIIntegration(unittest.TestCase):
                         self.assertFalse(any(n.name.startswith('src.') for n in node.names), name)
 
     def test_main_window_navigation_gating_and_live_theme(self):
-        from src.gui.translator import Translator
         from src.devicemanagement.device_manager import DeviceManager
         from src.gui.main_window import MainWindow
+        from src.gui.translator import Translator
         with tempfile.TemporaryDirectory() as directory, \
                 SettingsSandbox(Path(directory)) as make_settings:
             settings = make_settings('settings')

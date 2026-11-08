@@ -1,10 +1,11 @@
 """Local protective-backup generations and payload inventory (no device sessions)."""
 import json
 import os
-from pathlib import Path
 import shutil
 import tempfile
+from pathlib import Path
 from threading import Lock
+
 from src.exceptions.nugget_exception import NuggetException
 from src.utils.filecopy import clone_or_copy
 from src.utils.log_util import log_info, log_warn

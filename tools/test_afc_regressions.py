@@ -1,10 +1,10 @@
 """Offline AFC transfer regressions: python -m unittest tools.test_afc_regressions."""
 import asyncio
+import tempfile
+import unittest
 from contextlib import asynccontextmanager
 from pathlib import Path
-import tempfile
 from types import SimpleNamespace
-import unittest
 from unittest.mock import AsyncMock, Mock, patch
 
 from src.devicemanagement import session

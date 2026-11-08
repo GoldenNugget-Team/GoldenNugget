@@ -611,7 +611,7 @@ def cmd_verify(udid: str, words: list[str], value_override, tmp: Path,
         pref_delete(udid, d, k)
         print(f"  {d}/{k} {'已清除' if existed else '本就缺失'}")
 
-    print(f"\n采集基线（respring + 等待渲染）...")
+    print("\n采集基线（respring + 等待渲染）...")
     dt = capture(udid, before, probe, relaunch)
     print(f"  基线完成 {dt:.0f}s -> {before}")
 
@@ -620,7 +620,7 @@ def cmd_verify(udid: str, words: list[str], value_override, tmp: Path,
         pref_write(udid, d, k, v)
         print(f"  {d}/{k} = {v!r}")
 
-    print(f"\n重启 SpringBoard 并采集...")
+    print("\n重启 SpringBoard 并采集...")
     dt = capture(udid, after, probe, relaunch)
     print(f"  后帧完成 {dt:.0f}s -> {after}")
 

@@ -32,19 +32,20 @@ report them via :class:`ApplyAlertMessage`, and the main window asks
 Copy/Report buttons.
 """
 
-import sys
-import traceback
 import logging
 import os
+import sys
 import threading
+import traceback
 from typing import Callable, Optional
 from urllib.parse import quote
 
-from src.utils.i18n import QT_TRANSLATE_NOOP
+from pymobiledevice3.exceptions import NotEnoughDiskSpaceError
+
 from src.controllers.nugget_logger import get_log_path, get_log_tail
 from src.exceptions.device_errors import is_connection_error, is_device_locked_error
 from src.exceptions.nugget_exception import BackupDiskSpaceError
-from pymobiledevice3.exceptions import NotEnoughDiskSpaceError
+from src.utils.i18n import QT_TRANSLATE_NOOP
 
 logger = logging.getLogger("GoldenNugget.crash")
 
@@ -327,7 +328,7 @@ def _detect_desktop() -> str:
 def print_startup_banner() -> None:
     """Print a startup info banner to the terminal."""
     try:
-        from src.version import App_Version, App_Build
+        from src.version import App_Build, App_Version
         version_str = str(App_Version)
         beta_build = int(App_Build)
     except Exception:
@@ -364,6 +365,7 @@ def _install_faulthandler():
     captures whatever stack is left so the bug can be diagnosed."""
     try:
         import faulthandler
+
         from src.controllers.nugget_logger import get_log_dir
         dump_path = os.path.join(get_log_dir(), "nugget_crash_backtrace.log")
         dump_file = open(dump_path, "ab", buffering=0)

@@ -50,10 +50,10 @@ import zipfile
 from functools import lru_cache
 from typing import Any, Callable, Optional
 
-from .grappa import AUTHENTIC_GRAPPA_TOKENS, get_grappa_token
-
 from pymobiledevice3.lockdown import LockdownClient
 from pymobiledevice3.services.afc import AfcService
+
+from .grappa import AUTHENTIC_GRAPPA_TOKENS, get_grappa_token
 
 logger = logging.getLogger("GoldenNugget.airlift")
 

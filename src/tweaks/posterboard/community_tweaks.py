@@ -38,9 +38,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-from src.utils.i18n import QCoreApplication, QT_TRANSLATE_NOOP
-
 from src.restore.path_mapping import split_path_into_domain
+from src.utils.i18n import QT_TRANSLATE_NOOP, QCoreApplication
 
 MAX_TWEAKS = 64
 MAX_WRITES = 32

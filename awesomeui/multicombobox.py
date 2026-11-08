@@ -1,6 +1,6 @@
-from PySide6.QtGui import QStandardItemModel, QStandardItem
-from PySide6.QtWidgets import QComboBox
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QStandardItem, QStandardItemModel
+from PySide6.QtWidgets import QComboBox
 
 
 class MultiComboBox(QComboBox):

@@ -1,10 +1,19 @@
-import faulthandler, os, sys, json, time, shutil, sqlite3, tempfile
+import faulthandler
+import json
+import os
+import shutil
+import sqlite3
+import sys
+import tempfile
+import time
+
 faulthandler.dump_traceback_later(15, exit=True)
 sys.path.insert(0, os.path.join(os.getcwd(), 'src', 'qt'))
 sys.path.insert(0, os.getcwd())
 os.environ["GOLDENNUGGET_CACHE_PERSIST_MIN_GB"] = "0"  # keep CACHE_PERSIST_MIN_GB importable
 from pathlib import Path
-from src.restore.protective import ProtectiveBackupCache, CACHE_PERSIST_MIN_GB
+
+from src.restore.protective import CACHE_PERSIST_MIN_GB, ProtectiveBackupCache
 
 UDID = "UDIDPLC"; tmp = Path(tempfile.mkdtemp(prefix="gn_cache_placement_"))
 cache = ProtectiveBackupCache(UDID, "27.0")

@@ -1,16 +1,29 @@
-from PySide6.QtCore import Qt, QSize, QUrl, QRectF, QCoreApplication
-from PySide6.QtGui import QDesktopServices, QPixmap, QPainter, QPainterPath, QIcon, QColor
+from PySide6.QtCore import QCoreApplication, QRectF, QSize, Qt, QUrl
+from PySide6.QtGui import (
+    QColor,
+    QDesktopServices,
+    QIcon,
+    QPainter,
+    QPainterPath,
+    QPixmap,
+)
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel,
-    QPushButton, QToolButton, QSizePolicy,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QSizePolicy,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
 )
 
-from src.gui.credits import CREDITS, CREDIT_AVATARS, CREDIT_AVATAR_SOURCES
-from src.gui.ios.contributor_media import ContributorMedia, TRANSLATIONS_REPOSITORY
+from src.gui.credits import CREDIT_AVATAR_SOURCES, CREDIT_AVATARS, CREDITS
+from src.gui.ios.contributor_media import TRANSLATIONS_REPOSITORY, ContributorMedia
+from src.gui.theme import ColorThemeManager, t, theme_pixmap
 from src.gui.widgets import (
     IOSCard,
 )
-from src.gui.theme import ColorThemeManager, theme_pixmap, t
 
 
 def _tr(text):
@@ -214,6 +227,7 @@ class SupportPanel(IOSCard):
         self._translations_started = True
         self._translation_status.setText(_tr('Loading translation contributors…'))
         import weakref
+
         from shiboken6 import isValid
         target = weakref.ref(self)
 

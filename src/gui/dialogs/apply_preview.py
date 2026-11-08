@@ -1,7 +1,17 @@
 """Scrollable read-only preview, opened without accepting the apply summary."""
-from PySide6.QtCore import QCoreApplication, Qt, QRect, QSize
-from PySide6.QtWidgets import (QDialog, QLabel, QPlainTextEdit, QPushButton,
-    QVBoxLayout, QTreeWidget, QTreeWidgetItem, QAbstractItemView, QHeaderView, QStyledItemDelegate)
+from PySide6.QtCore import QCoreApplication, QRect, QSize, Qt
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QDialog,
+    QHeaderView,
+    QLabel,
+    QPlainTextEdit,
+    QPushButton,
+    QStyledItemDelegate,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+)
 
 from src.gui.theme import ColorThemeManager, t
 

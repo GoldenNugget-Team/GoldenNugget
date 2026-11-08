@@ -30,10 +30,13 @@ app = QCoreApplication(sys.argv)
 app.setApplicationName("GoldenNugget")
 app.setOrganizationDomain("com.leemin")
 
-from src.restore import storage
 from src.controllers.settings import Settings
+from src.restore import storage
 from src.utils.paths import (
-    APP_NAME, app_data_dir, app_data_root, legacy_app_data_dirs,
+    APP_NAME,
+    app_data_dir,
+    app_data_root,
+    legacy_app_data_dirs,
 )
 
 # The app's own folder (``<data root>/gnugget``). The old builds used Qt's

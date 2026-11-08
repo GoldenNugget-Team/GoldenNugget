@@ -8,22 +8,25 @@ touches preview labels lives here so the backend stays toolkit-free.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtWidgets import (
-    QCheckBox, QHBoxLayout, QLabel, QLineEdit, QSlider, QStackedLayout,
-    QToolButton, QVBoxLayout, QWidget,
+    QCheckBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QSlider,
+    QStackedLayout,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
 )
 
 from src.gui.liquid.choice_editor import GlassComboBox
-from src.tweaks.posterboard.template_options import OptionType
 from src.tweaks.posterboard.template_options.picker_option import PickerOption
 from src.tweaks.posterboard.template_options.remove_option import RemoveOption
 from src.tweaks.posterboard.template_options.replace_option import ReplaceOption
 from src.tweaks.posterboard.template_options.set_option import SetOption, SetterType
 from src.utils.color import RgbColor
-
 
 # --------------------------------------------------------------------------- #
 # Colour conversion

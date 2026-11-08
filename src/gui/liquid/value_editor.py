@@ -1,9 +1,17 @@
-from PySide6.QtCore import Qt, QEvent, QRect, QPoint
-from PySide6.QtGui import QRegion,QPainter,QColor,QPalette
-from PySide6.QtWidgets import QApplication, QDialogButtonBox, QPushButton, QVBoxLayout, QLabel
+from PySide6.QtCore import QEvent, QPoint, QRect, Qt
+from PySide6.QtGui import QColor, QPainter, QPalette, QRegion
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialogButtonBox,
+    QLabel,
+    QPushButton,
+    QVBoxLayout,
+)
+
+from src.gui.theme import ColorThemeManager
+
 from .controls import GlassPanel
 from .motion import animate
-from src.gui.theme import ColorThemeManager
 
 
 class ValueEditor(GlassPanel):

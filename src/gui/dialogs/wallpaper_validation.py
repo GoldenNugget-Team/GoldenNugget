@@ -1,8 +1,16 @@
 """Background package inspection with a saveable report."""
 import json
 
-from PySide6.QtCore import QCoreApplication, QThread, Qt
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPlainTextEdit, QPushButton, QFileDialog, QMessageBox
+from PySide6.QtCore import QCoreApplication, Qt, QThread
+from PySide6.QtWidgets import (
+    QDialog,
+    QFileDialog,
+    QHBoxLayout,
+    QMessageBox,
+    QPlainTextEdit,
+    QPushButton,
+    QVBoxLayout,
+)
 
 from src.controllers.wallpaper_validation import validate_wallpaper, validation_text
 from src.gui.theme import ColorThemeManager, t

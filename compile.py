@@ -1,10 +1,11 @@
-from sys import platform, argv
 import os
+import platform as _platform_mod
 import re
-import shutil # Added for the macOS fix
+import shutil  # Added for the macOS fix
 import subprocess
 import sys
-import platform as _platform_mod
+from sys import argv, platform
+
 import PyInstaller.__main__
 
 target_arch = next((arg for arg in argv if arg.startswith("--target-arch=")), None)
@@ -67,10 +68,7 @@ args = [
     '--collect-all=PIL',
     '--add-data=files/:files',
     '--copy-metadata=pyimg4',
-    '--hidden-import=zeroconf',
     '--hidden-import=pyimg4',
-    '--hidden-import=zeroconf._utils.ipaddress',
-    '--hidden-import=zeroconf._handlers.answers',
     '--hidden-import=src.qt.resources_rc',
     '--add-data=src/qt:src/qt',
     # Liquid glass panel icons are loaded at RUNTIME from the installed
@@ -144,7 +142,7 @@ if platform == "darwin":
     # Delete sslpsk_pmd3's bundled OpenSSL before PyInstaller collects it.
     # This forces fallback to Python's built-in _ssl without breaking codesign.
     try:
-        import sslpsk_pmd3
+        import sslpsk_pmd3  # pyright: ignore[reportMissingImports]  (macOS-only build dep)
         sslpsk_path = os.path.dirname(sslpsk_pmd3.__file__)
         dylibs_path = os.path.join(sslpsk_path, "__dot__dylibs")
         if os.path.exists(dylibs_path):
@@ -158,7 +156,7 @@ if platform == "darwin":
     args.append('--osx-bundle-identifier=com.leemin.Nugget')
 
     try:
-        import secrets_nugget.compile_config as compile_config
+        import secrets_nugget.compile_config as compile_config  # pyright: ignore[reportMissingImports]  (optional codesign helper)
         args.append('--osx-entitlements-file=entitlements.plist')
         args.append(f"--codesign-identity={compile_config.CODESIGN_HASH}")
     except ImportError:

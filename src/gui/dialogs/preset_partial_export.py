@@ -7,12 +7,18 @@ SpringBoard tweaks, or only the Daemons, from a previously saved preset.
 
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import (
-    QCheckBox, QDialog, QDialogButtonBox, QGroupBox, QLabel,
-    QScrollArea, QVBoxLayout, QWidget,
+    QCheckBox,
+    QDialog,
+    QDialogButtonBox,
+    QGroupBox,
+    QLabel,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
 )
 
+from src.tweaks.registry import SPECS_BY_ID, Section
 from src.tweaks.tweak_names import TweakID
-from src.tweaks.registry import Section, SPECS_BY_ID
 
 
 def _label_for(tweak_id: TweakID) -> str:

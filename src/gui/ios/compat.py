@@ -8,9 +8,11 @@ translated variant the UI shows.
 from src.tweaks.compatibility import (  # noqa: F401 - re-exported API
     _parse_version,
     device_family,
-    device_compatibility_reasons as compatibility_reasons,
     is_tweak_compatible,
     untested_tweaks_enabled,
+)
+from src.tweaks.compatibility import (
+    device_compatibility_reasons as compatibility_reasons,
 )
 
 __all__ = [

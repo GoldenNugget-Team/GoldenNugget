@@ -1,29 +1,28 @@
 """Behavioural regressions for the rewrite audit; never connects to a device."""
 import asyncio
-from contextlib import asynccontextmanager, closing
-import io
+import json
 import os
-from pathlib import Path
 import plistlib
 import sqlite3
 import sys
 import tempfile
-from types import SimpleNamespace
-import unittest
-import json
 import threading
+import unittest
 import zipfile
+from contextlib import asynccontextmanager, closing
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT), str(ROOT / "src/qt")]
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from src.exceptions.nugget_exception import NuggetException
-from src.utils.log_tail import LogTailReader
 from src.controllers.autosave_state import AutosaveState
+from src.exceptions.nugget_exception import NuggetException
 from src.tweaks.store import TweakStore
 from src.tweaks.tweak_classes import Tweak
+from src.utils.log_tail import LogTailReader
 
 
 class RewriteTests(unittest.TestCase):
@@ -33,7 +32,10 @@ class RewriteTests(unittest.TestCase):
         self.root = Path(temporary.name)
 
     def test_posterboard_commit_keeps_saved_ids_independent(self):
-        from src.tweaks.posterboard.pb_config_manager import PBConfigManager, PreferenceManager
+        from src.tweaks.posterboard.pb_config_manager import (
+            PBConfigManager,
+            PreferenceManager,
+        )
         manager = PBConfigManager()
         manager.start_staging()
         manager.add_config("wallpaper", "extension")
@@ -74,15 +76,16 @@ class RewriteTests(unittest.TestCase):
             verify_backup_payloads(self.root, "device")
 
     def test_encryption_read_error_never_becomes_plain(self):
-        from src.restore import inject
         from unittest.mock import Mock
+
+        from src.restore import inject
         backend = SimpleNamespace(_is_encrypted_backup=Mock(side_effect=OSError("unreadable")))
         with patch.object(inject, "Mobilebackup2Service", backend):
             with self.assertRaises(NuggetException):
                 inject._is_encrypted_backup(self.root)
 
     def test_failed_decryption_removes_scratch(self):
-        from src.restore.verification import inspect_backup_payloads, VerificationStatus
+        from src.restore.verification import VerificationStatus, inspect_backup_payloads
         (self.root / "Manifest.db").write_bytes(b"encrypted")
         scratch = []
         def decrypt(root, password, output):
@@ -134,6 +137,7 @@ class RewriteTests(unittest.TestCase):
 
     def test_preset_failure_does_not_publish_earlier_prepared_values(self):
         from copy import copy
+
         from src.controllers.preset_apply import apply_preset_transaction
         from src.tweaks.tweak_names import TweakID
         key = TweakID.HideDICompletely
@@ -194,7 +198,9 @@ class RewriteTests(unittest.TestCase):
         self.assertEqual(parse.call_count, 1)
 
     def test_template_payload_is_path_backed(self):
-        from src.tweaks.posterboard.template_options.templates_tweak import TemplatesTweak
+        from src.tweaks.posterboard.template_options.templates_tweak import (
+            TemplatesTweak,
+        )
         package = self.root / "Container"
         package.mkdir()
         (package / "video.mov").write_bytes(b"large media payload")
@@ -205,7 +211,7 @@ class RewriteTests(unittest.TestCase):
         self.assertEqual(Path(files[0].contents_path).read_bytes(), b"large media payload")
 
     def test_xml_and_plist_batch_parse_once_and_keep_order(self):
-        from src.controllers import xml_handler, plist_handler
+        from src.controllers import plist_handler, xml_handler
         from src.controllers.patch_session import patch_batch
         xml = self.root / "main.xml"
         xml.write_text('<caml><CALayer nuggetId="a" x="1"/></caml>')
@@ -222,8 +228,8 @@ class RewriteTests(unittest.TestCase):
         self.assertFalse(plistlib.loads(plist.read_bytes())["nested"]["enabled"])
 
     def test_failed_patch_does_not_write_partial_xml(self):
-        from src.controllers.xml_handler import set_xml_value
         from src.controllers.patch_session import patch_batch
+        from src.controllers.xml_handler import set_xml_value
         path = self.root / "main.xml"
         original = '<caml><CALayer nuggetId="a" x="1"/></caml>'
         path.write_text(original)
@@ -257,8 +263,13 @@ class RewriteTests(unittest.TestCase):
         self.assertTrue(state.dirty)
 
     def test_recovery_stops_before_inject_when_prune_fails(self):
-        from src.restore.recovery import RecoverySource, RecoveryBackend, prepare_recovery
         from unittest.mock import Mock
+
+        from src.restore.recovery import (
+            RecoveryBackend,
+            RecoverySource,
+            prepare_recovery,
+        )
         prune = Mock(side_effect=OSError("disk full"))
         verify, inject = Mock(), Mock()
         backend = RecoveryBackend(prune, verify, lambda root: False, inject)
@@ -268,8 +279,13 @@ class RewriteTests(unittest.TestCase):
         inject.assert_not_called()
 
     def test_normal_restore_requires_media_marker_before_prune(self):
-        from src.restore.recovery import RecoverySource, RecoveryBackend, prepare_recovery
         from unittest.mock import Mock
+
+        from src.restore.recovery import (
+            RecoveryBackend,
+            RecoverySource,
+            prepare_recovery,
+        )
         prune, verify, inject = Mock(), Mock(), Mock()
         backend = RecoveryBackend(prune, verify, lambda root: False, inject)
         with self.assertRaisesRegex(NuggetException, "AFC media store"):
@@ -316,10 +332,11 @@ class RewriteTests(unittest.TestCase):
             release.set()
 
     def test_restore_cancel_discards_view_and_keeps_master(self):
+        from unittest.mock import Mock
+
         from src.restore import restore
         from src.restore.protective import PreparedBackup
         from src.restore.verification import PruneResult
-        from unittest.mock import Mock
         client = SimpleNamespace(udid="device", close=AsyncMock())
         prepared = PreparedBackup(root=str(self.root / "master"), master=True,
                                   view_root=str(self.root / "view"))
@@ -369,6 +386,7 @@ class GuiRewriteTests(unittest.TestCase):
 
     def test_decoded_images_have_a_byte_budget(self):
         from PySide6.QtGui import QImage
+
         from src.gui.preview.ca import render
         from src.gui.preview.ca.models import CADocument, Layer
         doc = CADocument(root=Layer(), assets={str(i): b"image" for i in range(3)})
@@ -383,8 +401,8 @@ class GuiRewriteTests(unittest.TestCase):
         self.assertEqual(renderer._image_bytes, image.sizeInBytes() * 2)
 
     def test_document_edit_invalidates_render_and_animation_caches(self):
-        from src.gui.preview.ca.render import CAMLRenderer
         from src.gui.preview.ca.models import CADocument, Layer, Size
+        from src.gui.preview.ca.render import CAMLRenderer
         root = Layer(size=Size(4, 4), backgroundColor="#ff0000")
         doc = CADocument(root=root)
         renderer = CAMLRenderer(doc)
@@ -394,7 +412,8 @@ class GuiRewriteTests(unittest.TestCase):
         self.assertEqual(renderer.render().pixelColor(0, 0).name(), "#0000ff")
 
     def test_template_editor_updates_model_and_uses_model_widget_key(self):
-        from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QToolButton
+        from PySide6.QtWidgets import QLineEdit, QToolButton, QVBoxLayout, QWidget
+
         from src.tweaks.posterboard.template_file import TemplateFile
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "example.batter"
@@ -416,6 +435,7 @@ class GuiRewriteTests(unittest.TestCase):
 
     def test_tweak_notifications_from_worker_are_delivered_to_gui(self):
         from PySide6.QtCore import QObject
+
         from src.gui.main_window_mixins import SettingsMixin
         from src.tweaks.store import default_changes
         class Window(QObject, SettingsMixin):
@@ -437,6 +457,7 @@ class GuiRewriteTests(unittest.TestCase):
 
     def test_background_jobs_have_bounded_workers_and_cancel_queued_work(self):
         from PySide6.QtWidgets import QWidget
+
         from src.gui.dialogs.file_task import start_file_task
         owner = QWidget()
         self.addCleanup(owner.deleteLater)
@@ -465,9 +486,11 @@ class GuiRewriteTests(unittest.TestCase):
             release.set()
 
     def test_startup_safety_notice_is_queued_to_gui(self):
-        from PySide6.QtCore import QThread
-        from src.gui.startup_services import StartupServices
         from unittest.mock import Mock
+
+        from PySide6.QtCore import QThread
+
+        from src.gui.startup_services import StartupServices
         notices = []
         service = StartupServices(self.app, None, None, SimpleNamespace(update=lambda: True),
             Mock(), lambda manager, rules: {"reason": "test"},

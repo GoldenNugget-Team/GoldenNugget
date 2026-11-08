@@ -211,8 +211,9 @@ def test_media_refresh_keeps_metadata():
 def test_media_push_is_a_diff():
     print("\nPhase 5 pushes only what the device lacks")
     import asyncio
+
     import src.restore.afc_media as afc_media
-    from src.restore.afc_media import _write_media_state, MEDIA_STATE_FILE
+    from src.restore.afc_media import MEDIA_STATE_FILE, _write_media_state
 
     tmp = Path(tempfile.mkdtemp(prefix="gn_fast_cache_"))
     store = tmp / "media"

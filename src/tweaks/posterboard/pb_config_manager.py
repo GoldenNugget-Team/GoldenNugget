@@ -1,25 +1,30 @@
-from os import path, makedirs, remove, listdir
+import json
 import shutil
 import sqlite3
-import json
 import time
+from os import listdir, path, remove
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from src.utils.i18n import QCoreApplication
-from src.utils.paths import app_data_dir
 from typing import Optional
 
-from src.exceptions.nugget_exception import NuggetException
 from src.controllers.files_handler import get_bundle_files
 from src.devicemanagement.preference_manager import PreferenceManager
+from src.exceptions.nugget_exception import NuggetException
+from src.utils.i18n import QCoreApplication
 from src.utils.log_util import log_warn
-from .pb_config_item import PBConfigItem
+
 # The snapshot checks live in a Qt-free module so the restore path can gate a
 # pulled database on them too; the private aliases below keep the old local names
 # working, and DB_FILE_NAME stays re-exported from here.
 from .db_validate import (
-    DB_FILE_NAME, POSTERBOARD_TABLES, is_encrypted_database, list_tables,
-    posterboard_db_is_snapshot_ok, snapshot_problem)
+    DB_FILE_NAME,
+    POSTERBOARD_TABLES,  # noqa: F401  (re-exported for tools/tests)
+    is_encrypted_database,
+    list_tables,
+    posterboard_db_is_snapshot_ok,
+    snapshot_problem,
+)
+from .pb_config_item import PBConfigItem
 
 _list_tables = list_tables
 _validate_posterboard_db = posterboard_db_is_snapshot_ok

@@ -254,8 +254,7 @@ Want to see your name here? Open a [Pull Request](https://github.com/GoldenNugge
 ## Building
 
 Follow [Quick Start](#quick-start) to install the dependencies first.
-The generated `src/qt/mainwindow_ui.py` is committed; no Designer UI generation
-step is required for the current interface.
+No Designer UI generation step is required for the current interface.
 
 When changing Qt resources, regenerate the resource module:
 ```py

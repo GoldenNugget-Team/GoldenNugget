@@ -1,21 +1,23 @@
 """Connection assistance stays inline and never pretends to detect Trust."""
-import os
 import asyncio
+import os
 import sys
-from pathlib import Path
+import unittest
 from contextlib import asynccontextmanager
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
-import unittest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+from pymobiledevice3.exceptions import ConnectionFailedError
 from PySide6.QtWidgets import QApplication, QDialogButtonBox
-from src.gui.ios.connect_placeholder import ConnectDevicePlaceholder
+
 from src.gui.dialogs.reset_dialog import ResetDialog
+from src.gui.ios.connect_placeholder import ConnectDevicePlaceholder
 from src.gui.main_window_mixins import DeviceBarMixin
 from src.gui.thread_workers.apply_worker import DeviceMonitorThread
 from src.utils.alerts import ApplyAlertMessage
-from pymobiledevice3.exceptions import ConnectionFailedError
 
 
 class ReconnectWindow(DeviceBarMixin):
@@ -102,8 +104,8 @@ class DeviceReconnectTests(unittest.TestCase):
         self.assertNotEqual(signature([before]), signature([after]))
 
     def test_scan_keeps_typed_mux_error_for_reboot_handling(self):
-        from src.devicemanagement.device_manager import DeviceManager
         from src.devicemanagement import device_manager
+        from src.devicemanagement.device_manager import DeviceManager
         error = ConnectionFailedError("got an error message: {'MessageType': 'Result', 'Number': 3}")
 
         @asynccontextmanager

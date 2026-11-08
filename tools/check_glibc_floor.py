@@ -115,11 +115,11 @@ def max_symbol_version(path: Path) -> tuple[str | None, str | None]:
         return None, None
 
     sections = list(_section_headers(data))
-    verneed_off = verneed_size = verneed_entsize = dynstr_idx = symbol_off = None
+    verneed_off = verneed_size = _verneed_entsize = dynstr_idx = symbol_off = None
     for sh_type, sh_offset, sh_size, sh_link, sh_entsize in sections:
         # SHT_GNU_verneed = 0x6ffffffe, SHT_DYNSYM = 11
         if sh_type == 0x6FFFFFFE:
-            verneed_off, verneed_size, verneed_entsize = sh_offset, sh_size, sh_entsize
+            verneed_off, verneed_size, _verneed_entsize = sh_offset, sh_size, sh_entsize
             # The version table's own sh_link is the dynamic-string section.
             dynstr_idx = sh_link
         elif sh_type == 11:

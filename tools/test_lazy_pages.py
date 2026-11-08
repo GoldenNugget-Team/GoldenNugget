@@ -6,10 +6,10 @@ stack slot (so the numeric page indices stay stable) and is built when
 something asks for it.
 """
 import os
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,10 +18,9 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
 from PySide6.QtGui import QFont, QFontDatabase
 from PySide6.QtWidgets import QApplication, QWidget
+from settings_sandbox import SettingsSandbox
 
 from src.gui.theme import ColorThemeManager
-
-from settings_sandbox import SettingsSandbox
 
 APP = QApplication.instance() or QApplication([])
 QFontDatabase.addApplicationFont(str(ROOT / 'src/qt/fonts/InterVariable.ttf'))
@@ -37,9 +36,9 @@ RESERVED = {
 
 class LazyPages(unittest.TestCase):
     def build_window(self):
-        from src.gui.translator import Translator
         from src.devicemanagement.device_manager import DeviceManager
         from src.gui.main_window import MainWindow
+        from src.gui.translator import Translator
         directory = tempfile.mkdtemp()
         self.addCleanup(lambda: None)
         sandbox = SettingsSandbox(Path(directory))

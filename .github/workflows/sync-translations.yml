@@ -36,16 +36,14 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.14'
-          cache: 'pip'
+      - name: Setup Python via uv
+        uses: astral-sh/setup-uv@v7
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install pyside6
+          uv venv .tool-env --python 3.14
+          echo "$GITHUB_WORKSPACE/.tool-env/bin" >> "$GITHUB_PATH"
+          uv pip install --python .tool-env/bin/python pyside6
 
       # gNugget-i18n force-pushes (translators rebase/amend), so the commit
       # recorded in this repo is regularly unreachable upstream. Do NOT use

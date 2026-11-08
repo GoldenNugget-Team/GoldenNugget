@@ -1,10 +1,10 @@
 """Bounded-memory payload copying and hashing for both backup formats."""
-from contextlib import contextmanager
-from hashlib import sha1
 import io
 import os
-from pathlib import Path
 import tempfile
+from contextlib import contextmanager
+from hashlib import sha1
+from pathlib import Path
 from typing import TypeAlias
 
 PayloadSource: TypeAlias = bytes | bytearray | memoryview | str | os.PathLike[str]

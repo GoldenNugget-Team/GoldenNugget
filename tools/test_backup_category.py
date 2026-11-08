@@ -10,7 +10,6 @@ Run: python tools/test_backup_category.py
 """
 import os
 import sys
-from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))

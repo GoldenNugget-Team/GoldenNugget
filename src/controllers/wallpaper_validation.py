@@ -5,12 +5,12 @@ __lazy_modules__ = (
 )
 
 import json
-from pathlib import Path
 import plistlib
 import re
 import xml.etree.ElementTree as ET
 import zipfile
 import zlib
+from pathlib import Path
 
 from src.controllers.archive_safety import checked_members
 
@@ -106,7 +106,7 @@ def validate_wallpaper(path, ios_version=None):
                     _check_tweaks(archive, name, config, issue)
                 if ios_version and (config.get('min_version') or config.get('max_version')):
                     # packaging is already a runtime dependency of the app.
-                    from packaging.version import Version, InvalidVersion
+                    from packaging.version import InvalidVersion, Version
                     try:
                         version = Version(ios_version)
                         if ((config.get('min_version') and version < Version(config['min_version']))
@@ -127,7 +127,11 @@ def validate_wallpaper(path, ios_version=None):
 
 def _check_tweaks(archive, config_name, config, issue):
     """Validate a format 3 ``tweaks`` list with the rules the app loads it by."""
-    from src.tweaks.posterboard.community_tweaks import CommunityTweakError, MAX_SOURCE_BYTES, parse_tweaks
+    from src.tweaks.posterboard.community_tweaks import (
+        MAX_SOURCE_BYTES,
+        CommunityTweakError,
+        parse_tweaks,
+    )
     if str(config.get('format_version')) != '3':
         issue('error', 'template_version', 'Templates with tweaks need format_version 3.', config_name)
     base = config_name[:-len('config.json')]

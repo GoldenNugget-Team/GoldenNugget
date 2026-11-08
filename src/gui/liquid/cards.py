@@ -1,5 +1,12 @@
-from PySide6.QtCore import Qt, QRect, QSize
-from PySide6.QtWidgets import QLayout, QVBoxLayout, QHBoxLayout, QLabel, QSizePolicy, QApplication
+from PySide6.QtCore import QRect, QSize, Qt
+from PySide6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QLayout,
+    QSizePolicy,
+    QVBoxLayout,
+)
 from shiboken6 import delete
 
 

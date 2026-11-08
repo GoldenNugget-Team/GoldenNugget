@@ -9,8 +9,9 @@ Usage::
 
 # Single UI font used on every platform. The bundled variable font
 # (src/qt/fonts/InterVariable.ttf + InterVariable-Italic.ttf) is registered at
-# startup in main_app.py; the global stylesheet pins it here so Designer
-# hardcoded families (e.g. .AppleSystemUIFont) can never leak in.
+# startup in main_app.py; the global stylesheet pins it here so any hardcoded
+# per-widget family (e.g. .AppleSystemUIFont from the old Designer file) can
+# never leak in.
 FONT_FAMILY = "Inter Variable"
 
 

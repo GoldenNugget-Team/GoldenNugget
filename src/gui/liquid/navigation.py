@@ -1,14 +1,36 @@
 import time
-from PySide6.QtCore import Qt, QCoreApplication, QEvent, QPoint, QSize, Signal, QVariantAnimation, QEasingCurve
+
+from PySide6.QtCore import (
+    QCoreApplication,
+    QEasingCurve,
+    QEvent,
+    QSize,
+    Qt,
+    QVariantAnimation,
+    Signal,
+)
 from PySide6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea, QApplication
+from PySide6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
+
 from src.gui.theme import ColorThemeManager, theme_pixmap
-from src.gui.window_chrome import CONTROLS_LEFT, CONTROLS_TOP, BUTTON_SIZE, _top_level
+from src.gui.window_chrome import (
+    CONTROLS_RIGHT,
+    CONTROLS_TRAILING_INSET,
+    FLAT_BUTTON_H,
+)
+
 from .controls import GlassPanel, LiquidButton
 
 # Ensure resources are registered (icons used below)
 try:
-    from src.qt import resources_rc  # noqa: F401
+    from src.qt import resources_rc  # noqa: F401  (side-effect: registers :/icon Qt resources)
 except Exception:
     resources_rc = None
 
@@ -26,13 +48,25 @@ class BackCapsule(LiquidButton):
     def __init__(self,parent=None):
         super().__init__('',parent)
         self.setIconSize(QSize(14,14))
-        self.setFixedHeight(30)
-        self.setStyleSheet('QPushButton#liquidButton { background:transparent; border:none; padding:3px 12px; font-size:14px; font-weight:600; }')
+        if CONTROLS_RIGHT:
+            # The back zone mirrors the caption-button band on the right:
+            # its height, and its full width, so the glass fills the flank.
+            self.setFixedHeight(FLAT_BUTTON_H)
+            self.setMinimumWidth(CONTROLS_TRAILING_INSET)
+        else:
+            self.setFixedHeight(30)
+        align='center' if CONTROLS_RIGHT else 'left'
+        self.setStyleSheet(f'QPushButton#liquidButton {{ background:transparent; border:none; padding:3px 12px; font-size:14px; font-weight:600; text-align:{align}; }}')
 
     def fit_to_label(self):
         width=max(80,self.sizeHint().width())
-        if width!=self.width():
-            self.setFixedWidth(width)
+        if CONTROLS_RIGHT:
+            # The layout parks the pill on the flank: never wider than the
+            # zone a translation hint can ougrow to nothing but minimum.
+            self.setMinimumWidth(CONTROLS_TRAILING_INSET)
+        else:
+            if width!=self.width():
+                self.setFixedWidth(width)
         self.labelFitted.emit(self.width())
 
     def setText(self,text):
@@ -54,12 +88,8 @@ class LiquidNavBar(GlassPanel):
     #: Left margin of the header content (the window's edge inset).
     LEADING_MARGIN = 14
 
-    #: The back capsule sits directly below the app-drawn window buttons
-    #: (close / minimize / zoom, see ``src/gui/window_chrome.py``).
-    BACK_GAP = 2
-
-    #: Air between the back capsule and the header's own content (title row).
-    BACK_TRAIL = 12
+    #: Right margin of the header content (the same edge inset, mirrored).
+    TRAILING_MARGIN = 14
 
     def __init__(self,title='',parent=None,on_back=None):
         super().__init__(parent)
@@ -67,10 +97,12 @@ class LiquidNavBar(GlassPanel):
         self._category_buttons=[]
         self._right_btn=None
         self._controls_inset=0
+        self._trailing_inset=CONTROLS_TRAILING_INSET
         root=QVBoxLayout(self)
-        root.setContentsMargins(self.LEADING_MARGIN,9,14,9)
+        root.setContentsMargins(self.LEADING_MARGIN,9,self.TRAILING_MARGIN,9)
         root.setSpacing(5)
         row=QHBoxLayout()
+        self._row=row
         row.setSpacing(12)
         self.back_btn=BackCapsule(self)
         self._configure_back_capsule()
@@ -81,9 +113,22 @@ class LiquidNavBar(GlassPanel):
         row.addWidget(self.icon_lbl)
         self.title_lbl=QLabel(title)
         self.title_lbl.setStyleSheet('font-size:22px;font-weight:650;background:transparent;')
-        row.addWidget(self.title_lbl,1)
         self._right_layout=QHBoxLayout()
-        row.addLayout(self._right_layout)
+        if CONTROLS_RIGHT:
+            # The native-title-bar look: the pill fills its left flank (its
+            # zone mirrors the caption-buttons zone of the right edge), so
+            # equal stretches pin the header name to the middle.
+            row.addWidget(self.back_btn)
+            row.addStretch(1)
+            row.addWidget(self.title_lbl)
+            row.addStretch(1)
+            row.addLayout(self._right_layout)
+        else:
+            # macOS mirrored: window buttons own the top-left, so the pill
+            # takes the opposite corner — last item of the title row.
+            row.addWidget(self.title_lbl,1)
+            row.addLayout(self._right_layout)
+            row.addWidget(self.back_btn)
         root.addLayout(row)
         self._categories=QScrollArea()
         self._categories.setWidgetResizable(True)
@@ -99,7 +144,10 @@ class LiquidNavBar(GlassPanel):
         self._categories.setWidget(self._category_content)
         self._categories.viewport().installEventFilter(self)
         self._category_content.installEventFilter(self)
+        # The pill's fitting fired before the right layout existed; apply the
+        # final margins now that every part of the row is in place.
         root.addWidget(self._categories)
+        self._apply_leading_margins()
         self._scroll_animation=QVariantAnimation(self)
         self._scroll_animation.setEasingCurve(QEasingCurve.OutCubic)
         self._scroll_animation.valueChanged.connect(lambda value:self._categories.horizontalScrollBar().setValue(round(value)))
@@ -117,62 +165,6 @@ class LiquidNavBar(GlassPanel):
         button.setToolTip(label)
         button.labelFitted.connect(self._apply_leading_margins)
         button.setText(label)   # also fits the button width
-        self._reposition_back_capsule()
-
-    def _back_capsule_spot(self):
-        """Where the back capsule belongs, in *this header's* coordinates.
-
-        ``move()`` on the capsule takes parent-relative coordinates, while the
-        traffic lights are placed by ``WindowChrome`` in **window** ones — the
-        two only agree while the header itself sits in the window's top-left
-        corner, and that is exactly what stopped being true: the shared header
-        used to live inside the page's centred column (so on any window wider
-        than ``IOS_CONTENT_MAX_WIDTH`` it started ~300px to the right, and the
-        capsule slid with it) and it shifts right again when the sidebar
-        opens. The spot is therefore mapped, never assumed — the same lesson
-        as ``PresetPopup._panel_pos``.
-
-        The buttons' column wins whenever the header actually starts at the
-        window's left edge; when it does not (a sidebar beside it) the capsule
-        keeps a small air gap from the header's own edge instead, so it can
-        never hang over the neighbouring surface. Vertically it is clamped the
-        same way: under the buttons when there is room, otherwise just inside
-        the header.
-        """
-        window=_top_level(self)
-        if window is None:
-            return QPoint(CONTROLS_LEFT,CONTROLS_TOP+BUTTON_SIZE+self.BACK_GAP)
-        # The window's origin seen from this header (negative while the header
-        # is inset: the floating dock reserves (10, 6) on ``body_row``, a
-        # sidebar the content's width), so adding it turns a window point into
-        # a local one.
-        origin=self.mapFrom(window,QPoint(0,0))
-        x=max(CONTROLS_LEFT,4-origin.x())
-        y=max(CONTROLS_TOP+BUTTON_SIZE+self.BACK_GAP,6-origin.y())
-        return QPoint(x+origin.x(),y+origin.y())
-
-    def _reposition_back_capsule(self):
-        """Keep the capsule under the buttons; the header moves, the pill stays."""
-        self.back_btn.move(self._back_capsule_spot())
-
-    def showEvent(self,event):
-        # First shown: the header is in the window's tree by now, so the spot
-        # computed at construction time is finally the real one.
-        super().showEvent(event)
-        self._reposition_back_capsule()
-
-    def moveEvent(self,event):
-        # The sidebar opening / closing, or a layout change on the way up,
-        # repositions this header without resizing it.
-        super().moveEvent(event)
-        self._reposition_back_capsule()
-
-    def resizeEvent(self,event):
-        # A window resize (including the zoom button) moves and resizes the
-        # header — the capsule has to follow it, not slide away from the
-        # buttons.
-        super().resizeEvent(event)
-        self._reposition_back_capsule()
 
     def set_leading_inset(self,px):
         """Reserve room on the left for the window's own buttons.
@@ -188,20 +180,36 @@ class LiquidNavBar(GlassPanel):
         self._controls_inset=max(0,int(px))
         self._apply_leading_margins()
 
+    def set_trailing_inset(self,px):
+        """Reserve room on the right for the window's own buttons.
+
+        The flat chrome (Windows/Linux caption style) ends the button group in
+        the top-right corner, where the header's right-side actions used to
+        sit; they shift left by the same room a native title bar would keep.
+        """
+        self._trailing_inset=max(0,int(px))
+        self._apply_leading_margins()
+
     def _apply_leading_margins(self,*_fitted):
         """Keep the title row clear of the window buttons AND the capsule."""
         root=self.layout()
         if root is None:
             return
-        margins=root.contentsMargins()
-        leading=self.LEADING_MARGIN+self._controls_inset
-        if self.back_btn.isVisibleTo(self):
-            leading=max(leading,self.back_btn.x()+self.back_btn.width()+self.BACK_TRAIL)
-        root.setContentsMargins(leading,margins.top(),margins.right(),margins.bottom())
+        # On the flat chrome the pill is the first row item and the title is
+        # pinned to the middle; the window buttons live top-right, so the
+        # right-side actions carry the clearance — the centred name is not
+        # pushed off-centre by it. On macOS the pill is the row's last item:
+        # the row never crosses the traffic lights on the left.
+        root.setContentsMargins(self.LEADING_MARGIN+self._controls_inset,9,
+                                self.TRAILING_MARGIN,9)
+        self._row.setContentsMargins(0,0,0,0)
+        # The row can refit its capsule before the right layout exists.
+        right=getattr(self,'_right_layout',None)
+        if right is not None:
+            right.setContentsMargins(0,0,self._trailing_inset,0)
 
     def set_back_visible(self,visible):
         self.back_btn.setVisible(visible)
-        self._reposition_back_capsule()
         self._apply_leading_margins()
 
     def paintEvent(self,event):

@@ -45,36 +45,43 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from PySide6 import QtCore  # noqa: E402  (QStandardPaths used by the cache)
-from pymobiledevice3.lockdown import create_using_usbmux  # noqa: E402
 from pymobiledevice3 import usbmux  # noqa: E402
 from pymobiledevice3.exceptions import (  # noqa: E402
-    PasswordRequiredError, DeviceNotFoundError, NotPairedError,
-    ConnectionFailedError, ConnectionTerminatedError, PyMobileDevice3Exception,
+    ConnectionFailedError,
+    ConnectionTerminatedError,
+    DeviceNotFoundError,
+    NotPairedError,
+    PasswordRequiredError,
+    PyMobileDevice3Exception,
 )
+from pymobiledevice3.lockdown import create_using_usbmux  # noqa: E402
+from PySide6 import QtCore  # noqa: E402  (QStandardPaths used by the cache)
 
-from src.restore.protective import (  # noqa: E402
-    make_protective_working_copy, discard_protective_working_copy,
-    clean_backup_for_restore,
-    verify_backup_payloads,
-    find_latest_protective_backup,
-    protective_persistent_base,
-    log_info, log_error,
-)
-from src.restore.storage import (  # noqa: E402
-    cache_base,
-    is_custom_backup_dir,
-)
+from src.restore import reboot_device  # noqa: E402
 from src.restore.afc_media import (  # noqa: E402
-    media_store_verified, recovery_media_dir,
     describe_media_store,
+    media_store_verified,
+    recovery_media_dir,
     restore_media_via_afc,
+)
+from src.restore.protective import (  # noqa: E402
+    clean_backup_for_restore,
+    discard_protective_working_copy,
+    find_latest_protective_backup,
+    log_error,
+    log_info,
+    make_protective_working_copy,
+    protective_persistent_base,
+    verify_backup_payloads,
 )
 from src.restore.restore import (  # noqa: E402
     _restore_protective_backup,
 )
 from src.restore.skip_setup27 import skip_all_setup27  # noqa: E402
-from src.restore import reboot_device  # noqa: E402
+from src.restore.storage import (  # noqa: E402
+    cache_base,
+    is_custom_backup_dir,
+)
 
 
 async def _list_connected_devices_async() -> list:
@@ -206,8 +213,8 @@ def _resolve_source(cache_root: str | None, udid: str, source: str) -> tuple:
     # fallback after a wedged apply.
     source_root, media_dir, label = candidates[0]
     if source == "auto" and len(candidates) > 1:
-        log_info(f"Found both a cache master and a live run — using the cache "
-                 f"master. Pass --source live to force the live run.")
+        log_info("Found both a cache master and a live run — using the cache "
+                 "master. Pass --source live to force the live run.")
     return source_root, media_dir, label
 
 
@@ -327,8 +334,8 @@ async def run(args) -> int:
     # fail the restore with MBErrorDomain/205. When an AFC media store exists,
     # the DCIM/PhotoStreamsData rows are also pruned here — their payloads were
     # never uploaded to the backup and get pushed back over AFC instead.
-    from src.restore.recovery import RecoverySource, RecoveryBackend, prepare_recovery
     from src.exceptions.nugget_exception import NuggetException
+    from src.restore.recovery import RecoveryBackend, RecoverySource, prepare_recovery
     try:
         prepared = await prepare_recovery(
             RecoverySource(working_root, udid, args.password or "", media_dir=media_dir),
@@ -430,8 +437,8 @@ def main(argv: list = None) -> int:
     import os as _os
     if not _os.environ.get("QT_QPA_PLATFORM") and _os.name != "nt" and not _os.environ.get("DISPLAY"):
         _os.environ["QT_QPA_PLATFORM"] = "offscreen"
-    from PySide6.QtWidgets import QApplication
     from PySide6.QtCore import QCoreApplication
+    from PySide6.QtWidgets import QApplication
     if QApplication.instance() is None:
         QApplication(sys.argv)
     QCoreApplication.setOrganizationDomain("com.leemin")

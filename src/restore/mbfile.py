@@ -1,7 +1,7 @@
 """Validated MBFile keyed archives, preserving unknown device metadata."""
+import plistlib
 from copy import deepcopy
 from dataclasses import dataclass
-import plistlib
 
 
 class InvalidMBFile(ValueError):

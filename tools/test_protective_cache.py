@@ -244,6 +244,7 @@ def main():
     # The master's metadata is indeterminate after a dead transfer, so the
     # next apply must rebuild instead of diffing against a broken mirror.
     import asyncio
+
     from src.restore import protective as _protective
 
     original_backup = _protective.perform_protective_backup

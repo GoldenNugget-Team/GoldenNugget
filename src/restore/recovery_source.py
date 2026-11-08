@@ -1,11 +1,13 @@
 """Read-only recovery lookup across the original and Liquid UI data stores."""
-from pathlib import Path
 import stat as _stat
 import tempfile
+from pathlib import Path
+
 from src.utils.paths import generic_data_dir, legacy_app_data_dirs
-from .storage import cache_base, protective_base
-from .protective import _validate_sqlite_db
+
 from .inject import _is_encrypted_backup
+from .protective import _validate_sqlite_db
+from .storage import cache_base, protective_base
 
 
 def locate_restore_source(udid):

@@ -126,7 +126,9 @@ async def targeted_statusbar_archive_fetch(udid: str,
     max_retries = 3
 
     from src.exceptions.device_errors import is_connection_error as _is_connection_error
-    from src.exceptions.device_errors import is_device_locked_error as _is_device_locked_error
+    from src.exceptions.device_errors import (
+        is_device_locked_error as _is_device_locked_error,
+    )
 
     def _on_retry(attempt: int, total: int, e: Exception, delay: float) -> None:
         if attempt < total:

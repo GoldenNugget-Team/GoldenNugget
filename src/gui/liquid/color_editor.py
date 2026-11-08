@@ -1,10 +1,19 @@
-from PySide6.QtCore import Qt, QRegularExpression, QSignalBlocker
+from PySide6.QtCore import QRegularExpression, QSignalBlocker, Qt
 from PySide6.QtGui import QColor, QRegularExpressionValidator
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLineEdit, QLabel, QPushButton, QDialogButtonBox
+from PySide6.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+)
 
-from .circle_palette import ColorWheel
-from .appearance import GlassSlider
 from src.gui.theme import ColorThemeManager
+
+from .appearance import GlassSlider
+from .circle_palette import ColorWheel
 
 
 class ColorPickerDialog(QDialog):

@@ -1,13 +1,18 @@
 """Qt editor for template selections; archive metadata stays in the model."""
-from PySide6 import QtWidgets, QtCore, QtGui
-from src.qt.custom_elements.resizable_image_label import ResizableImageLabel
+from PySide6 import QtCore, QtGui, QtWidgets
+
+from src.gui.liquid.choice_editor import GlassComboBox
 from src.gui.template_option_editors import (
     bind_previews as bind_option_previews,
+)
+from src.gui.template_option_editors import (
     create_interface as create_option_interface,
+)
+from src.gui.template_option_editors import (
     update_preview as update_option_preview,
 )
+from src.qt.custom_elements.resizable_image_label import ResizableImageLabel
 from src.tweaks.posterboard.community_tweaks import CommunityTweak
-from src.gui.liquid.choice_editor import GlassComboBox
 
 
 class TemplateEditor:

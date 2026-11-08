@@ -18,7 +18,12 @@ def add_parser(subp):
 
 
 def run(args) -> int:
-    from src.cli.common import bootstrap, make_device_manager, list_devices, describe_device
+    from src.cli.common import (
+        bootstrap,
+        describe_device,
+        list_devices,
+        make_device_manager,
+    )
     settings = bootstrap()
     dm = make_device_manager(settings)
     list_devices(dm, settings)

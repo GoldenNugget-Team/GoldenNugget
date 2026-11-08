@@ -1,9 +1,10 @@
-from typing import Any
-from .patch_session import current_patch_session
 import ast
 import math
 import operator
 import xml.etree.ElementTree as tree
+from typing import Any
+
+from .patch_session import current_patch_session
 
 tree.register_namespace('', "http://www.apple.com/CoreAnimation/1.0")
 

@@ -8,8 +8,8 @@ to :meth:`update` and it returns the formatted remaining time (or ``""`` until
 a stable rate is known).
 """
 
-import time
 import math
+import time
 
 from src.utils.i18n import QCoreApplication
 

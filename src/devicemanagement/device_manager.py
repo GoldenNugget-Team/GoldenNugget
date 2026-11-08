@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+
 # PEP 810: defer operation-only dependencies on Python 3.15+; eager on older Python.
 __lazy_modules__ = (
     "pymobiledevice3.services.mobile_config",
@@ -15,28 +16,34 @@ import re
 import shutil
 import sys
 import traceback
-
-from tempfile import TemporaryDirectory
 from typing import Optional
 
-from src.utils.i18n import QCoreApplication
-from src.utils.settings import Settings
-
-from pymobiledevice3 import usbmux
-from pymobiledevice3.services.mobile_config import MobileConfigService
-from pymobiledevice3.exceptions import PairingDialogResponsePendingError, UserDeniedPairingError, MuxException, PasswordRequiredError, ConnectionTerminatedError, AccessDeniedError, InvalidServiceError
-from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service
 import pymobiledevice3.service_connection as _sc
+from pymobiledevice3 import usbmux
+from pymobiledevice3.exceptions import (
+    AccessDeniedError,
+    ConnectionTerminatedError,
+    InvalidServiceError,
+    MuxException,
+    PairingDialogResponsePendingError,
+    PasswordRequiredError,
+    UserDeniedPairingError,
+)
+from pymobiledevice3.services.mobile_config import MobileConfigService
+from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service
 
-
+from src.controllers.hotload import HotLoad
 from src.devicemanagement.session import lockdown_session
 from src.exceptions.device_errors import (
     is_device_locked_error as _is_device_locked_error,
+)
+from src.exceptions.device_errors import (
     is_find_my_error,
 )
-from src.controllers.hotload import HotLoad
-from src.tweaks.compatibility import hardware_reasons
 from src.restore.skip_setup27 import build_cloud_config
+from src.tweaks.compatibility import hardware_reasons
+from src.utils.i18n import QCoreApplication
+from src.utils.settings import Settings
 
 # Bump SSL handshake timeout from 10s to 60s for all lockdown services.
 _sc.DEFAULT_SSL_HANDSHAKE_TIMEOUT = 60
@@ -47,35 +54,36 @@ _sc.DEFAULT_SSL_HANDSHAKE_TIMEOUT = 60
 MAX_TENDIES_PER_RESTORE = 5
 
 from src.devicemanagement.constants import Device, Version, is_supported_by_fork
-from src.devicemanagement.device_capabilities import has_dynamic_island, has_camera_control, has_action_button, has_home_button, has_always_on_display
 from src.devicemanagement.data_singleton import DataSingleton
 from src.devicemanagement.eta import ProgressEta
-from .preference_manager import PreferenceManager
-
-from src.utils.alerts import AlertIcon, ApplyAlertMessage
-from src.utils.pages import Page
-from src.controllers.path_handler import fix_windows_path
-
-from src.exceptions.nugget_exception import NuggetException, BackupStorageError, BackupDiskSpaceError
 from src.exceptions.device_errors import is_restore_mode_error
-from src.restore.find_my_wait import ApplyCancelledError
-
-from src.tweaks.tweaks import tweaks, TweakID, BasicPlistTweak, AdvancedPlistTweak, NullifyFileTweak, StatusBarTweak
-from src.tweaks.tweak_classes import ReversibleBooleanPlistTweak
-from src.tweaks.candidate_preferences import InstalledAppSuggestionsBlacklist
-from src.tweaks.status_bar.statusbar_archive import build_reset_archive
-from src.tweaks.posterboard.posterboard_tweak import PosterboardTweak
-from src.tweaks.posterboard.template_options.templates_tweak import TemplatesTweak
-from src.tweaks.icon_themes.icon_themes_tweak import IconThemesTweak
-from src.tweaks.basic_plist_locations import FileLocation
-from src.tweaks.registry import HOME_PREFIX, SPECS, Section, managed_pref_target
-
-from src.restore.restore import restore_files, FileToRestore
+from src.exceptions.nugget_exception import (
+    BackupDiskSpaceError,
+    BackupStorageError,
+    NuggetException,
+)
 from src.restore.afc_media import (
-    afc_media_dir_for, afc_media_enabled, describe_media_store,
+    afc_media_dir_for,
+    afc_media_enabled,
+    describe_media_store,
     media_store_verified,
 )
+from src.restore.find_my_wait import ApplyCancelledError
 from src.restore.protective import log_error, log_info, log_warn
+from src.restore.restore import FileToRestore, restore_files
+from src.tweaks.basic_plist_locations import FileLocation
+from src.tweaks.registry import HOME_PREFIX, managed_pref_target
+from src.tweaks.status_bar.statusbar_archive import build_reset_archive
+from src.tweaks.tweaks import (
+    StatusBarTweak,
+    TweakID,
+    tweaks,
+)
+from src.utils.alerts import AlertIcon, ApplyAlertMessage
+from src.utils.pages import Page
+
+from .preference_manager import PreferenceManager
+
 
 def get_files_list_str(files_list: list[FileToRestore] = None) -> str:
     files_str: str = ""
@@ -264,7 +272,9 @@ class DeviceManager:
                     # Check backup encryption status if experimental option not enabled
                     if not self.pref_manager.use_encrypted_backup:
                         try:
-                            from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service
+                            from pymobiledevice3.services.mobilebackup2 import (
+                                Mobilebackup2Service,
+                            )
                             mb = Mobilebackup2Service(ld)
                             try:
                                 await mb.connect()
@@ -520,9 +530,11 @@ class DeviceManager:
             if not self.get_current_device_partially_supported():
                 self._report_operation_stage("tweaks")
             update_label(QCoreApplication.tr("Preparing to restore...") + self.do_not_unplug)
-            from src.restore.inject import (preference_baseline_creates,
-                                            preference_baseline_skips,
-                                            preference_delivery_warnings)
+            from src.restore.inject import (
+                preference_baseline_creates,
+                preference_baseline_skips,
+                preference_delivery_warnings,
+            )
             delivery_warnings = []
             baseline_skips = []
             baseline_creates = []
@@ -593,7 +605,10 @@ class DeviceManager:
         if self.update_label == None:
             return
         if isinstance(progress, str):
-            from src.devicemanagement.progress_status import BackupStatus, OperationStatus
+            from src.devicemanagement.progress_status import (
+                BackupStatus,
+                OperationStatus,
+            )
             if isinstance(progress, BackupStatus):
                 self._report_operation_stage("backup", progress.category)
             elif isinstance(progress, OperationStatus):
@@ -643,7 +658,6 @@ class DeviceManager:
 
         def _cb(progress):
             if isinstance(progress, str):
-                from src.devicemanagement.progress_status import BackupStatus
                 from src.devicemanagement.progress_status import OperationStatus
                 if isinstance(progress, OperationStatus):
                     category = "backup" if progress.category == "transfer_ready" else progress.category
@@ -681,7 +695,9 @@ class DeviceManager:
         return _cb
     def _disable_unavailable_controls(self, update_label):
         tweaks = _selection_store(self)
-        from src.tweaks.compatibility import device_compatibility_reasons as compatibility_reasons
+        from src.tweaks.compatibility import (
+            device_compatibility_reasons as compatibility_reasons,
+        )
         from src.tweaks.registry import SPECS_BY_ID
 
         version = self.get_current_device_version()
@@ -723,8 +739,9 @@ class DeviceManager:
         try:
             self._raise_if_unsupported()
             self._disable_unavailable_controls(update_label)
-            from src.tweaks.registry import SPECS, Kind
             from math import isfinite
+
+            from src.tweaks.registry import SPECS, Kind
             device_version = Version(self.get_current_device_version())
             device_model = self.get_current_device_model() or ""
             for spec in SPECS:
@@ -766,9 +783,11 @@ class DeviceManager:
             self._report_operation_stage("prepare")
             posterkit=tweaks.get(TweakID.PosterKitOverrides)
             if posterkit is not None and posterkit.enabled and posterkit.value:
-                from src.restore.protective import is_backup_encrypted
                 from src.devicemanagement.session import lockdown_session
-                from src.exceptions.nugget_exception import PosterBoardBackupEncryptionError
+                from src.exceptions.nugget_exception import (
+                    PosterBoardBackupEncryptionError,
+                )
+                from src.restore.protective import is_backup_encrypted
                 async with lockdown_session(self.get_current_device_udid()) as client:
                     if await is_backup_encrypted(client):
                         raise PosterBoardBackupEncryptionError(
@@ -864,7 +883,10 @@ class DeviceManager:
 
             self._apply_hotload_daemon_forcing()
 
-            from src.controllers.apply_preview import safe_capture_preview, write_preview
+            from src.controllers.apply_preview import (
+                safe_capture_preview,
+                write_preview,
+            )
             preview = safe_capture_preview(self)
             preview_udid = self.get_current_device_udid()
             preview_version = self.get_current_device_version()
@@ -1019,9 +1041,13 @@ Returns (PreparedBackup, posterboard_db_ok). When the PosterBoard
             return None, False
     
         from src.restore.protective import (
-            PreparedBackup, extract_posterboard_db, is_backup_encrypted,
-            new_protective_backup_dir, perform_protective_backup,
-            prune_protective_backups)
+            PreparedBackup,
+            extract_posterboard_db,
+            is_backup_encrypted,
+            new_protective_backup_dir,
+            perform_protective_backup,
+            prune_protective_backups,
+        )
     
         def _register_pb_db(backup_root: str) -> bool:
             """Extract the fresh PosterBoard sqlite and register it for editing.
@@ -1109,7 +1135,9 @@ Returns (PreparedBackup, posterboard_db_ok). When the PosterBoard
 
         async with lockdown_session(udid) as lc:
             if needs_posterboard and await is_backup_encrypted(lc):
-                from src.exceptions.nugget_exception import PosterBoardBackupEncryptionError
+                from src.exceptions.nugget_exception import (
+                    PosterBoardBackupEncryptionError,
+                )
                 raise PosterBoardBackupEncryptionError(
                     'PosterBoard changes need extraction of an encrypted backup, which this build does not support. '
                     'No backup or injection was started. Repeating the backup cannot fix this. '
@@ -1180,8 +1208,7 @@ Returns (PreparedBackup, posterboard_db_ok). When the PosterBoard
                 "The backup cache is disabled. Enable 'Use Fast Backup Cache "
                 "(Experimental)' in Settings → Backup first.")
 
-        from src.restore.protective import (
-            ProtectiveBackupCache, is_backup_encrypted)
+        from src.restore.protective import ProtectiveBackupCache, is_backup_encrypted
         use_afc_media = afc_media_enabled(self.pref_manager.use_afc_media)
         async with lockdown_session(udid) as lc:
             encrypted = await is_backup_encrypted(lc)
@@ -1437,7 +1464,10 @@ Returns (PreparedBackup, posterboard_db_ok). When the PosterBoard
                     pass
                 elif page == Page.Templates:
                     ## COMMUNITY TWEAKS FROM TEMPLATES
-                    from src.tweaks.posterboard.community_tweaks import load_record, reset_plan as community_reset_plan
+                    from src.tweaks.posterboard.community_tweaks import load_record
+                    from src.tweaks.posterboard.community_tweaks import (
+                        reset_plan as community_reset_plan,
+                    )
                     to_empty, community_leftover = community_reset_plan(load_record(udid))
                     files_to_null.extend(path for path in to_empty if path not in files_to_null)
                 elif page == Page.InternalOptions:

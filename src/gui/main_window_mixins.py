@@ -6,23 +6,22 @@ the apply/reset flow. Each mixin only reaches ``self`` attributes that
 NavigationMixin, ApplyMixin)``.
 """
 
-from typing import Optional
 import os
 import time
+from typing import TYPE_CHECKING, Any, Optional
 
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtCore import QCoreApplication
 
 from src.controllers.video_handler import set_ignore_frame_limit
 from src.devicemanagement.constants import Version
-from src.gui.dialogs.reset_dialog import ResetDialog
-from src.gui.logger import get_logger
+from src.devicemanagement.device_capabilities import device_text
 from src.gui.autosave import AutosaveMixin
-from src.devicemanagement.device_capabilities import device_text, device_os_name
+from src.gui.dialogs.reset_dialog import ResetDialog
+from src.gui.ios.theme_manager import ThemeManager
+from src.gui.ios.tweaks import _hidden_feature_names
+from src.gui.logger import get_logger
 from src.gui.theme import ColorThemeManager, theme_icon
-from src.utils.alerts import AlertIcon
-
-
 from src.gui.thread_workers.apply_worker import (
     ApplyAlertMessage,
     ApplyThread,
@@ -31,11 +30,8 @@ from src.gui.thread_workers.apply_worker import (
     set_sudo_pwd,
 )
 from src.gui.version import App_Build, App_Version
-from src.gui.ios.theme_manager import ThemeManager
-from src.gui.ios.tweaks import _hidden_feature_names
-from src.gui.pages.pages_list import Page
-from src.tweaks.tweak_classes import set_tweak_change_callback
-from src.tweaks.tweaks import tweaks, TweakID
+from src.tweaks.tweaks import TweakID, tweaks
+from src.utils.alerts import AlertIcon
 
 
 def _qt_alert_icon(icon):
@@ -56,7 +52,77 @@ def _qt_alert_icon(icon):
     return icon
 
 
-class DeviceBarMixin:
+if TYPE_CHECKING:
+    class _WindowBase:
+        """Attributes/methods ``MainWindow.__init__`` installs for its mixins.
+
+        Type-checking-only namespace (the mixins mix into ``MainWindow`` at
+        runtime); declared ``Any`` so the checker resolves every ``self.*``
+        handshake between the mixins without dragging Qt types in.
+        """
+        ui: Any
+        device_manager: Any
+        translator: Any
+        settings: Any
+        content_stack: Any
+        ios_pages: Any
+        ios_home: Any
+        ios_apply: Any
+        ios_nav: Any
+        ios_tweaks: Any
+        ios_daemons: Any
+        ios_settings: Any
+        theme_manager: Any
+        preset_manager: Any
+        bottom_navigation: Any
+        body_row: Any
+        shell_layout: Any
+        connect_placeholder: Any
+        apply_in_progress: Any
+        refresh_in_progress: Any
+        noneText: Any
+        _color_theme: Any
+        _device_refresh_timer: Any
+        _ios_page_titles: Any
+        _nav_right_actions: Any
+        _mobile_promo_shown: Any
+        _posterboard_waiting: Any
+        _posterboard_selection_error: Any
+        _expect_device_reboot: Any
+        _update_shared_nav: Any
+        _refresh_preset_widgets: Any
+        _sync_sidebar_selection: Any
+        _schedule_device_event_refresh: Any
+        _defer_until_posterboard_ready: Any
+        built_page: Any
+        page_at: Any
+        show_ios_page: Any
+        show_home: Any
+        toggle_thread_btns: Any
+        tr: Any
+        sender: Any
+else:
+    _WindowBase = object
+
+
+def is_ios_beta_build(version: str, build: str) -> bool:
+    """True when the device is running an Apple iOS beta.
+
+    Apple beta builds carry a lowercase-letter suffix ("24B5099f" = 27.2
+    beta 3); every release build is uppercase+digits ("24A435" = 27.0.1).
+    A missing/odd build string is treated as release so a stale empty value
+    can never warn — the version qualifier keeps the gate on the post-26
+    era where the beta backup/restore workflow applied.
+    """
+    try:
+        if not (version and build and Version(version) > Version("26.0")):
+            return False
+        return build[-1].isalpha() and build[-1].islower()
+    except Exception:  # malformed version strings must never crash startup
+        return False
+
+
+class DeviceBarMixin(_WindowBase):
     """Device refresh, selection and per-device interface updates."""
 
     def _expect_device_reboot(self):
@@ -111,9 +177,6 @@ class DeviceBarMixin:
             self._update_shared_nav(page)
 
     def updateInterfaceForNewDevice(self):
-        # update the home page
-        self.pages[Page.Home].updatePhoneInfo()
-
         device = self.device_manager.data_singleton.current_device
         if device is None:
             return
@@ -330,6 +393,7 @@ class DeviceBarMixin:
         if alert is None:
             return
         import logging
+
         from src.exceptions.device_errors import is_connection_error
         if self._device_reconnect_expected() and is_connection_error(alert.exc_value):
             logging.getLogger('GoldenNugget.refresh').debug(
@@ -340,7 +404,11 @@ class DeviceBarMixin:
             return
         self._device_reconnect_until = 0
         self._last_connection_error = alert.txt
-        from pymobiledevice3.exceptions import PasswordRequiredError, PairingDialogResponsePendingError, UserDeniedPairingError
+        from pymobiledevice3.exceptions import (
+            PairingDialogResponsePendingError,
+            PasswordRequiredError,
+            UserDeniedPairingError,
+        )
         error = getattr(alert, "exc_value", None)
         if isinstance(error, PasswordRequiredError):
             self._connection_action = "unlock"
@@ -366,24 +434,30 @@ class DeviceBarMixin:
                 or self.settings.value("hide_dev_beta_warning", False, type=bool)):
             return
         ver = self.device_manager.get_current_device_version()
+        build = self.device_manager.get_current_device_build()
         if ver == "":
             return
-        if Version(ver) > Version("26.0") and not self.device_manager.get_current_device_build()[-1].isdigit():
-            self._dev_beta_warning_shown = True
-            # Keep the same standard warning dialog shape used previously by
-            # alert_message; only the optional persistent checkbox is new.
-            dialog = QtWidgets.QMessageBox()
-            dialog.setIcon(QtWidgets.QMessageBox.Warning)
-            dialog.setWindowTitle(self.tr("Warning"))
-            dialog.setText(device_text(self.tr(
-                "Warning: You are on iOS 26 beta.\n\n"
-                "This has been known to cause problems and potentially lead to bootloops.\n\n"
-                "Use at your own risk!"), self.device_manager.get_current_device_model()))
-            dialog.setCheckBox(QtWidgets.QCheckBox(self.tr("Don't show this warning again"), dialog))
-            dialog.exec()
-            if dialog.checkBox().isChecked():
-                self.settings.setValue("hide_dev_beta_warning", True)
-                self.settings.sync()
+        # Apple beta builds carry a lowercase-letter suffix ("24B5099f"); every
+        # release build is uppercase+digits ("24A435"). An empty or unusual
+        # build string never warns (and never crashes on ""[-1]).
+        if not is_ios_beta_build(ver, build):
+            return
+        self._dev_beta_warning_shown = True
+        # Keep the same standard warning dialog shape used previously by
+        # alert_message; only the optional persistent checkbox is new.
+        dialog = QtWidgets.QMessageBox()
+        dialog.setIcon(QtWidgets.QMessageBox.Warning)
+        dialog.setWindowTitle(self.tr("Warning"))
+        dialog.setText(device_text(self.tr(
+            "Warning: You are running an iOS beta build (%1).\n\n"
+            "This has been known to cause problems and potentially lead to bootloops.\n\n"
+            "Use at your own risk!").arg(f"{ver} ({build})"),
+            self.device_manager.get_current_device_model()))
+        dialog.setCheckBox(QtWidgets.QCheckBox(self.tr("Don't show this warning again"), dialog))
+        dialog.exec()
+        if dialog.checkBox().isChecked():
+            self.settings.setValue("hide_dev_beta_warning", True)
+            self.settings.sync()
 
 
     def refresh_devices_finished(self):
@@ -598,7 +672,9 @@ class DeviceBarMixin:
             self._posterboard_selection_workers = {}
         if udid in self._posterboard_selection_workers:
             return
-        from src.gui.thread_workers.posterboard_selection import PosterBoardSelectionWorker
+        from src.gui.thread_workers.posterboard_selection import (
+            PosterBoardSelectionWorker,
+        )
         worker = PosterBoardSelectionWorker(udid, self)
         self._posterboard_selection_workers[udid] = worker
         worker.ready.connect(self._posterboard_selection_ready)
@@ -646,7 +722,7 @@ class DeviceBarMixin:
         return True
 
 
-class SettingsMixin(AutosaveMixin):
+class SettingsMixin(AutosaveMixin, _WindowBase):
     """Settings/preset loading, theme switching and app-version label."""
 
     def loadSettings(self):
@@ -779,7 +855,7 @@ class SettingsMixin(AutosaveMixin):
 
 
 
-class NavigationMixin:
+class NavigationMixin(_WindowBase):
     """Page structure, shared IOS nav bar and sidebar selection."""
 
     # Icon Themes retains the shared navigation header in the classic shell.
@@ -917,11 +993,7 @@ class NavigationMixin:
 
 
     def _refresh_preset_widgets(self):
-        """Keep the active-preset banners on both home pages in sync."""
-        try:
-            self.pages[Page.Home].refresh_preset_widget()
-        except Exception:
-            pass
+        """Keep the active-preset banner on the iOS home page in sync."""
         try:
             self.ios_home.refresh_preset_widget()
         except Exception:
@@ -930,7 +1002,9 @@ class NavigationMixin:
 
     def show_ios_page(self, index: int):
         if index == 11:
-            from src.devicemanagement.passcode_support import current_passcode_theme_reason
+            from src.devicemanagement.passcode_support import (
+                current_passcode_theme_reason,
+            )
             if current_passcode_theme_reason(self.device_manager):
                 self.ios_home.update_passcode_support()
                 return
@@ -1106,13 +1180,8 @@ class NavigationMixin:
 
 
     def on_daemonsPageBtn_clicked(self):
-        if self.theme_manager.current_theme == ThemeManager.CLASSIC:
-            self.pages[Page.Daemons].load()
-            self.pages[Page.Daemons].refresh()
-            self.content_stack.setCurrentIndex(2)
-        else:
-            self.ios_daemons.refresh_from_tweaks()
-            self.show_ios_page(3)
+        self.ios_daemons.refresh_from_tweaks()
+        self.show_ios_page(3)
         self._sync_sidebar_selection()
 
 
@@ -1145,7 +1214,7 @@ class NavigationMixin:
         self._sync_sidebar_selection()
 
 
-class ApplyMixin:
+class ApplyMixin(_WindowBase):
     """Apply/reset orchestration, alerts and dialog prompts."""
 
     # IOSSummaryDialog extra-button result when the user asks to update the
@@ -1181,7 +1250,7 @@ class ApplyMixin:
         dialog, ``total`` is the summed change count (0 = nothing to do).
         """
         from src.tweaks.registry import SPECS_BY_SECTION, Section
-        from src.tweaks.tweak_loader import load_plist_tweaks, load_daemons
+        from src.tweaks.tweak_loader import load_daemons, load_plist_tweaks
         load_plist_tweaks()
         load_daemons()
 
@@ -1319,7 +1388,7 @@ class ApplyMixin:
             from src.controllers.apply_preview import load_preview
             from src.controllers.hotload import HotLoad
             from src.controllers.preset_manager import PresetManager
-            from src.controllers.risk_assessment import assess, apply_factors
+            from src.controllers.risk_assessment import apply_factors, assess
             from src.controllers.tweak_conflicts import current_conflicts
             manager = self.device_manager
             version = manager.get_current_device_version() or ""
@@ -1771,7 +1840,7 @@ class ApplyMixin:
             mbox.setWindowTitle(title)
             mbox.setIcon(QtWidgets.QMessageBox.Warning)
             mbox.setText(text)
-            abort_btn = mbox.addButton(
+            mbox.addButton(
                 QCoreApplication.tr("Abort"), QtWidgets.QMessageBox.RejectRole)
             resume_btn = mbox.addButton(
                 QCoreApplication.tr("Resume"), QtWidgets.QMessageBox.AcceptRole)

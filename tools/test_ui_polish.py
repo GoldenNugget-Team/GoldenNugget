@@ -1,11 +1,11 @@
 """Focused UI polish regressions, without device access or a MainWindow fixture."""
 import ast
 import os
-from pathlib import Path
 import sys
 import tempfile
-from types import SimpleNamespace
 import unittest
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,13 +15,20 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QApplication, QDialog, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QVBoxLayout,
+    QWidget,
+)
+from settings_sandbox import SettingsSandbox
+
 from src.gui.ios import settings as settings_module
 from src.gui.ios.settings import IOSSettingsPage
 from src.gui.theme import ColorThemeManager, t
 from src.gui.widgets import IOSCollapsibleSection, IOSSearchField
-
-from settings_sandbox import SettingsSandbox
 
 APP = QApplication.instance() or QApplication([])
 APP.setStyle('Fusion')

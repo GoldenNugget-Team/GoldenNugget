@@ -3,7 +3,8 @@
 Keep application settings and theme ownership here; implementations live in awesomeui.
 """
 from PySide6.QtCore import QTimer
-from awesomeui import configure_theme, Sidebar, SidebarTheme
+
+from awesomeui import Sidebar, SidebarTheme, configure_theme
 from src.gui.theme import ColorThemeManager, t, theme_pixmap
 from src.gui.theme.theme_manager import connect_visible_theme
 
@@ -11,20 +12,26 @@ configure_theme(manager=ColorThemeManager.instance, stylesheet=t,
                 pixmap=theme_pixmap, connect=connect_visible_theme)
 
 from awesomeui.controls import (
-    IOSSearchField as _SearchField,
-    IOSSegmentedFilter,
+    IOSCard,
+    IOSDangerButton,
+    IOSPrimaryButton,
     IOSSearchEmpty,
     IOSSectionHeader,
-    IOSCard,
-    IOSCollapsibleSection as _CollapsibleSection,
-    IOSNavBar as _NavBar,
-    IOSValueRow,
-    IOSSettingsRow,
+    IOSSegmentedFilter,
     IOSSettingsAction,
-    IOSPrimaryButton,
-    IOSDangerButton,
+    IOSSettingsRow,
     IOSSwitch,
+    IOSValueRow,
     _auto_retheme,
+)
+from awesomeui.controls import (
+    IOSCollapsibleSection as _CollapsibleSection,
+)
+from awesomeui.controls import (
+    IOSNavBar as _NavBar,
+)
+from awesomeui.controls import (
+    IOSSearchField as _SearchField,
 )
 
 
@@ -69,10 +76,14 @@ class NavigationSidebar(Sidebar):
     """awesomeUI navigation with the existing page-controller bindings."""
 
     ITEM_NAMES = (
-        "homePageBtn", "posterboardPageBtn", "templatesPageBtn", "gestaltPageBtn", "euEnablerPageBtn",
-        "statusBarPageBtn", "passcodePageBtn", "springboardOptionsPageBtn",
-        "internalOptionsPageBtn", "liquidGlassPageBtn", "daemonsPageBtn",
-        "iconThemesPageBtn", "presetsPageBtn", "applyPageBtn", "settingsPageBtn",
+        ("homePageBtn", "Home"), ("posterboardPageBtn", "PosterBoard"),
+        ("templatesPageBtn", "Templates"), ("gestaltPageBtn", "Mobile Gestalt"),
+        ("euEnablerPageBtn", "Eligibility"), ("statusBarPageBtn", "Status Bar"),
+        ("passcodePageBtn", "Passcode"), ("springboardOptionsPageBtn", "Springboard"),
+        ("internalOptionsPageBtn", "Internal"), ("liquidGlassPageBtn", "Liquid Glass"),
+        ("daemonsPageBtn", "Daemons"), ("iconThemesPageBtn", "Icon Themes"),
+        ("presetsPageBtn", "Presets"), ("applyPageBtn", "Apply"),
+        ("settingsPageBtn", "Settings"),
     )
 
     def __init__(self, ui, parent=None):
@@ -82,23 +93,17 @@ class NavigationSidebar(Sidebar):
         self._base_top_padding = self.layout().contentsMargins().top()
         from PySide6.QtCore import QCoreApplication
         from PySide6.QtGui import QIcon
-        for name in self.ITEM_NAMES:
+        for name, label in self.ITEM_NAMES:
             if name == "posterboardPageBtn":
                 ui.sidebarDiv1 = self.add_separator()
             if name == "applyPageBtn":
                 ui.sidebarDiv2 = self.add_separator()
-            old = getattr(ui, name, None)
-            text = old.text() if old else QCoreApplication.translate("Nugget", "Presets")
-            icon = old.icon() if old else QIcon(":/icon/folder.svg")
-            if name == "templatesPageBtn":
-                text = QCoreApplication.translate("Nugget", "Templates")
-                icon = QIcon(":/icon/file-earmark-text.svg")
+            # the Designer page buttons used to carry text/icon/state; the
+            # sidebar owns its labels now and re-creates the handler names.
+            text = QCoreApplication.translate("Nugget", label)
+            icon = (QIcon(":/icon/file-earmark-text.svg")
+                    if name == "templatesPageBtn" else QIcon(":/icon/folder.svg"))
             item = self.add_item(name, text, icon)
-            if old is not None:
-                item.setEnabled(old.isEnabled())
-                item.setVisible(not old.isHidden())
-                item.setToolTip(old.toolTip())
-                item.setChecked(old.isChecked())
             setattr(ui, name, item)
         self._retheme()
         _auto_retheme(self)
@@ -128,9 +133,8 @@ class NavigationSidebar(Sidebar):
                                 margins.right(), margins.bottom())
 
 
-from src.gui.liquid.controls import LiquidSwitch as IOSSwitch
 from src.gui.liquid.controls import LiquidActionButton as IOSPrimaryButton
-from src.gui.liquid.controls import LiquidDangerButton as IOSDangerButton
-from src.gui.liquid.navigation import LiquidNavBar as IOSNavBar
-
 from src.gui.liquid.controls import LiquidCard as IOSCard
+from src.gui.liquid.controls import LiquidDangerButton as IOSDangerButton
+from src.gui.liquid.controls import LiquidSwitch as IOSSwitch
+from src.gui.liquid.navigation import LiquidNavBar as IOSNavBar

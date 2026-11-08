@@ -15,8 +15,8 @@ import xml.etree.ElementTree as ET
 from typing import Any, List, Optional
 
 from .models import (
-    CADocument,
     Animation,
+    CADocument,
     EmitterCell,
     Filter,
     GradientColor,

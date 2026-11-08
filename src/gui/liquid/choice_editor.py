@@ -1,12 +1,20 @@
 from PySide6.QtCore import QEvent, QPersistentModelIndex, QSize, Qt
 from PySide6.QtWidgets import (
-    QComboBox, QDialog, QHBoxLayout, QLabel, QLineEdit, QListWidget,
-    QListWidgetItem, QPushButton, QVBoxLayout,
+    QComboBox,
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QPushButton,
+    QVBoxLayout,
 )
 from shiboken6 import isValid
 
-from .value_editor import ValueEditor
 from src.gui.theme import ColorThemeManager
+
+from .value_editor import ValueEditor
 
 
 class ChoiceDialog(QDialog):

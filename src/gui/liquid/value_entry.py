@@ -1,7 +1,8 @@
-from PySide6.QtCore import Qt, QRectF, QSize
-from PySide6.QtGui import QPainter, QColor, QPen
+from PySide6.QtCore import QRectF, QSize, Qt
+from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QPushButton, QSizePolicy
-from src.gui.theme import ColorThemeManager,theme_pixmap
+
+from src.gui.theme import ColorThemeManager, theme_pixmap
 
 
 class GlassValueEntry(QPushButton):

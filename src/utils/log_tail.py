@@ -1,6 +1,6 @@
 """A bounded, byte-offset log tail independent of Qt and logging handlers."""
-from dataclasses import dataclass
 import os
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)

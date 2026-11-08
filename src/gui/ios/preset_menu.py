@@ -16,26 +16,43 @@ import os
 import sys
 import weakref
 from typing import Optional
-from src.devicemanagement.device_capabilities import device_os_name
 
 from PySide6.QtCore import (
-    Qt, QCoreApplication, QObject, QEvent, QPoint, QRect,
-    QPropertyAnimation, QEasingCurve, Signal,
+    QCoreApplication,
+    QEasingCurve,
+    QEvent,
+    QObject,
+    QPoint,
+    QPropertyAnimation,
+    QRect,
+    Qt,
+    Signal,
 )
 from PySide6.QtWidgets import (
-    QApplication, QWidget, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QScrollArea, QGraphicsOpacityEffect, QSizePolicy,
-    QMessageBox, QFileDialog, QDialog,
+    QApplication,
+    QDialog,
+    QFileDialog,
+    QFrame,
+    QGraphicsOpacityEffect,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
 )
 
+from src.controllers.hotload import HotLoad
+from src.controllers.preset_manager import PresetManager
+from src.devicemanagement.device_capabilities import device_os_name
 from src.gui.dialogs.confirmation import ask_confirmation
+from src.gui.dialogs.hotload_warning import confirm_flagged
 from src.gui.theme import ColorThemeManager, t
 from src.gui.widgets import (
     _auto_retheme,
 )
-from src.controllers.preset_manager import PresetManager
-from src.controllers.hotload import HotLoad
-from src.gui.dialogs.hotload_warning import confirm_flagged
 
 # _ = translate
 _T = QCoreApplication.translate

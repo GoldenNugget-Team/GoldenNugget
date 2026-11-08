@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 import platform
 import plistlib
 import random
@@ -16,6 +15,7 @@ import statistics
 import sys
 import tempfile
 import time
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -106,9 +106,14 @@ def icon_probe():
 
 
 def state_probe():
-    from src.gui.preview.ca.models import Layer
-    from src.gui.preview.ca.render import apply_state_overrides, interpolated_state_root, _layer_index
     import copy
+
+    from src.gui.preview.ca.models import Layer
+    from src.gui.preview.ca.render import (
+        _layer_index,
+        apply_state_overrides,
+        interpolated_state_root,
+    )
 
     results = []
     for count in (200, 1000):
@@ -130,12 +135,14 @@ def state_probe():
 
 def blend_probe():
     import io
-    from PySide6.QtCore import QBuffer
-    from PySide6.QtGui import QImage
-    from src.gui.preview.ca.render import _hsl_blend
+
     # Import optional dependencies outside the timer; fail visibly if absent.
     import numpy  # noqa: F401
     from PIL import Image  # noqa: F401
+    from PySide6.QtCore import QBuffer
+    from PySide6.QtGui import QImage
+
+    from src.gui.preview.ca.render import _hsl_blend
 
     width, height = 390, 844
     pixels = bytearray(random.Random(0).randbytes(width * height * 4))

@@ -1,15 +1,20 @@
-import math
-from PySide6.QtCore import Qt, QRectF, QPointF, QTimer, QRect, QSize, QEvent
-from PySide6.QtGui import QColor, QPainter, QPen, QFont, QPixmap, QPainterPath
-from pathlib import Path
-from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QSlider,
-                               QCheckBox, QApplication, QWidget, QScrollArea)
+from PySide6.QtCore import QPointF, QRectF, QSize, Qt, QTimer
+from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen, QPixmap
+from PySide6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
+
 from src.gui.theme import ColorThemeManager
-from .controls import GlassPanel, LiquidButton, GlassCheckBox, LiquidActionButton
-from .motion import animate
-from .appearance import InlinePalette, GlassSlider, GlassChoice
-from .placement import panel_rect
+
+from .appearance import GlassChoice, GlassSlider
 from .choice_editor import GlassComboBox as QComboBox
+from .controls import GlassCheckBox, GlassPanel, LiquidButton
+from .placement import panel_rect
 
 
 class PhoneRender(GlassPanel):
@@ -249,9 +254,6 @@ class WorkspaceSettings(GlassPanel):
     def __init__(self,window):
         super().__init__(window)
         self.window=window
-        from .sounds import UiSounds
-        self.sounds=UiSounds.instance()
-        self.sounds.configure(window.settings)
         self.setFixedWidth(420)
         outer=QVBoxLayout(self)
         outer.setContentsMargins(4,4,4,4)
@@ -306,6 +308,7 @@ class WorkspaceSettings(GlassPanel):
         # off window.ios_settings built that whole page (the most expensive one)
         # just to open this panel.
         from PySide6.QtCore import QCoreApplication
+
         from src.gui.pages.main.settings import available_languages
         self._language_codes=list(available_languages.values())
         for language in available_languages:
@@ -347,11 +350,6 @@ class WorkspaceSettings(GlassPanel):
         QApplication.instance().setProperty('liquid_reduce_motion', reduced.isChecked())
         reduced.toggled.connect(self.reduce_motion)
         field('',reduced,4,1)
-        self.ui_sounds=GlassCheckBox('UI Sounds')
-        self.ui_sounds.setChecked(self.sounds.enabled)
-        self.ui_sounds.setAccessibleName('UI Sounds')
-        self.ui_sounds.toggled.connect(self.sounds.set_enabled)
-        field('',self.ui_sounds,5,0,2)
         column.addWidget(full)
         def retheme():
             colors=ColorThemeManager.instance().colors
@@ -410,6 +408,7 @@ class WorkspaceSettings(GlassPanel):
 
     def paintEvent(self,event):
         from PySide6.QtGui import QPainterPath
+
         from .controls import paint_dock_glass
         dock=self.window.bottom_navigation
         rect=QRectF(self.rect()).adjusted(.5,.5,-.5,-.5)
@@ -629,6 +628,7 @@ class RestoreDrawer(GlassPanel):
 
     def selection(self):
         import json
+
         from src.controllers.preset_manager import PresetManager
         return (self.window.device_manager.get_current_device_udid(),
                 json.dumps(PresetManager()._serialize(),sort_keys=True,default=str))
@@ -723,8 +723,8 @@ class RestoreDrawer(GlassPanel):
             and not self._pending_confirm and (self.ack.isHidden() or self.ack.isChecked()))
 
     def open(self):
-        from src.controllers.tweak_conflicts import current_conflicts
         from src.controllers.risk_assessment import RiskLevel
+        from src.controllers.tweak_conflicts import current_conflicts
         window=self.window
         self._progress_mode=False
         self.progress_area.hide()

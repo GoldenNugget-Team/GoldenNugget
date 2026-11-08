@@ -11,7 +11,6 @@
 import hashlib
 import json
 import os
-import plistlib
 import sys
 from pathlib import Path
 

@@ -1,9 +1,20 @@
 from PySide6.QtCore import (
-    Qt, QRectF, QTime, QDate, QTimer, QPropertyAnimation,
-    QEasingCurve, Property,
+    Property,
+    QDate,
+    QEasingCurve,
+    QPropertyAnimation,
+    QRectF,
+    Qt,
+    QTime,
+    QTimer,
 )
 from PySide6.QtGui import (
-    QPainter, QPainterPath, QColor, QFont, QPixmap, QLinearGradient,
+    QColor,
+    QFont,
+    QLinearGradient,
+    QPainter,
+    QPainterPath,
+    QPixmap,
 )
 from PySide6.QtWidgets import QWidget
 

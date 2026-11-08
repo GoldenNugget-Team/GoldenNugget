@@ -28,8 +28,6 @@ included only when backup encryption is enabled — keychain payloads are
 encrypted at rest and iOS rejects them in an unencrypted backup.
 """
 
-from src.utils.filecopy import clone_or_copy
-
 import asyncio
 import os
 import shutil
@@ -45,19 +43,21 @@ from typing import Optional
 
 import pymobiledevice3.exceptions as _pm3_exc
 import pymobiledevice3.service_connection as _sc
-from pymobiledevice3.lockdown import LockdownClient
 from pymobiledevice3.exceptions import NotEnoughDiskSpaceError
+from pymobiledevice3.lockdown import LockdownClient
 from pymobiledevice3.services.lockdown_service import LockdownService
-from src.devicemanagement.progress_status import BackupStatus
-
 from pymobiledevice3.services.mobilebackup2 import (
-    Mobilebackup2Service, NP_LOCAL_AUTH_PRESENTED, NP_LOCAL_AUTH_DISMISSED,
+    NP_LOCAL_AUTH_DISMISSED,
+    NP_LOCAL_AUTH_PRESENTED,
+    Mobilebackup2Service,
 )
 
-from src.utils.i18n import QCoreApplication
-
-from src.exceptions.nugget_exception import NuggetException, BackupStorageError, BackupDiskSpaceError
-from src.restore.preference_scope import is_preference_file, is_preference_parent, is_preference_upload
+from src.devicemanagement.progress_status import BackupStatus
+from src.exceptions.nugget_exception import (
+    BackupDiskSpaceError,
+    BackupStorageError,
+    NuggetException,
+)
 from src.restore.afc_media import (  # noqa: F401  (re-exported public API)
     AFC_MEDIA_TREES,
     afc_media_dir_for,
@@ -69,12 +69,19 @@ from src.restore.inject import (  # noqa: F401  (re-exported public API)
     _validate_sqlite_db,
     inject_files_into_backup,
 )
+from src.restore.preference_scope import (
+    is_preference_file,
+    is_preference_parent,
+    is_preference_upload,
+)
 from src.restore.protective_cache import (  # noqa: F401  (re-exported public API)
     CACHE_MEDIA_REFRESH_SECS,
     CACHE_PERSIST_MIN_GB,
     CACHE_REFRESH_SECS,
     ProtectiveBackupCache,
 )
+from src.utils.filecopy import clone_or_copy
+from src.utils.i18n import QCoreApplication
 
 
 @dataclass
@@ -201,20 +208,26 @@ _sc.DEFAULT_SSL_HANDSHAKE_TIMEOUT = 60
 
 # Resolve the executor through its defining module, including Python 3.15.
 from src.utils.async_disk import ensure_thread_executor
+
 ensure_thread_executor()
 
-from src.utils.log_util import log_info, log_warn, log_error, log_debug
-from .device_link_adapter import recv_timeout_secs
+from src.utils.log_util import log_debug, log_error, log_info, log_warn
 
 # --- DeviceLink protocol constants (from pymobiledevice3.services.device_link) ---
-
 # Backup metadata files that must always be preserved (never filtered out)
 from .backup_store import (
-    _BACKUP_METADATA_FILES, WORKING_COPY_PREFIX, _copy_backup_tree,
-    make_protective_working_copy, make_cache_snapshot, _retire_backup_tree,
-    discard_protective_working_copy, regenerate_cache_from_snapshot,
-    _payload_inventory, _remove_orphan_payloads,
+    _BACKUP_METADATA_FILES,
+    WORKING_COPY_PREFIX,
+    _copy_backup_tree,
+    _payload_inventory,
+    _remove_orphan_payloads,
+    _retire_backup_tree,
+    discard_protective_working_copy,
+    make_cache_snapshot,
+    make_protective_working_copy,
+    regenerate_cache_from_snapshot,
 )
+from .device_link_adapter import recv_timeout_secs
 
 # Domains whose files should be kept in the protective backup.
 PROTECTIVE_DOMAINS = frozenset({
@@ -573,6 +586,7 @@ def _install_encrypted_manifest_prune_shim():
     upstream simply loses its Windows-only failure mode.
     """
     import tempfile
+
     from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service
 
     def prune_backup_manifest(cls, device_directory, filter_callback, password=""):
@@ -763,7 +777,9 @@ class ProtectiveBackupService(Mobilebackup2Service):
         that format provably yields the PosterBoard DB in full backups.
         """
         try:
-            from pymobiledevice3.services.installation_proxy import InstallationProxyService
+            from pymobiledevice3.services.installation_proxy import (
+                InstallationProxyService,
+            )
             from pymobiledevice3.services.springboard import SpringBoardServicesService
             bundle_id = POSTERBOARD_DB_DOMAIN.removeprefix("AppDomain-")
             async with InstallationProxyService(lockdown=self.lockdown) as ip:
@@ -796,7 +812,7 @@ class ProtectiveBackupService(Mobilebackup2Service):
 async def perform_protective_backup(
     lockdown_client: LockdownClient,
     backup_root: str,
-    progress_callback=None,
+    progress_callback=None,  # pyright: ignore[reportRedeclaration] (a nested closure uses the same name below)
     include_photos: bool = True,
     include_posterboard: bool = False,
     include_keychain: Optional[bool] = None,
@@ -1095,7 +1111,7 @@ def prune_protective_backups(udid: str, keep: int = PROTECTIVE_KEEP_RUNS) -> int
     return removed
 
 
-def _copy_backup_tree(src_root: Path, dst_root: Path) -> None:
+def _copy_backup_tree(src_root: Path, dst_root: Path) -> None:  # noqa: F811 (local impl shadows the legacy re-export)
     """Faithfully copy one backup device dir into ``dst_root``.
 
     Metadata (incl. sqlite sidecars) is real-copied — pruning rewrites
@@ -1167,7 +1183,7 @@ def discard_restore_view(view_root: str, udid: str) -> None:
     shutil.rmtree(Path(view_root) / udid, ignore_errors=True)
 
 
-def make_protective_working_copy(backup_root: str, udid: str) -> str:
+def make_protective_working_copy(backup_root: str, udid: str) -> str:  # noqa: F811 (local impl shadows the legacy re-export)
     """Build a throwaway hardlink copy of a protective backup for prune + injection.
 
     Hardlinks keep it near-instant and size-free; pruning unlinks orphans
@@ -1190,7 +1206,7 @@ def make_protective_working_copy(backup_root: str, udid: str) -> str:
     return str(working_root)
 
 
-def make_cache_snapshot(backup_root: str, udid: str, inject_files: list = None) -> str:
+def make_cache_snapshot(backup_root: str, udid: str, inject_files: list = None) -> str:  # noqa: F811 (local impl shadows the legacy re-export)
     """Deprecated: the cache master is no longer modified in place.
 
     Applies now build a disposable restore *view* of the master
@@ -1202,7 +1218,7 @@ def make_cache_snapshot(backup_root: str, udid: str, inject_files: list = None) 
         "the cache master is immutable — use make_restore_view() instead")
 
 
-def regenerate_cache_from_snapshot(snapshot_dir: str, backup_root: str, udid: str) -> str:
+def regenerate_cache_from_snapshot(snapshot_dir: str, backup_root: str, udid: str) -> str:  # noqa: F811 (local impl shadows the legacy re-export)
     """Deprecated: the cache master is never modified, so nothing regenerates it."""
     raise NotImplementedError(
         "the cache master is immutable — it needs no regeneration")

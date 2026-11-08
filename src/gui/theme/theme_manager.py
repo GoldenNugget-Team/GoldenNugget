@@ -1,7 +1,7 @@
-from PySide6.QtCore import QObject, Signal, QEvent, Qt
-from PySide6.QtGui import QColor, QPalette, QGuiApplication
+from PySide6.QtCore import QEvent, QObject, Qt, Signal
+from PySide6.QtGui import QColor, QGuiApplication, QPalette
 
-from src.gui.theme.colors import ThemeColors, DARK, ACCENT_PRESETS
+from src.gui.theme.colors import ACCENT_PRESETS, DARK, ThemeColors
 from src.utils.settings import Settings
 
 

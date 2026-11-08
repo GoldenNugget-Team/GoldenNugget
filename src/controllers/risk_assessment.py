@@ -15,10 +15,9 @@ wrong, and an unlisted tweak is "low" only in the sense that nothing is known.
 from dataclasses import dataclass, field
 from enum import IntEnum
 
-from src.utils.i18n import QCoreApplication, QT_TRANSLATE_NOOP
-
 from src.tweaks.registry import SPECS_BY_ID, Section
 from src.tweaks.tweak_names import TweakID
+from src.utils.i18n import QT_TRANSLATE_NOOP, QCoreApplication
 
 CONTEXT = "RiskAssessment"
 MANY_CHANGES = 20
@@ -141,7 +140,9 @@ def _daemon_factors(keys):
 
 def assess(tweaks_data, device_version="", device_model="", *, hotload=None, extra=()):
     """Assess preset-shaped ``tweaks_data``; ``extra`` adds apply-time factors."""
-    from src.tweaks.compatibility import device_compatibility_reasons as compatibility_reasons
+    from src.tweaks.compatibility import (
+        device_compatibility_reasons as compatibility_reasons,
+    )
     report = RiskReport()
     selected = {name: entry for name, entry in (tweaks_data or {}).items()
                 if is_selected(name, entry)}
@@ -216,7 +217,11 @@ def community_factors(active):
     """Factors for community tweaks from .batter templates.
 
     ``active`` is community_tweaks.active(): (template name, tweak, writes)."""
-    from src.tweaks.posterboard.community_tweaks import RISK_HIGH, RISK_MEDIUM, write_risk
+    from src.tweaks.posterboard.community_tweaks import (
+        RISK_HIGH,
+        RISK_MEDIUM,
+        write_risk,
+    )
     factors, low = [], 0
     for name, tweak, writes in active:
         label = f"{name} — {tweak.label}"

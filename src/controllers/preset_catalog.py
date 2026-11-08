@@ -27,10 +27,9 @@ import zipfile
 from dataclasses import dataclass, field
 from urllib.parse import quote
 
+from src.controllers import share_code
 from src.utils.i18n import QT_TRANSLATE_NOOP
 from src.utils.paths import app_data_dir, cache_dir
-
-from src.controllers import share_code
 
 CATALOG_REPO = "GoldenNugget-Team/GoldenNugget-Presets"
 INDEX_URL = "https://goldennugget-team.github.io/GoldenNugget-Presets/index.json"

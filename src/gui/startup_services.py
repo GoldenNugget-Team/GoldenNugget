@@ -1,6 +1,7 @@
 """Background startup fetches; every UI reaction runs in the Qt main thread."""
 import os
 from threading import Event, Thread
+
 from PySide6.QtCore import QObject, QTimer, Signal, Slot
 
 
@@ -31,7 +32,7 @@ class StartupServices(QObject):
     def _fetch_update(self):
         try:
             from src.controllers import web_request_handler
-            from src.gui.version import App_Version, App_Build
+            from src.gui.version import App_Build, App_Version
             result = web_request_handler.is_update_available(App_Version, App_Build)
             available = bool(result) if web_request_handler.last_fetched_version is not None else None
             if not self.closing.is_set():

@@ -47,7 +47,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from src.utils.paths import app_data_dir, generic_data_dir, legacy_app_data_dirs
+from src.utils.paths import app_data_dir, legacy_app_data_dirs
 
 _LOCK = threading.RLock()
 _STORES: dict[tuple[str, str], "_Store"] = {}

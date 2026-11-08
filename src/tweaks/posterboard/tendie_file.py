@@ -2,6 +2,7 @@ import os
 import uuid
 import zipfile
 
+
 class TendieFile:
     path: str
     name: str
@@ -9,8 +10,8 @@ class TendieFile:
     is_container: bool
     unsafe_container: bool
     loaded: bool
-    auto_convert: bool
-    legacy_families: list
+    auto_convert: bool  # pyright: ignore[reportRedeclaration] (re-annotated in __init__: bool | None)
+    legacy_families: list  # pyright: ignore[reportRedeclaration] (list[str | ...], filled in __init__)
 
     def __init__(self, path: str):
         self.path = path

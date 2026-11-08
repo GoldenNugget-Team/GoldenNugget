@@ -1,9 +1,9 @@
 """Offline regressions for compact tweak controls and window-local navigation."""
 import os
-from pathlib import Path
 import sys
-from types import SimpleNamespace
 import unittest
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -12,8 +12,9 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import QApplication, QBoxLayout, QDialog, QLineEdit, QWidget
-from src.gui.ios.tweaks import IOSSectionContent
+
 from src.gui.ios.apply import IOSApplyPage
+from src.gui.ios.tweaks import IOSSectionContent
 from src.gui.main_window_mixins import NavigationMixin
 
 

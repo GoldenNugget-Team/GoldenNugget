@@ -21,14 +21,13 @@ push side (no host bookkeeping pushed, short writes detected).
 Run: python tools/test_afc_media_safety.py
 """
 import asyncio
-import inspect
 import os
 import shutil
 import sys
-import time
 import tempfile
-from types import SimpleNamespace
+import time
 from contextlib import asynccontextmanager
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -36,6 +35,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from src.devicemanagement.device_manager import DeviceManager
 from src.exceptions.nugget_exception import NuggetException
 from src.restore import afc_media
+from src.restore import restore as restore_mod
 from src.restore.afc_media import (
     MEDIA_STATE_FILE,
     _invalidate_media_state,
@@ -45,7 +45,6 @@ from src.restore.afc_media import (
     media_store_state,
     media_store_verified,
 )
-from src.restore import restore as restore_mod
 
 PASS = 0
 TMP = tempfile.mkdtemp(prefix="gn_afc_media_")
@@ -419,8 +418,9 @@ def test_pre_apply_gate():
 def test_restore_call_sites():
     print("\nshared restore preparation and Phase 5 fail closed")
     from unittest.mock import Mock, patch
-    from src.restore.recovery import RecoverySource, RecoveryBackend, prepare_recovery
-    from src.restore.context import RestoreSession, RestoreOptions
+
+    from src.restore.context import RestoreOptions, RestoreSession
+    from src.restore.recovery import RecoveryBackend, RecoverySource, prepare_recovery
     from src.restore.verification import PruneResult
     good = store("shared_gate")
     write_file(os.path.join(good, "DCIM", "photo.jpg"), b"photo")

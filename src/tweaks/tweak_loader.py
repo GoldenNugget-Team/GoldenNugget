@@ -1,8 +1,12 @@
-from .tweaks import tweaks, TweakID
-from .registry import SPECS, Kind, Section, LOCAL_ONLY_IDS
 from .basic_plist_locations import FileLocation
-from .tweak_classes import BasicPlistTweak, AdvancedPlistTweak, DaemonPlistTweak, NullifyFileTweak
 from .daemons_tweak import DANGEROUS_KEYS, INTERFACE_KEYS
+from .registry import LOCAL_ONLY_IDS, SPECS, Kind, Section
+from .tweak_classes import (
+    BasicPlistTweak,
+    DaemonPlistTweak,
+    NullifyFileTweak,
+)
+from .tweaks import TweakID, tweaks
 
 
 def _build_spec(spec):
@@ -11,6 +15,7 @@ def _build_spec(spec):
         return PosterKitOverrides()
     if spec.kind == Kind.WALLPAPER:
         from copy import deepcopy
+
         from .tweak_classes import WallpaperPreferencesTweak
         return WallpaperPreferencesTweak(spec.location,spec.key,value=deepcopy(spec.value))
     if spec.factory is not None:

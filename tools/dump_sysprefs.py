@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pymobiledevice3.lockdown import create_using_usbmux
 from pymobiledevice3.usbmux import list_devices
 
-from src.restore.protective import ProtectiveBackupService, _BACKUP_METADATA_FILES
+from src.restore.protective import _BACKUP_METADATA_FILES, ProtectiveBackupService
 
 
 def _preserve(file_name: str, device_name: str) -> bool:

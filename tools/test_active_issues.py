@@ -1,19 +1,24 @@
 """Offline regressions for PosterBoard fetch failures (#59) and daemon recovery (#58)."""
 import os
-from pathlib import Path
 import sys
-from types import SimpleNamespace
 import unittest
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtWidgets import QApplication
+
 from src.devicemanagement import device_manager as dm
 from src.exceptions.nugget_exception import NuggetException
 from src.restore import posterboard_backup
-from src.tweaks.daemons_tweak import Daemon, RECOMMENDED_ANALYTICS, NOTIFICATION_RECOVERY_DAEMONS
+from src.tweaks.daemons_tweak import (
+    NOTIFICATION_RECOVERY_DAEMONS,
+    RECOMMENDED_ANALYTICS,
+    Daemon,
+)
 from src.tweaks.tweak_loader import load_daemons
 
 
@@ -78,8 +83,8 @@ class NotificationRecovery(unittest.TestCase):
             self.assertNotIn(daemon, RECOMMENDED_ANALYTICS)
 
     def test_removed_daemons_cannot_be_selected_or_applied_from_old_presets(self):
-        from src.tweaks.daemons_tweak import INTERFACE_KEYS
         from src.tweaks.basic_plist_locations import FileLocation
+        from src.tweaks.daemons_tweak import INTERFACE_KEYS
         from src.tweaks.tweak_classes import DaemonPlistTweak
 
         removed = {"DeviceCheck": "com.apple.devicecheckd",

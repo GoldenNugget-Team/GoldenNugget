@@ -1,19 +1,19 @@
 """Remote daemon rules remain authoritative without enabling manual selections."""
-import os
 import asyncio
+import os
 import plistlib
 import sys
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
-from src.devicemanagement import device_manager as dm
 from src.controllers.apply_preview import capture_preview
-from src.tweaks.tweak_classes import AdvancedPlistTweak
+from src.devicemanagement import device_manager as dm
 from src.tweaks.basic_plist_locations import FileLocation
+from src.tweaks.tweak_classes import AdvancedPlistTweak
 from src.tweaks.tweak_names import TweakID
 
 

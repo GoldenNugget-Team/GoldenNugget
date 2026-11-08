@@ -1,11 +1,17 @@
+from PySide6.QtCore import QCoreApplication, Qt
 from PySide6.QtWidgets import (
-    QDialog, QDialogButtonBox, QLabel, QPushButton, QVBoxLayout,
-    QSizePolicy, QScrollArea, QWidget,
+    QDialog,
+    QDialogButtonBox,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import QCoreApplication, QT_TRANSLATE_NOOP, Qt
-from src.gui.theme import ColorThemeManager, t
 
 from src.gui.pages.pages_list import Page, get_resettable_pages
+from src.gui.theme import ColorThemeManager, t
 
 
 class ResetDialog(QDialog):
@@ -49,13 +55,6 @@ class ResetDialog(QDialog):
         scroll.setWidget(content)
         layout.addWidget(scroll, 1)
         pages = get_resettable_pages(self.device_manager)
-        # getPageName() is plain English (the CLI shares it); translate it here.
-        page_names = (QT_TRANSLATE_NOOP("Nugget", "Status Bar"),
-                      QT_TRANSLATE_NOOP("Nugget", "Springboard"),
-                      QT_TRANSLATE_NOOP("Nugget", "Liquid Glass"),
-                      QT_TRANSLATE_NOOP("Nugget", "Internal"),
-                      QT_TRANSLATE_NOOP("Nugget", "Daemons"),
-                      QT_TRANSLATE_NOOP("Nugget", "Community Tweaks"))
         for page in pages:
             name = "Community Tweaks" if page == Page.Templates else page.getPageName()
             label = QCoreApplication.translate("Nugget", name)

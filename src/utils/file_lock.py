@@ -8,7 +8,6 @@ by a dead process is considered stale and is reclaimed.
 from __future__ import annotations
 
 import os
-import sys
 import time
 
 _STALE_SECONDS = 30.0

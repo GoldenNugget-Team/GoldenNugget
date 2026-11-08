@@ -2,7 +2,6 @@
 
 from src.tweaks.registry import Kind, Section
 
-
 SPRINGBOARD_GROUPS = {
     "Animation & Motion": (
         "DisableControlSymbolAnimations",

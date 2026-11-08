@@ -141,8 +141,9 @@ def _decode_heif_via_pillow(data: bytes):
     """Decode HEIF/HEIC via pillow-heif (bundled libheif/libde265)."""
     try:
         import io
+
+        import pillow_heif  # pyright: ignore[reportMissingImports] (optional HEIC opener, guarded)
         from PIL import Image
-        import pillow_heif
         pillow_heif.register_heif_opener()
         with Image.open(io.BytesIO(data)) as img:
             rgb = img.convert("RGB")

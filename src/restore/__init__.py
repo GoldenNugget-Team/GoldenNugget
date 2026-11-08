@@ -6,16 +6,16 @@ __lazy_modules__ = (
 )
 
 import os
-from tempfile import TemporaryDirectory
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
-from pymobiledevice3.lockdown import create_using_usbmux
-from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service
 from pymobiledevice3.exceptions import PyMobileDevice3Exception
+from pymobiledevice3.lockdown import LockdownClient, create_using_usbmux
 from pymobiledevice3.services.diagnostics import DiagnosticsService
-from pymobiledevice3.lockdown import LockdownClient
+from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service
 
 from . import backup
+
 
 async def reboot_device(reboot: bool = False, lockdown_client: LockdownClient = None):
     if reboot and lockdown_client != None:

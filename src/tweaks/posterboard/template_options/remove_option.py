@@ -1,11 +1,11 @@
-from src.controllers.archive_safety import package_matches
-from . import TemplateOption
-
 import os
 from shutil import rmtree
 from typing import Optional
 
+from src.controllers.archive_safety import package_matches
 from src.controllers.xml_handler import delete_xml_value
+
+from . import TemplateOption
 
 
 class RemoveOption(TemplateOption):

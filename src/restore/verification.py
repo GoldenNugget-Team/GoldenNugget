@@ -1,10 +1,10 @@
 """Explicit, fail-closed verification of local backup manifests and payloads."""
+import sqlite3
+import tempfile
 from contextlib import closing
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-import sqlite3
-import tempfile
 
 from src.exceptions.nugget_exception import NuggetException
 

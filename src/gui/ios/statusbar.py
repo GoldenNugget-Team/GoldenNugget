@@ -1,22 +1,30 @@
+from packaging.version import InvalidVersion, Version
+from PySide6.QtCore import QCoreApplication, QSize, Qt, QTimer
+from PySide6.QtWidgets import (
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
+
 from src.controllers.settings import Settings
 from src.devicemanagement.device_capabilities import device_os_name
-from PySide6.QtCore import Qt, QCoreApplication, QTimer, QSize
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, QLabel,
-    QDialog, QPushButton, QMessageBox
-)
-from packaging.version import Version, InvalidVersion
-
-from src.gui.widgets import (
-    IOSCard, IOSSectionHeader, IOSSwitch,
-)
-from src.gui.ios.components import TextInputDialog, NumberInputDialog
-from src.gui.theme import ColorThemeManager, theme_icon, t
-from src.tweaks.tweaks import tweaks, TweakID
-from src.tweaks.status_bar.status_setter import StatusBarItem
+from src.gui.ios.components import NumberInputDialog, TextInputDialog
 from src.gui.liquid.cards import ControlGrid, prepare_card
 from src.gui.liquid.selection_card import bind_selection_card
 from src.gui.liquid.value_entry import GlassValueEntry
+from src.gui.theme import ColorThemeManager, t, theme_icon
+from src.gui.widgets import (
+    IOSCard,
+    IOSSectionHeader,
+    IOSSwitch,
+)
+from src.tweaks.status_bar.status_setter import StatusBarItem
+from src.tweaks.tweaks import TweakID, tweaks
 
 
 class StatusValueEntry(GlassValueEntry):
@@ -373,6 +381,7 @@ class IOSStatusBarPage(QWidget):
             dialog.deleteLater()
             return
         from shiboken6 import isValid
+
         from src.gui.liquid.value_editor import ValueEditor
         old = getattr(self, '_value_editor_panel', None)
         if old is not None and isValid(old):

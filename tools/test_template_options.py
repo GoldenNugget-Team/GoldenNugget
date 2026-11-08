@@ -1,22 +1,23 @@
 """Regressions for template controls and the files their selections retain."""
-import os
 import json
-from pathlib import Path
+import os
 import sys
 import tempfile
 import unittest
 import zipfile
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QComboBox, QVBoxLayout, QWidget
+
 from src.gui.template_option_editors import create_interface
+from src.tweaks.posterboard.template_file import TemplateFile
 from src.tweaks.posterboard.template_options.picker_option import PickerOption
 from src.tweaks.posterboard.template_options.replace_option import ReplaceOption
 from src.tweaks.posterboard.template_options.set_option import SetOption
-from src.tweaks.posterboard.template_file import TemplateFile
 
 APP = QApplication.instance() or QApplication([])
 

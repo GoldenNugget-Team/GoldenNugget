@@ -1,9 +1,41 @@
 import math
-from PySide6.QtCore import Qt, QRectF, QPointF, QSize, QMimeData, Signal, QVariantAnimation, QEasingCurve, QTimer
-from PySide6.QtGui import QColor, QCursor, QPainter, QPainterPath, QPen, QLinearGradient, QRadialGradient, QDrag, QPixmap
-from PySide6.QtWidgets import QAbstractScrollArea, QFrame, QPushButton, QWidget, QApplication, QStyleOptionButton, QStyle, QSlider, QCheckBox, QLabel
+
+from PySide6.QtCore import (
+    QEasingCurve,
+    QMimeData,
+    QPointF,
+    QRectF,
+    QSize,
+    Qt,
+    QVariantAnimation,
+    Signal,
+)
+from PySide6.QtGui import (
+    QColor,
+    QCursor,
+    QDrag,
+    QLinearGradient,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QPixmap,
+    QRadialGradient,
+)
+from PySide6.QtWidgets import (
+    QAbstractScrollArea,
+    QApplication,
+    QCheckBox,
+    QFrame,
+    QLabel,
+    QPushButton,
+    QStyle,
+    QStyleOptionButton,
+    QWidget,
+)
+
 from awesomeui.controls import IOSSwitch as BaseSwitch
 from src.gui.theme import ColorThemeManager
+
 from .motion import animate
 
 
@@ -73,8 +105,6 @@ def paint_dock_glass(p,shape,subtle=False):
 class LiquidSwitch(BaseSwitch):
     def __init__(self,checked=False,parent=None):
         super().__init__(checked,parent)
-        from .sounds import UiSounds
-        self.clicked.connect(UiSounds.instance().play_toggle)
 
     def setChecked(self, checked):
         super().setChecked(checked)
@@ -676,6 +706,7 @@ class LiquidActionButton(LiquidButton):
         p.setPen(QColor(c.text_primary))
         p.setFont(QFont('Inter Variable',12,QFont.DemiBold))
         from PySide6.QtGui import QFontMetricsF
+
         from src.gui.theme import theme_pixmap
         title_rect=QRectF(rect)
         if self._action_footer:
@@ -773,8 +804,6 @@ class MagnifyingArtwork(QLabel):
 class GlassCheckBox(QCheckBox):
     def __init__(self,text='',parent=None):
         super().__init__(text,parent)
-        from .sounds import UiSounds
-        self.clicked.connect(UiSounds.instance().play_toggle)
         self.amount=0.0
         self.motion=QVariantAnimation(self)
         self.motion.setDuration(180)
@@ -957,8 +986,6 @@ class LiquidCard(GlassPanel):
 class FavoriteButton(QPushButton):
     def __init__(self,parent=None):
         super().__init__(parent)
-        from .sounds import UiSounds
-        self.clicked.connect(UiSounds.instance().play_favorite)
 
     def paintEvent(self,event):
         if self.isChecked():

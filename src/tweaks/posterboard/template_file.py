@@ -1,19 +1,30 @@
 import os
 import uuid
 import zipfile
-
-from typing import Optional
-from tempfile import TemporaryDirectory
 from shutil import rmtree
+from tempfile import TemporaryDirectory
+from typing import Optional
 
+from src.devicemanagement.constants import Version
+from src.exceptions.posterboard_exceptions import PBTemplateException
 from src.utils.i18n import QCoreApplication
 
-from .tendie_file import TendieFile
+from .community_tweaks import (
+    MAX_SOURCE_BYTES,
+    MAX_TOTAL_SOURCE_BYTES,
+    CommunityTweak,
+    parse_tweaks,
+)
 from .template_definition import TemplateDefinition
-from .template_options import OptionType, TemplateOption, ReplaceOption, RemoveOption, SetOption, PickerOption
-from .community_tweaks import CommunityTweak, MAX_SOURCE_BYTES, MAX_TOTAL_SOURCE_BYTES, parse_tweaks
-from src.exceptions.posterboard_exceptions import PBTemplateException
-from src.devicemanagement.constants import Version
+from .template_options import (
+    OptionType,
+    PickerOption,
+    RemoveOption,
+    ReplaceOption,
+    SetOption,
+    TemplateOption,
+)
+from .tendie_file import TendieFile
 
 CURRENT_FORMAT = 3
 
@@ -56,9 +67,9 @@ class TemplateFile(TendieFile):
             if self.json_path is not None:
                 # load the options; a template with only community tweaks
                 # needs neither options nor a domain
-                if not 'options' in data and not 'tweaks' in data:
+                if 'options' not in data and 'tweaks' not in data:
                     raise PBTemplateException(path, QCoreApplication.tr("No options were found in the config. Make sure that it is in the correct format."))
-                if not 'domain' in data and not 'tweaks' in data:
+                if 'domain' not in data and 'tweaks' not in data:
                     raise PBTemplateException(path, QCoreApplication.tr("This config does not have a valid domain!"))
                 self.domain = data.get('domain', "")
                 # add backwards compatibility for my mistake in the v5.2 betas
@@ -177,6 +188,7 @@ class TemplateFile(TendieFile):
         # apply the options
         parent_path = os.path.join(zip_output, os.path.dirname(self.json_path))
         from src.controllers.patch_session import patch_batch
+
         from .template_options.set_option import SetOption
         with patch_batch() as patches:
             for option in self.options:

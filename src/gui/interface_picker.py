@@ -1,7 +1,7 @@
-from PySide6.QtCore import Qt, QCoreApplication
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QFrame
+from PySide6.QtCore import QCoreApplication, Qt
+from PySide6.QtWidgets import QDialog, QFrame, QLabel, QVBoxLayout
 
-from src.gui.theme import ColorThemeManager, t
+from src.gui.theme import ColorThemeManager
 
 
 class HomeWidgetPickerDialog(QDialog):

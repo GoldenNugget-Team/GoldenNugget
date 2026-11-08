@@ -13,15 +13,12 @@ import json
 import os
 import ssl
 import time
+import urllib.request
 from typing import Optional
 
-import urllib.request
-
-from src.utils.i18n import QCoreApplication
+from src.tweaks.registry import SECTION_FEATURES, SPECS_BY_SECTION
 from src.utils.paths import app_data_dir, brand_dir
-
 from src.version import App_Version as _APP_VERSION
-from src.tweaks.registry import SPECS_BY_SECTION, SECTION_FEATURES
 
 RULES_URL = ("https://raw.githubusercontent.com/GoldenNugget-Team/"
              "GoldenNugget/main/hotload_rules.json")

@@ -17,9 +17,9 @@ class FeatureNews:
         return cls._instance
 
     def __init__(self):
-        from src.tweaks.registry import SPECS_BY_ID
-        from src.tweaks.daemons_tweak import Daemon, INTERFACE_KEYS, DANGEROUS_KEYS
         from src.tweaks.daemon_descriptions import DAEMON_DESCRIPTIONS
+        from src.tweaks.daemons_tweak import DANGEROUS_KEYS, INTERFACE_KEYS, Daemon
+        from src.tweaks.registry import SPECS_BY_ID
         self.controls = {
             'tweak:' + spec.id.name: {'title': spec.title, 'kind': spec.kind.value,
                                       'description': spec.description}

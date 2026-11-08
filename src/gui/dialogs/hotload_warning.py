@@ -6,8 +6,8 @@ the confirmation dialog is Qt.
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import QMessageBox
 from PySide6.QtCore import QCoreApplication
+from PySide6.QtWidgets import QMessageBox
 
 
 def confirm_flagged(rule: dict, parent=None) -> bool:

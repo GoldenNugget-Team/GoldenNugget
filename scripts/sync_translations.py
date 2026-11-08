@@ -5,11 +5,11 @@ Sync translations from gNugget-i18n submodule to GoldenNugget.
 Usage: python sync_translations.py <source_dir> <target_dir>
 """
 import argparse
+import shutil
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
-import shutil
-import subprocess
 
 
 def parse_ts_file(filepath: Path) -> dict:

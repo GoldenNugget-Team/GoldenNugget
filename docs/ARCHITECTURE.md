@@ -657,9 +657,6 @@ and is not the live navigator. Real navigation uses:
   and the Batter Builder link. Each has a home tile, sidebar item and independent
   HotLoad feature visibility. Catalog template installs refresh `ios_templates`.
 
-- **Classic** — Qt Designer (`mainwindow.ui` → `mainwindow_ui.py`) wrappers in
-  `pages/main/*` and `pages/tools/*`. The classic Daemons page literally embeds
-  the shared `IOSDaemonsContent`.
 - **iOS-style** — hand-built widgets in `ios/`, rendered from the registry
   where applicable; a single shared `IOSNavBar` is reconfigured per page.
 - Both bind to the same `tweaks` instances — toggling in either UI changes the

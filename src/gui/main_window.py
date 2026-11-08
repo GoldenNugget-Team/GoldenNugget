@@ -29,42 +29,36 @@ def _still_running(worker) -> bool:
     except RuntimeError:
         return False
 
-from src.qt.mainwindow_ui import Ui_Nugget
-import src.gui.pages as Pages
-
-from src.gui.translator import Translator
 from src.controllers.preset_manager import PresetManager
-
-from src.gui.pages.pages_list import Page
+from src.gui.app_shell import ShellUI
+from src.gui.translator import Translator
 
 if TYPE_CHECKING:
     from src.devicemanagement.device_manager import DeviceManager
 
-from src.gui.ios.theme_manager import ThemeManager
-from src.gui.ios.home import IOSHomePage
-from src.gui.ios.tweaks import IOSTweaksPage, IOSSectionPage
-from src.gui.ios.posterboard import IOSPosterboardPage
-from src.gui.ios.templates import IOSTemplatesPage
-from src.gui.ios.daemons import IOSDaemonsPage
 from src.gui.ios.apply import IOSApplyPage
-from src.gui.ios.settings import IOSSettingsPage
-from src.gui.ios.presets import IOSPresetsPage
 from src.gui.ios.catalog import IOSCatalogPage
-from src.gui.ios.statusbar import IOSStatusBarPage
+from src.gui.ios.connect_placeholder import ConnectDevicePlaceholder
+from src.gui.ios.daemons import IOSDaemonsPage
+from src.gui.ios.home import IOSHomePage
 from src.gui.ios.icon_themes import IOSIconThemesPage
 from src.gui.ios.passcode_theme import IOSPasscodeThemePage
-from src.gui.ios.connect_placeholder import ConnectDevicePlaceholder
-from src.gui.thread_workers.apply_worker import DeviceMonitorThread
-from src.tweaks.registry import Section
-
-from src.gui.theme import ColorThemeManager, t, theme_icon, themed_stylesheet
-
+from src.gui.ios.posterboard import IOSPosterboardPage
+from src.gui.ios.presets import IOSPresetsPage
+from src.gui.ios.settings import IOSSettingsPage
+from src.gui.ios.statusbar import IOSStatusBarPage
+from src.gui.ios.templates import IOSTemplatesPage
+from src.gui.ios.theme_manager import ThemeManager
+from src.gui.ios.tweaks import IOSSectionPage, IOSTweaksPage
 from src.gui.main_window_mixins import (
     ApplyMixin,
     DeviceBarMixin,
     NavigationMixin,
     SettingsMixin,
 )
+from src.gui.theme import ColorThemeManager, t, theme_icon, themed_stylesheet
+from src.gui.thread_workers.apply_worker import DeviceMonitorThread
+from src.tweaks.registry import Section
 
 # Classic chrome (device bar + sidebar + home toolbar) uses monochrome white
 # bootstrap SVGs; they must be recolored on every theme change.
@@ -110,13 +104,12 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         self.device_manager = device_manager
         self.translator = translator
         self.settings = self.translator.settings
-        self.ui = Ui_Nugget()
-        self.ui.setupUi(self)
+        self.ui = ShellUI()
         from src.gui.widgets import NavigationSidebar
         self.ui.sidebar.hide()
         self.ui.sidebar = NavigationSidebar(self.ui, self)
-        # Designer pins the window to exactly 1000x600 (min == max). Keep that
-        # as the minimum, but let the user grow it: at 600px most pages scroll.
+        # Window floor: exactly 1000x600 (min == max). Keep that as the
+        # minimum, but let the user grow it: at 600px most pages scroll.
         self.setMaximumSize(16777215, 16777215)  # QWIDGETSIZE_MAX
         self.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
                            QtWidgets.QSizePolicy.Preferred)
@@ -161,12 +154,6 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         self.ui.applyPageBtn.hide()
         self.ui.sidebarDiv1.hide()
         self.ui.sidebarDiv2.hide()
-
-        # pre-load the pages
-        self.pages = {
-            Page.Home: Pages.Home(window=self, ui=self.ui),
-            Page.Daemons: Pages.Daemons(ui=self.ui, window=self)
-        }
 
         # theme manager stores the active UI mode (classic sidebar shell vs
         # full-screen iOS); apply_theme() below applies it
@@ -334,8 +321,7 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
 
         # Update the app version/build number label
         self.updateAppVersionLabel()
-        self.pages[Page.Home].load()
-        
+
         ## DEVICE BAR
         self.ui.refreshBtn.clicked.connect(self.refresh_devices)
         self.ui.refreshBtn.setToolTip(QCoreApplication.translate("Nugget", "Refresh connected devices"))
@@ -487,7 +473,10 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         # Linux: usbmuxd / libimobiledevice are required to see an iPhone.
         # Offer to install them (the system asks for the password).
         if "--test-mode" not in sys.argv:
-            from src.gui.dialogs.linux_deps_dialog import prompt_and_install, should_prompt_on_startup
+            from src.gui.dialogs.linux_deps_dialog import (
+                prompt_and_install,
+                should_prompt_on_startup,
+            )
             if should_prompt_on_startup(self):
                 prompt_and_install(self, from_startup=True)
 
@@ -519,9 +508,9 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
             if widget is not None:
                 widget.setIcon(theme_icon(res, c.text_primary))
 
-        # Device picker keeps its Designer stylesheet untouched (classic look).
+        # Device picker keeps its default stylesheet (classic look).
 
-        # Version link inherits white from the .ui — restyle to text_secondary
+        # Version link inherits white from the shell defaults — restyle to text_secondary
         self.ui.phoneNameLbl.setStyleSheet(f"color: {c.text_primary};")
         self.ui.phoneVersionLbl.setText(
             f'<a style="text-decoration:none; color:{c.text_secondary}" href="#">Version</a>')

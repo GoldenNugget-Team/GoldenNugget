@@ -1,6 +1,6 @@
 """Bounded ZIP inspection shared by portable presets and wallpaper reports."""
-from pathlib import PurePosixPath
 import stat
+from pathlib import PurePosixPath
 
 MAX_FILES = 20000
 MAX_FILE_BYTES = 512 * 1024 ** 2

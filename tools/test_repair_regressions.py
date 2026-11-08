@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """Offline regressions for template isolation and backup delivery failures."""
 import asyncio
-from contextlib import ExitStack, asynccontextmanager, redirect_stdout
 import io
 import json
 import os
-from pathlib import Path
 import plistlib
 import sys
 import tempfile
-from types import SimpleNamespace
 import unittest
+from contextlib import ExitStack, asynccontextmanager, redirect_stdout
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +20,7 @@ from PySide6.QtCore import QStandardPaths
 
 QStandardPaths.setTestModeEnabled(True)
 
+import restore_cache
 from src.airlift import grappa
 from src.controllers.archive_safety import package_matches, package_path
 from src.controllers.files_handler import get_bundle_files
@@ -31,7 +32,6 @@ from src.tweaks.posterboard.template_options.picker_option import PickerOption
 from src.tweaks.posterboard.template_options.remove_option import RemoveOption
 from src.utils.file_to_restore import FileToRestore
 from tools import backup_ios
-import restore_cache
 
 
 class Repairs(unittest.TestCase):
@@ -246,8 +246,8 @@ class Repairs(unittest.TestCase):
         ld.close.assert_awaited_once()
 
     def test_gui_restore_uses_selected_cache_metadata(self):
-        from src.gui.thread_workers.apply_worker import RestoreCacheThread
         from src.devicemanagement import session
+        from src.gui.thread_workers.apply_worker import RestoreCacheThread
         from src.restore import protective
 
         dummy = SimpleNamespace(

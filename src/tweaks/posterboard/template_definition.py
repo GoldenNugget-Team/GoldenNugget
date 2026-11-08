@@ -1,6 +1,6 @@
 """Template metadata parsed independently of Qt controls and mutable selection."""
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)

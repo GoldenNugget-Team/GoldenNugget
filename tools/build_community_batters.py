@@ -52,12 +52,12 @@ OUT_DIR = os.path.join(REPO, "community-batters")
 sys.path.insert(0, REPO)
 sys.path.insert(0, BUILDER)
 
-from src.tweaks.registry import SPECS, SPECS_BY_ID, Section, Kind  # noqa: E402
-from src.tweaks.basic_plist_locations import FileLocation  # noqa: E402
-
-from batter_builder.model import Template, Tweak, Write, Control  # noqa: E402
-from batter_builder import rules  # noqa: E402
 from batter_builder import batter as batter_io  # noqa: E402
+from batter_builder import rules  # noqa: E402
+from batter_builder.model import Control, Template, Tweak, Write  # noqa: E402
+
+from src.tweaks.basic_plist_locations import FileLocation  # noqa: E402
+from src.tweaks.registry import SPECS, SPECS_BY_ID, Kind, Section  # noqa: E402
 
 AUTHOR = "Jason"
 

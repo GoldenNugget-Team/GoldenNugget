@@ -3,12 +3,19 @@ import re
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QSizePolicy
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QProgressBar,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.devicemanagement.device_capabilities import device_text
-from src.gui.widgets import IOSCard
-from src.gui.theme import ColorThemeManager, t, theme_pixmap
 from src.gui.ios.feature_icons import FEATURE_ICONS
+from src.gui.theme import ColorThemeManager, t, theme_pixmap
+from src.gui.widgets import IOSCard
 
 _STAGES = {
     "prepare": ("Preparing files", ":/icon/gear.svg"),

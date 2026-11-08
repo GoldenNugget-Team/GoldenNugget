@@ -1,8 +1,9 @@
-from PySide6.QtCore import Signal, QThread
-from PySide6.QtWidgets import QMessageBox
 import asyncio
 import queue
 import traceback
+
+from PySide6.QtCore import QThread, Signal
+from PySide6.QtWidgets import QMessageBox
 
 from src.gui.thread_workers.apply_worker import ApplyAlertMessage
 from src.gui.thread_workers.gc_guard import worker_gc_guard

@@ -9,8 +9,8 @@ from unittest.mock import Mock, patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from PySide6.QtGui import QBitmap, QRegion
-from PySide6.QtWidgets import QApplication, QLabel, QFrame, QToolButton
-from src.qt import resources_rc
+from PySide6.QtWidgets import QApplication, QFrame, QLabel, QToolButton
+
 from src.gui.ios.feature_icons import FEATURE_ICONS
 from src.gui.ios.home import IOSHomePage
 
@@ -32,8 +32,9 @@ class FeatureArtwork(unittest.TestCase):
                          'https://discord.com/users/1196529222617923660')
 
     def test_translation_credit_groups_avatars_under_one_heading(self):
-        from src.gui.ios.support_panel import SupportPanel
         from PySide6.QtWidgets import QPushButton
+
+        from src.gui.ios.support_panel import SupportPanel
         with patch('src.gui.ios.support_panel.ContributorMedia.instance') as media:
             panel = SupportPanel()
             panel._load_translation_contributors(True)
@@ -46,8 +47,9 @@ class FeatureArtwork(unittest.TestCase):
         self.assertTrue(panel._translation_status.isHidden())
 
     def test_contributor_name_uses_theme_button_instead_of_html_link(self):
-        from src.gui.ios.support_panel import SupportPanel
         from PySide6.QtWidgets import QPushButton
+
+        from src.gui.ios.support_panel import SupportPanel
         with patch('src.gui.ios.support_panel.ContributorMedia.instance'):
             entry = SupportPanel._credit('Wallpaper Website', 'SerStars',
                                          'https://cowabun.ga/wallpapers')

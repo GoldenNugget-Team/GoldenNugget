@@ -3,8 +3,10 @@ import asyncio
 import os
 import shutil
 import sys
+
 from pymobiledevice3.exceptions import NotEnoughDiskSpaceError, PyMobileDevice3Exception
-from src.utils.log_util import log_info, log_warn, log_debug
+
+from src.utils.log_util import log_debug, log_info, log_warn
 
 # How long the device may stay completely silent in the middle of a transfer
 # before the backup is abandoned. A healthy DeviceLink answers within seconds
@@ -102,7 +104,9 @@ def install_verbose(disk_space_message) -> None:
         important = None
         if sys.platform == "darwin":
             try:
-                from pymobiledevice3.services.device_link import _darwin_important_available_capacity
+                from pymobiledevice3.services.device_link import (
+                    _darwin_important_available_capacity,
+                )
                 important = _darwin_important_available_capacity(self.root_path)
             except Exception as e:
                 log_debug(f"darwin important-capacity lookup failed: {e}")
@@ -153,8 +157,9 @@ def install_contents():
     """
     try:
         import datetime as _datetime
-        from pymobiledevice3.services.device_link import APPLE_EPOCH, DeviceLink
         from typing import cast
+
+        from pymobiledevice3.services.device_link import APPLE_EPOCH, DeviceLink
     except Exception as e:  # pragma: no cover - defensive
         log_debug(f"DeviceLink contents shim not installed: {e}")
         return

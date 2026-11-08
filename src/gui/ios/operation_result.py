@@ -1,10 +1,17 @@
 """Persistent, dismissible result shared by Home and Apply."""
 from PySide6.QtCore import QCoreApplication, Qt
-from PySide6.QtWidgets import QLabel, QPushButton, QPlainTextEdit, QVBoxLayout, QHBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QPlainTextEdit,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.devicemanagement.device_capabilities import device_text
+from src.gui.theme import ColorThemeManager, t, theme_pixmap
 from src.gui.widgets import IOSCard
-from src.gui.theme import t, ColorThemeManager, theme_pixmap
 
 
 def result_text(success, error, reset_pages=None, preview=None):

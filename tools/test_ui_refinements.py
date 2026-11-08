@@ -3,28 +3,35 @@ import os
 import sys
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch
 from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from pymobiledevice3.services.mobilebackup2 import (
+    NP_LOCAL_AUTH_DISMISSED,
+    NP_LOCAL_AUTH_PRESENTED,
+    Mobilebackup2Service,
+)
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QDialog, QDialogButtonBox, QPushButton, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QDialogButtonBox,
+    QPushButton,
+    QWidget,
+)
 
-from src.qt import resources_rc
 from src.gui.dialogs.confirmation import ConfirmationDialog
 from src.gui.dialogs.reset_dialog import ResetDialog
 from src.gui.ios.components import IOSSearchField, IOSSummaryDialog, IOSSwitch
-from src.gui.ios.settings import IOSSettingsPage
 from src.gui.ios.operation_result import OperationResultCard
-from src.gui.ios.support_panel import SupportPanel, CommunityLinks
+from src.gui.ios.settings import IOSSettingsPage
+from src.gui.ios.support_panel import CommunityLinks, SupportPanel
 from src.gui.theme import ColorThemeManager
 from src.restore.protective import ProtectiveBackupService
-from pymobiledevice3.services.mobilebackup2 import (
-    Mobilebackup2Service, NP_LOCAL_AUTH_PRESENTED, NP_LOCAL_AUTH_DISMISSED,
-)
 
 
 class UIRefinementTests(unittest.TestCase):
@@ -33,7 +40,7 @@ class UIRefinementTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def test_profile_resources_work_without_optional_image_plugins(self):
-        from PySide6.QtCore import QFile, QIODevice, QResource, QCoreApplication
+        from PySide6.QtCore import QCoreApplication, QFile, QIODevice, QResource
         from PySide6.QtGui import QPixmap
         original_paths = QCoreApplication.libraryPaths()
         try:

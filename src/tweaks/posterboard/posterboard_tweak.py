@@ -1,4 +1,5 @@
 import shutil
+
 # PEP 810: defer operation-only dependencies on Python 3.15+; eager on older Python.
 __lazy_modules__ = (
     "src.controllers",
@@ -8,27 +9,31 @@ __lazy_modules__ = (
 
 import logging
 import os
-import uuid
-import traceback
 import plistlib
+import traceback
+import uuid
 from random import randint
 from shutil import copytree, rmtree
+
+from src.controllers import video_handler
+from src.controllers.aar.aar import wrap_in_aar
+from src.controllers.files_handler import get_bundle_files
+from src.controllers.plist_handler import set_plist_value
+from src.devicemanagement.constants import Version
+from src.exceptions.nugget_exception import NuggetException
+from src.exceptions.posterboard_exceptions import PBTemplateException
+from src.utils.file_to_restore import FileToRestore
 from src.utils.i18n import QCoreApplication
 
 from ..tweak_classes import Tweak
 from . import posterboard_converter
-from .tendie_file import TendieFile
-from .template_file import TemplateFile
 from .pb_config_manager import (
-    DB_FILE_NAME, PBConfigManager, create_empty_posterboard_db)
-from src.utils.file_to_restore import FileToRestore
-from src.controllers.plist_handler import set_plist_value
-from src.controllers.files_handler import get_bundle_files
-from src.controllers import video_handler
-from src.controllers.aar.aar import wrap_in_aar
-from src.exceptions.nugget_exception import NuggetException
-from src.exceptions.posterboard_exceptions import PBTemplateException
-from src.devicemanagement.constants import Version
+    DB_FILE_NAME,
+    PBConfigManager,
+    create_empty_posterboard_db,
+)
+from .template_file import TemplateFile
+from .tendie_file import TendieFile
 
 # PosterKit depth effect: the animated video layer is rendered larger than the
 # 390x844 document and pushed off-centre so the tilt parallax has travel.

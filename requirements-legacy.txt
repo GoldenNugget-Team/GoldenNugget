@@ -1,16 +1,17 @@
 # Legacy build variant for older *hosts* (e.g. a 2016 MacBook Pro capped at
-# macOS 12 Monterey). This is about the macOS floor, NOT about Python: the
-# project minimum is Python 3.10 (see requirements.txt), and nothing here is
-# needed to satisfy it.
+# macOS 12 Monterey). This is about the macOS floor, NOT about the bundle's
+# Python: the released builds use Python 3.15 (see CI), and nothing here is
+# needed to satisfy it -- BUT the PySide6 6.9.2 pin below requires Python
+# < 3.14, so this variant only ever installs under Python 3.13 or older.
 #
 # Pins:
 #   * PySide6 6.9.2 -> the last line that ships a macOS 12 wheel. Verified on
 #     PyPI: 6.9.2 ships cp39-abi3-macosx_12_0_universal2, while 6.10.0 already
 #     moved to macosx_13_0. That macOS bump is the whole reason this file
 #     exists: 6.9 keeps the app installable on old Intel Macs stuck on
-#     Monterey. The wheel is abi3, so it serves every CPython from 3.9 up
-#     (6.9.2 declares requires_python >=3.9,<3.14) -- including our 3.10 floor.
-# Everything else matches requirements.txt (all already support Python 3.10).
+#     Monterey. The wheel is abi3, so it serves every CPython from 3.9 up to
+#     the 3.13 cap of its requires_python.
+# Everything else matches requirements.txt.
 pymobiledevice3==10.7.1
 certifi
 PySide6-Essentials==6.9.2; sys_platform != 'linux'

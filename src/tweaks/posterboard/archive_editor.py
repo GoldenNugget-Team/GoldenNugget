@@ -5,7 +5,6 @@ import plistlib
 import shutil
 from pathlib import Path
 
-
 FILES = {
     "Rendering": "versions/0/com.apple.posterkit.provider.instance.renderingConfiguration.plist",
     "Clock": "versions/0/com.apple.posterkit.provider.instance.titleStyleConfiguration.plist",

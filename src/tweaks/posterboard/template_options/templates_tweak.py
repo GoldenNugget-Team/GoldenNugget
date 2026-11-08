@@ -1,13 +1,13 @@
 import os
 import uuid
 
+from src.utils.file_to_restore import FileToRestore
 from src.utils.i18n import QCoreApplication
 
 from ...tweak_classes import Tweak
-from ..template_file import TemplateFile
 from .. import community_tweaks
+from ..template_file import TemplateFile
 
-from src.utils.file_to_restore import FileToRestore
 
 class TemplatesTweak(Tweak):
     def __init__(self):

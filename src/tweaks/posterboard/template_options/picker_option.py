@@ -1,9 +1,10 @@
-from src.controllers.archive_safety import package_path, safe_member
-from . import TemplateOption
-
 import os
+from shutil import move, rmtree
 from typing import Optional
-from shutil import rmtree, move
+
+from src.controllers.archive_safety import package_path, safe_member
+
+from . import TemplateOption
 
 
 class PickerElement:
@@ -86,7 +87,7 @@ class PickerOption(TemplateOption):
             sel_options.append(self.options[self.selection])
         # delete the files that are not in use
         for opt in self.options:
-            if not opt in sel_options:
+            if opt not in sel_options:
                 for file in opt.files:
                     # delete files or directories
                     path = package_path(container_path, file)

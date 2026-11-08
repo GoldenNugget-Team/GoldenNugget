@@ -27,19 +27,25 @@ from __future__ import annotations
 
 import os
 
-from PySide6.QtCore import QCoreApplication, QTimer, Qt, QUrl, QT_TRANSLATE_NOOP
+from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication, Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices, QFont, QFontDatabase
 from PySide6.QtWidgets import (
-    QDialog, QHBoxLayout, QLabel, QPlainTextEdit,
-    QPushButton, QVBoxLayout,
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QPlainTextEdit,
+    QPushButton,
+    QVBoxLayout,
 )
 
 from src.controllers.nugget_logger import get_log_path
 from src.gui.liquid.choice_editor import GlassComboBox as QComboBox
-from src.gui.widgets import (
-    _auto_retheme, IOSSwitch, IOSSearchField,
-)
 from src.gui.theme import t
+from src.gui.widgets import (
+    IOSSearchField,
+    IOSSwitch,
+    _auto_retheme,
+)
 
 # Newest slice of the log that is ever held in memory. The rotating handler
 # writes up to 16 MiB per file, and the interesting part of a long session

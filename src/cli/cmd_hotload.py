@@ -8,8 +8,7 @@ import argparse
 import sys
 
 from src.cli.output import set_result
-
-from src.controllers.hotload import RULES_URL, _rules_path, FEATURE_TWEAKS
+from src.controllers.hotload import FEATURE_TWEAKS, RULES_URL, _rules_path
 
 
 def _settings():

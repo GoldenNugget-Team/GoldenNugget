@@ -1,4 +1,4 @@
-from PySide6.QtCore import QPointF, QRect, QRectF, Qt, QEasingCurve
+from PySide6.QtCore import QEasingCurve, QPointF, QRect, QRectF, Qt
 from PySide6.QtGui import QPainter, QRegion
 from PySide6.QtWidgets import QApplication, QWidget
 

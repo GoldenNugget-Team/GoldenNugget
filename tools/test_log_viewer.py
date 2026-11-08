@@ -38,7 +38,10 @@ from PySide6.QtWidgets import QApplication
 from src.controllers import nugget_logger
 from src.gui.dialogs import log_viewer
 from src.gui.dialogs.log_viewer import (
-    LogViewerDialog, filter_lines, record_rank, TAIL_BYTES,
+    TAIL_BYTES,
+    LogViewerDialog,
+    filter_lines,
+    record_rank,
 )
 
 PASS = 0

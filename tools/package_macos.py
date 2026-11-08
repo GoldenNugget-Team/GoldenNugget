@@ -1,5 +1,4 @@
 """Finalize the Universal2 app, verify compatibility and create ZIP and DMG."""
-from pathlib import Path
 import hashlib
 import json
 import plistlib
@@ -7,6 +6,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
 from PyInstaller.utils.osx import set_dylib_dependency_paths, sign_binary
 

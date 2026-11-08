@@ -6,10 +6,9 @@ helpers: reads the current device from ``DataSingleton`` and evaluates the
 local HotLoad rules with whatever settings object the running app exposes.
 """
 
-from src.utils.i18n import QCoreApplication
-
 from src.controllers.hotload import HotLoad
 from src.devicemanagement.data_singleton import DataSingleton
+from src.utils.i18n import QCoreApplication
 
 
 def _hotload() -> HotLoad:

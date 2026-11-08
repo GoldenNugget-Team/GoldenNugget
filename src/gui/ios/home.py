@@ -1,24 +1,42 @@
 import time
+
 from PySide6.QtCore import (
-    Qt, QCoreApplication, QT_TRANSLATE_NOOP, Slot, QTimer, QSize, QEvent, Signal, QThread,
+    QT_TRANSLATE_NOOP,
+    QCoreApplication,
+    QEvent,
+    QSize,
+    Qt,
+    QThread,
+    QTimer,
+    Signal,
+    Slot,
 )
 from PySide6.QtGui import QPainter, QPixmap
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton,
-    QComboBox, QSizePolicy, QScrollArea, QTabWidget, QBoxLayout
+    QBoxLayout,
+    QComboBox,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QSizePolicy,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
 )
 
-from src.gui.widgets import (
-    IOSCard, IOSPrimaryButton,
-)
-from src.gui.theme import t, ColorThemeManager, theme_icon, theme_pixmap
-
+from src.devicemanagement.constants import normalize_udid
+from src.devicemanagement.device_capabilities import device_os_name
+from src.devicemanagement.passcode_support import current_passcode_theme_reason
+from src.devicemanagement.storage_info import format_device_capacity
 from src.gui.ios.feature_icons import FEATURE_ICONS
 from src.gui.ios.nugget_logo import NuggetLogo
-from src.devicemanagement.device_capabilities import device_os_name
-from src.devicemanagement.constants import normalize_udid
-from src.devicemanagement.storage_info import format_device_capacity
-from src.devicemanagement.passcode_support import current_passcode_theme_reason
+from src.gui.theme import ColorThemeManager, t, theme_icon, theme_pixmap
+from src.gui.widgets import (
+    IOSCard,
+    IOSPrimaryButton,
+)
 
 
 def _restyle(widget, sheet):
@@ -48,9 +66,11 @@ class _StorageThread(QThread):
     async def _query(self):
         import asyncio
         import logging
-        from src.devicemanagement.session import lockdown_session
+
         from pymobiledevice3.services.afc import AfcService
         from pymobiledevice3.services.diagnostics import DiagnosticsService
+
+        from src.devicemanagement.session import lockdown_session
 
         async def storage():
             try:

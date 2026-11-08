@@ -4,28 +4,28 @@ on:
   workflow_dispatch:
     inputs:
       build_for_macos:
-        description: 'Build macOS Universal2 (Sonoma 14.4+, DMG and ZIP)'
+        description: "Build macOS Universal2 (Sonoma 14.4+, DMG and ZIP)"
         required: false
         default: true
         type: boolean
       build_for_windows:
-        description: 'Build Windows'
+        description: "Build Windows"
         required: false
         default: true
         type: boolean
       build_for_linux:
-        description: 'Build Linux'
+        description: "Build Linux"
         required: false
         default: true
         type: boolean
       build_for_arm_linux:
-        description: 'Build Linux ARM'
+        description: "Build Linux ARM"
         required: false
         default: true
         type: boolean
   push:
     branches: [main, release]
-    tags: ['v*']
+    tags: ["v*"]
 
 permissions:
   contents: read
@@ -53,7 +53,7 @@ jobs:
           sudo installer -pkg "$RUNNER_TEMP/python.pkg" -target /
           /Library/Frameworks/Python.framework/Versions/3.15/bin/python3.15 -m venv .crypto-env
           echo "$GITHUB_WORKSPACE/.crypto-env/bin" >> "$GITHUB_PATH"
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         id: crypto-cache
         with:
           path: .macos-cryptography-wheels
@@ -90,7 +90,7 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 60
     env:
-      MACOSX_DEPLOYMENT_TARGET: '14.4'
+      MACOSX_DEPLOYMENT_TARGET: "14.4"
     steps:
       - uses: actions/checkout@v5
       - uses: actions/download-artifact@v7
@@ -123,7 +123,7 @@ jobs:
       # compile.py refuses a single-arch slice in a Universal2 app.
       - name: Cache Rust engine build
         id: engine-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
@@ -184,7 +184,7 @@ jobs:
             dist/SHA256SUMS-macOS.txt
             dist/macOS-dependencies.txt
           if-no-files-found: error
-          
+
   build-windows:
     if: ${{ github.event_name == 'push' || github.event.inputs.build_for_windows == 'true' }}
     runs-on: windows-latest
@@ -193,16 +193,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.15'
+      - name: Setup Python via uv
+        uses: astral-sh/setup-uv@v7
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Cache Rust engine build
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~\.cargo\registry
@@ -216,12 +214,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install -U pip setuptools wheel
-          pip install -r requirements.txt
-          pip install pyuac
+          uv venv .build-env --python 3.15
+          uv pip install --python .build-env\Scripts\python.exe -U pip setuptools wheel
+          uv pip install --python .build-env\Scripts\python.exe -r requirements.txt
 
       - name: Build Windows
-        run: python compile.py
+        run: .build-env\Scripts\python.exe compile.py
 
       - name: Verify bundled engine
         shell: pwsh
@@ -341,10 +339,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.15'
+      # uv manages the toolchain itself (python-build-standalone), the same
+      # channel the x86_64 container build uses below — no runner-native CPython.
+      - name: Install uv + Python 3.15
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          uv python install 3.15
+          uv venv .build-env --python 3.15
+          echo "$GITHUB_WORKSPACE/.build-env/bin" >> "$GITHUB_PATH"
 
       - name: Install system dependencies
         run: |
@@ -358,7 +361,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Cache Rust engine build
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
@@ -377,8 +380,8 @@ jobs:
           set -uo pipefail
           installed=0
           for attempt in 1 2 3 4; do
-            if python -m pip install -U pip setuptools wheel \
-              && pip install --retries 5 --timeout 60 -r requirements.txt; then
+            if uv pip install --python .build-env/bin/python -U pip setuptools wheel \
+              && UV_HTTP_TIMEOUT=60 uv pip install --python .build-env/bin/python -r requirements.txt; then
               installed=1
               break
             fi
@@ -389,14 +392,14 @@ jobs:
             echo "::error::requirements.txt still not installable after 4 attempts"
             exit 1
           fi
-          pip check
+          uv pip check --python .build-env/bin/python
           test -x tools/sideload-engine/target/release/gn-sideload
 
       - name: Build Linux ARM
-        run: python compile.py
+        run: .build-env/bin/python compile.py
 
       - name: Glibc floor gate (ARM floor is the PySide6 wheel's manylinux_2_39)
-        run: python tools/check_glibc_floor.py --floor 2.39 dist/GoldenNugget/_internal
+        run: .build-env/bin/python tools/check_glibc_floor.py --floor 2.39 dist/GoldenNugget/_internal
 
       - name: Verify bundled engine
         run: |

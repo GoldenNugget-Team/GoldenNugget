@@ -1,9 +1,9 @@
 """One JSON document on stdout; bounded human/progress output on stderr."""
-from contextlib import redirect_stderr, redirect_stdout
-from contextvars import ContextVar
 import io
 import json
 import sys
+from contextlib import redirect_stderr, redirect_stdout
+from contextvars import ContextVar
 
 _result = ContextVar('cli_result', default=None)
 _json_mode = ContextVar('cli_json_mode', default=False)

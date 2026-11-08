@@ -207,7 +207,7 @@ class ApplyConversionTests(unittest.TestCase):
 class InvalidImportTests(unittest.TestCase):
     def test_invalid_archive_warns_and_next_wallpaper_still_imports(self):
         from src.gui.ios import posterboard as page
-        app = QApplication.instance() or QApplication([])
+        _app = QApplication.instance() or QApplication([])
         with tempfile.TemporaryDirectory() as directory:
             invalid = Path(directory) / 'broken.tendies'
             invalid.write_text('<html>Download failed</html>')

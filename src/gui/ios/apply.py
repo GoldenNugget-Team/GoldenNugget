@@ -1,12 +1,13 @@
-from PySide6.QtCore import Qt, QCoreApplication, QTimer
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QScrollArea, QPushButton
-)
+from PySide6.QtCore import QCoreApplication, Qt, QTimer
+from PySide6.QtWidgets import QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget
 
-from src.gui.widgets import (
-    IOSSectionHeader, IOSCard, IOSPrimaryButton, IOSDangerButton,
-)
 from src.gui.theme import ColorThemeManager, t
+from src.gui.widgets import (
+    IOSCard,
+    IOSDangerButton,
+    IOSPrimaryButton,
+    IOSSectionHeader,
+)
 
 
 class IOSApplyPage(QWidget):

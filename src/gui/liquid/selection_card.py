@@ -1,10 +1,23 @@
-from PySide6.QtCore import Qt, QEvent, QVariantAnimation, QEasingCurve, QPoint, Slot
-from shiboken6 import isValid
-from PySide6.QtGui import QPainter, QPainterPath, QColor, QPen, QConicalGradient, QLinearGradient, QRegion
-from PySide6.QtWidgets import (
-    QWidget, QApplication, QAbstractButton, QAbstractSpinBox, QComboBox,
-    QLineEdit, QAbstractSlider, QLabel,
+from PySide6.QtCore import QEasingCurve, QEvent, Qt, QVariantAnimation, Slot
+from PySide6.QtGui import (
+    QColor,
+    QConicalGradient,
+    QLinearGradient,
+    QPainter,
+    QPainterPath,
+    QPen,
 )
+from PySide6.QtWidgets import (
+    QAbstractButton,
+    QAbstractSlider,
+    QAbstractSpinBox,
+    QApplication,
+    QComboBox,
+    QLabel,
+    QLineEdit,
+    QWidget,
+)
+from shiboken6 import isValid
 
 
 class SelectionCard(QWidget):
@@ -209,6 +222,7 @@ def bind_selection_card(card, switch, *, favorite_feedback=False):
     card._selection_surface = SelectionCard(card, switch)
     switch._selection_surface = card._selection_surface
     from PySide6.QtGui import QFont
+
     from src.gui.theme import ColorThemeManager
     if favorite_feedback:
         from .favorite_feedback import FavoriteFeedbackLabel

@@ -1,9 +1,9 @@
 """Crash handler event routing: events for dead objects are dropped, errors in
 our own event handlers still reach the crash dialog (no device)."""
 import os
-from pathlib import Path
 import sys
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))

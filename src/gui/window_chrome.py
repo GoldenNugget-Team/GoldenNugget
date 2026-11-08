@@ -37,13 +37,40 @@ Offline regression suite: ``tools/test_window_chrome.py``.
 
 import math
 
-from PySide6.QtCore import (QCoreApplication, QEvent, QObject, QPoint, QRect,
-                            QRectF, Qt, QTimer)
-from PySide6.QtGui import (QColor, QCursor, QImage, QPainter, QPen, QPolygon,
-                           QRegion)
-from PySide6.QtWidgets import (QAbstractButton, QAbstractItemView, QAbstractSlider,
-                               QApplication, QComboBox, QHBoxLayout, QLabel,
-                               QLineEdit, QScrollBar, QTabBar, QWidget)
+from PySide6.QtCore import (
+    QCoreApplication,
+    QEvent,
+    QObject,
+    QPoint,
+    QPointF,
+    QRect,
+    QRectF,
+    Qt,
+    QTimer,
+)
+from PySide6.QtGui import (
+    QColor,
+    QCursor,
+    QGuiApplication,
+    QImage,
+    QPainter,
+    QPen,
+    QPolygon,
+    QRegion,
+)
+from PySide6.QtWidgets import (
+    QAbstractButton,
+    QAbstractItemView,
+    QAbstractSlider,
+    QApplication,
+    QComboBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QScrollBar,
+    QTabBar,
+    QWidget,
+)
 
 from src.gui import native_corners
 from src.gui.theme import ColorThemeManager, t
@@ -60,7 +87,24 @@ CORNER_STEPS = 10
 #: How close to an edge the pointer has to be to resize (px).
 RESIZE_MARGIN = 5
 
-#: Traffic-light buttons: diameter, gap and where the group starts.
+#: Buttons style. ``"mac"`` = macOS traffic lights top-left (cocoa only);
+#: ``"flat"`` = the desktop's own caption-button look — right-aligned flat
+#: buttons with glyphs on Windows and Linux, where every native title bar
+#: puts close in the top-right corner.
+CHROME_STYLE = ("mac" if QGuiApplication.platformName() == "cocoa" else "flat")
+
+#: Flat style (the OS caption buttons): each is a rectangle the size the
+#: Windows 11 title bar uses, packed with no gap at the window's right edge.
+FLAT_BUTTON_W = 44
+FLAT_BUTTON_H = 32
+FLAT_GAP = 0
+FLAT_EDGE_INSET = 8
+CONTROLS_RIGHT = CHROME_STYLE != "mac"
+
+#: The native caption-button hover: close lights up red (Windows convention).
+_CLOSE_HOVER_COLOR = "#e81123"
+
+#: Traffic-light buttons (mac style): diameter, gap and where the group starts.
 BUTTON_SIZE = 14
 BUTTON_GAP = 8
 CONTROLS_LEFT = 16
@@ -68,6 +112,10 @@ CONTROLS_TOP = 10
 
 #: Left space a top surface has to reserve for the buttons (left + width + air).
 CONTROLS_INSET = 76
+
+#: Right space a top surface reserves for the flat caption buttons
+#: (inset + 3 buttons + air). Real distance from the window edge.
+CONTROLS_TRAILING_INSET = FLAT_EDGE_INSET + 3 * FLAT_BUTTON_W + 12 if CONTROLS_RIGHT else 0
 
 #: Right space the version label keeps from the window's right edge.
 VERSION_RIGHT_INSET = 16
@@ -170,23 +218,28 @@ def cursor_for_edges(edges) -> Qt.CursorShape | None:
 
 
 class WindowButton(QAbstractButton):
-    """One traffic-light button, painted by the app.
+    """One title-bar button, painted by the app.
 
-    A filled circle in the classic colour; hovering reveals the action glyph,
-    and the whole group greys out while the window is in the background.
+    mac style: a filled circle in the classic colour; hovering reveals the
+    action glyph, and the whole group greys out while the window is in the
+    background. flat style: the OS caption button — a transparent rectangle
+    with a hairline glyph that lights up on hover (close in native red).
     """
 
-    def __init__(self, color, glyph, parent=None):
+    def __init__(self, color, glyph, parent=None, flat=False):
         super().__init__(parent)
         self._color = QColor(color)
         self._glyph = glyph
-        self.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
+        self._flat = flat
+        size = FLAT_BUTTON_W if flat else BUTTON_SIZE
+        height = FLAT_BUTTON_H if flat else BUTTON_SIZE
+        self.setFixedSize(size, height)
         self.setCursor(Qt.CursorShape.ArrowCursor)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
 
     def enterEvent(self, event):
-        # The glyph only appears on hover, so the circle has to repaint on
+        # The glyph only appears on hover, so the button has to repaint on
         # enter/leave as well as on a press.
         self.update()
         super().enterEvent(event)
@@ -198,6 +251,13 @@ class WindowButton(QAbstractButton):
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        if self._flat:
+            self._paint_flat(painter)
+        else:
+            self._paint_traffic(painter)
+        painter.end()
+
+    def _paint_traffic(self, painter):
         active = self.isActiveWindow()
         color = QColor(self._color) if active else QColor(_INACTIVE_COLOR)
         if active and self.underMouse():
@@ -210,39 +270,94 @@ class WindowButton(QAbstractButton):
         pen = QPen(QColor(0, 0, 0, 150), 1.2)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         painter.setPen(pen)
-        center = BUTTON_SIZE / 2
+        self._draw_glyph(painter, QPointF(BUTTON_SIZE / 2, BUTTON_SIZE / 2))
+
+    def _paint_flat(self, painter):
+        hovered = self.underMouse() and self.isActiveWindow()
+        colors = ColorThemeManager.instance().colors
+        if hovered:
+            # Native caption-button behaviour: close lights up red, the rest
+            # take the subtle hover wash the theme already uses for surfaces.
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(_CLOSE_HOVER_COLOR) if self._glyph == "close"
+                             else QColor(colors.surface_hover))
+            painter.drawRect(self.rect())
+            fg = QColor("white") if self._glyph == "close" \
+                else QColor(colors.text_primary)
+        else:
+            fg = QColor(colors.text_primary)
+            if not self.isActiveWindow():
+                fg.setAlphaF(0.35)
+        pen = QPen(fg, 1.0)
+        pen.setCapStyle(Qt.PenCapStyle.FlatCap)
+        painter.setPen(pen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        center = self.rect().center()
+        half = 5
+        if self._glyph == "zoom":
+            painter.drawRect(QRectF(center.x() - half, center.y() - half,
+                                    2 * half, 2 * half))
+        else:
+            if self._glyph == "close":
+                painter.drawLine(int(center.x() - half), int(center.y() - half),
+                                 int(center.x() + half), int(center.y() + half))
+                painter.drawLine(int(center.x() + half), int(center.y() - half),
+                                 int(center.x() - half), int(center.y() + half))
+            elif self._glyph == "minimize":
+                # Native Windows habit: the minimize line sits low in the button.
+                painter.drawLine(int(center.x() - half), int(center.y() + 3),
+                                 int(center.x() + half), int(center.y() + 3))
+            else:  # mac zoom should never reach the flat branch
+                painter.drawLine(int(center.x() - half), int(center.y()),
+                                 int(center.x() + half), int(center.y()))
+
+    def _draw_glyph(self, painter, center):
         half = BUTTON_SIZE / 4.6
         if self._glyph == "close":
-            painter.drawLine(int(center - half), int(center - half),
-                             int(center + half), int(center + half))
-            painter.drawLine(int(center + half), int(center - half),
-                             int(center - half), int(center + half))
+            painter.drawLine(int(center.x() - half), int(center.y() - half),
+                             int(center.x() + half), int(center.y() + half))
+            painter.drawLine(int(center.x() + half), int(center.y() - half),
+                             int(center.x() - half), int(center.y() + half))
         elif self._glyph == "minimize":
-            painter.drawLine(int(center - half), int(center),
-                             int(center + half), int(center))
+            painter.drawLine(int(center.x() - half), int(center.y()),
+                             int(center.x() + half), int(center.y()))
         else:  # zoom
-            painter.drawLine(int(center - half), int(center),
-                             int(center + half), int(center))
-            painter.drawLine(int(center), int(center - half),
-                             int(center), int(center + half))
+            painter.drawLine(int(center.x() - half), int(center.y()),
+                             int(center.x() + half), int(center.y()))
+            painter.drawLine(int(center.x()), int(center.y() - half),
+                             int(center.x()), int(center.y() + half))
 
 
 class WindowControls(QWidget):
-    """The window's own title-bar buttons, bound to *window*."""
+    """The window's own title-bar buttons, bound to *window*.
+
+    mac style floats the traffic lights as a spaced row; the flat style packs
+    the buttons the way the OS title bar does (Windows/Linux: the close button
+    is always the last of a right-hand group).
+    """
 
     def __init__(self, window):
         super().__init__(window)
         self._window = window
         row = QHBoxLayout(self)
         row.setContentsMargins(0, 0, 0, 0)
-        row.setSpacing(BUTTON_GAP)
-        self.close_btn = WindowButton(_CLOSE_COLOR, "close", self)
-        self.minimize_btn = WindowButton(_MINIMIZE_COLOR, "minimize", self)
-        self.zoom_btn = WindowButton(_ZOOM_COLOR, "zoom", self)
-        for button in (self.close_btn, self.minimize_btn, self.zoom_btn):
+        row.setSpacing(FLAT_GAP if CONTROLS_RIGHT else BUTTON_GAP)
+        width, height = FLAT_BUTTON_W, FLAT_BUTTON_H
+        if CONTROLS_RIGHT:
+            self.minimize_btn = WindowButton(_MINIMIZE_COLOR, "minimize", self, flat=True)
+            self.zoom_btn = WindowButton(_ZOOM_COLOR, "zoom", self, flat=True)
+            self.close_btn = WindowButton(_CLOSE_COLOR, "close", self, flat=True)
+            buttons = (self.minimize_btn, self.zoom_btn, self.close_btn)
+            width = 3 * FLAT_BUTTON_W
+        else:
+            self.close_btn = WindowButton(_CLOSE_COLOR, "close", self)
+            self.minimize_btn = WindowButton(_MINIMIZE_COLOR, "minimize", self)
+            self.zoom_btn = WindowButton(_ZOOM_COLOR, "zoom", self)
+            buttons = (self.close_btn, self.minimize_btn, self.zoom_btn)
+            width = 3 * BUTTON_SIZE + 2 * BUTTON_GAP
+        for button in buttons:
             row.addWidget(button)
-        width = 3 * BUTTON_SIZE + 2 * BUTTON_GAP
-        self.setFixedSize(width, BUTTON_SIZE)
+        self.setFixedSize(width, height)
         self.close_btn.setToolTip(QCoreApplication.translate("Nugget", "Close"))
         self.minimize_btn.setToolTip(
             QCoreApplication.translate("Nugget", "Minimize"))
@@ -428,7 +543,9 @@ class WindowChrome(QObject):
         self._strip = _TitleStrip(window, self)
 
         if header is not None and hasattr(header, "set_leading_inset"):
-            header.set_leading_inset(CONTROLS_INSET)
+            header.set_leading_inset(0 if CONTROLS_RIGHT else CONTROLS_INSET)
+        if header is not None and hasattr(header, "set_trailing_inset"):
+            header.set_trailing_inset(CONTROLS_TRAILING_INSET)
         if sidebar is not None and hasattr(sidebar, "set_top_inset"):
             sidebar.set_top_inset(TITLE_BAR_HEIGHT)
         for page in pages:
@@ -529,16 +646,28 @@ class WindowChrome(QObject):
         """Re-place the buttons and re-cut the window's rounded corners."""
         self._strip.refresh_geometry(self._window.width())
         self._strip.raise_()
-        self.controls.move(CONTROLS_LEFT, CONTROLS_TOP)
+        if CONTROLS_RIGHT:
+            # The OS habit (Windows/Linux): the caption group ends in the
+            # top-right corner, the free corner air keeps the rounded clip.
+            self.controls.move(self._window.width() - self.controls.width()
+                               - FLAT_EDGE_INSET, FLAT_EDGE_INSET)
+        else:
+            self.controls.move(CONTROLS_LEFT, CONTROLS_TOP)
         self.controls.raise_()
         # The name sits centred over the window's top strip (where a native
         # title bar would draw it); it is re-centred on every resize.
-        self.title.move((self._window.width() - self.title.width()) // 2,
-                        CONTROLS_TOP + (BUTTON_SIZE - self.title.height()) // 2)
+        mid_top = CONTROLS_TOP + (BUTTON_SIZE - self.title.height()) // 2
+        self.title.move((self._window.width() - self.title.width()) // 2, mid_top)
         self.title.raise_()
-        self.version.move(self._window.width() - self.version.width()
-                          - VERSION_RIGHT_INSET,
-                          CONTROLS_TOP + (BUTTON_SIZE - self.version.height()) // 2)
+        # Where a native title bar would not put a build tag: away from the
+        # buttons' corner (right on mac, left under the flat style).
+        if CONTROLS_RIGHT:
+            self.version.move(VERSION_RIGHT_INSET,
+                              FLAT_EDGE_INSET + (FLAT_BUTTON_H
+                                                 - self.version.height()) // 2)
+        else:
+            self.version.move(self._window.width() - self.version.width()
+                              - VERSION_RIGHT_INSET, mid_top)
         self.version.raise_()
         self._sync_title()
         self._apply_shape()

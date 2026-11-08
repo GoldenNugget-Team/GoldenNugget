@@ -1,12 +1,12 @@
-from src.utils.paths import app_data_dir
-from src.utils.settings import Settings
-from os import path, makedirs
+from os import makedirs, path
 from os import remove as rmfile
 from shutil import copyfile
 from typing import Optional
 
 from src.tweaks.posterboard.pb_config_item import PBConfigItem
-from src.controllers.settings import Settings
+from src.utils.paths import app_data_dir
+from src.utils.settings import Settings
+
 
 class PreferenceManager:
     def __init__(self, settings: Settings):

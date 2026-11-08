@@ -3,8 +3,8 @@ import asyncio
 from contextvars import ContextVar
 from threading import Event, Lock
 
-from src.utils.i18n import QCoreApplication
 from src.exceptions.nugget_exception import NuggetException
+from src.utils.i18n import QCoreApplication
 
 current_find_my_wait = ContextVar("find_my_wait", default=None)
 

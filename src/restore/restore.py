@@ -7,7 +7,6 @@ __lazy_modules__ = (
 )
 
 import asyncio
-from src.utils.async_disk import disk_call
 import os
 import plistlib
 import shutil
@@ -16,45 +15,59 @@ import tempfile
 import time
 from pathlib import Path
 
-from src.utils.i18n import QCoreApplication
-from src.devicemanagement.progress_status import OperationStatus
-
-from . import backup, perform_restore, reboot_device
-from src.utils.file_to_restore import FileToRestore, _FileMode
-from src.utils.preference_reset import PreferenceKeyReset
-from .lastapply import is_ios27_scaffolding, load_lastapply, sparse_signature
-from .skip_setup27 import skip_all_setup27
-from .afc_media import (
-    afc_media_dir_for, describe_media_store,
-    media_store_verified, restore_media_via_afc,
-)
-from .recovery import RecoverySource, RecoveryBackend, prepare_recovery
-from .context import RestoreOptions, RestoreSession
-from .inject import _is_encrypted_backup
-from .protective import (
-    PreparedBackup,
-    clean_backup_for_restore,
-    discard_restore_view,
-    inject_files_into_backup,
-    log_error,
-    log_warn,
-    log_info,
-    make_restore_view,
-    new_protective_backup_dir,
-    perform_protective_backup,
-    prune_protective_backups,
-    verify_backup_payloads,
-    WORKING_COPY_PREFIX,
+from pymobiledevice3.exceptions import (
+    CloudConfigurationAlreadyPresentError,
+    ConnectionTerminatedError,
+    InvalidServiceError,
+    PasswordRequiredError,
 )
 from pymobiledevice3.lockdown import LockdownClient, create_using_usbmux
 from pymobiledevice3.services.installation_proxy import InstallationProxyService
 from pymobiledevice3.services.lockdown_service import LockdownService
 from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service
-from pymobiledevice3.exceptions import ConnectionTerminatedError, PasswordRequiredError, InvalidServiceError, CloudConfigurationAlreadyPresentError
 
+from src.devicemanagement.progress_status import OperationStatus
+from src.exceptions.device_errors import (
+    is_connection_error,
+    is_device_lock_required_error,
+    is_device_locked_error,
+    is_find_my_error,
+    is_icloud_restore_in_progress,
+    is_transient_restore_error,
+)
 from src.exceptions.nugget_exception import NuggetException
-from src.exceptions.device_errors import is_transient_restore_error, is_find_my_error, is_icloud_restore_in_progress
-from src.exceptions.device_errors import is_connection_error, is_device_lock_required_error, is_device_locked_error
+from src.utils.async_disk import disk_call
+from src.utils.file_to_restore import FileToRestore, _FileMode
+from src.utils.i18n import QCoreApplication
+from src.utils.preference_reset import PreferenceKeyReset
+
+from . import backup, perform_restore, reboot_device
+from .afc_media import (
+    afc_media_dir_for,
+    describe_media_store,
+    media_store_verified,
+    restore_media_via_afc,
+)
+from .context import RestoreOptions
+from .inject import _is_encrypted_backup
+from .lastapply import is_ios27_scaffolding, load_lastapply, sparse_signature
+from .protective import (
+    WORKING_COPY_PREFIX,
+    PreparedBackup,
+    clean_backup_for_restore,
+    discard_restore_view,
+    inject_files_into_backup,
+    log_error,
+    log_info,
+    log_warn,
+    make_restore_view,
+    new_protective_backup_dir,
+    perform_protective_backup,
+    prune_protective_backups,
+    verify_backup_payloads,
+)
+from .skip_setup27 import skip_all_setup27
+
 
 def concat_regular_file(file: FileToRestore, files_list: list[FileToRestore], last_domain: str, last_path: str):
     path, name = os.path.split(file.restore_path)
@@ -187,10 +200,16 @@ async def _wait_for_device(udid: str, progress_callback,
     fresh waiting cycle instead of killing the restore.
     """
     from pymobiledevice3.exceptions import (
-        DeviceNotFoundError, PasswordRequiredError, NotPairedError,
-        ConnectionFailedError, ConnectionTerminatedError, LockdownError,
-        MissingValueError, PairingError, FatalPairingError,
+        ConnectionFailedError,
+        ConnectionTerminatedError,
+        DeviceNotFoundError,
+        FatalPairingError,
+        LockdownError,
+        MissingValueError,
         MuxException,
+        NotPairedError,
+        PairingError,
+        PasswordRequiredError,
     )
     while True:
         start = time.monotonic()
@@ -354,7 +373,7 @@ async def _restore_protective_backup(lc: LockdownClient, backup_root: str,
 
     max_retries = 18
 
-    from src.restore.find_my_wait import current_find_my_wait, ApplyCancelledError
+    from src.restore.find_my_wait import ApplyCancelledError, current_find_my_wait
     wait_control = current_find_my_wait.get()
     restore_started = False
 
@@ -946,6 +965,7 @@ async def _restore_ios27(back: backup.Backup, reboot: bool,
         # here would turn a recoverable failure into permanent loss. The
         # prefix is the guard, and the check below makes it fail safe.
         import glob as _glob
+
         from .protective import protective_persistent_base
         _persistent_base = str(protective_persistent_base())
         for stale in sorted(_glob.glob(os.path.join(

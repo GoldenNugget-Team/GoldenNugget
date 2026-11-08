@@ -1,16 +1,33 @@
 """Theme-aware Qt controls; the host supplies a theme via configure_theme."""
 from PySide6.QtCore import (
-    Qt, QCoreApplication, Signal as pyqtSignal, QSize, QRectF,
-    QPropertyAnimation, QEasingCurve, Property, QEvent,
+    Property,
+    QCoreApplication,
+    QEasingCurve,
+    QEvent,
+    QPropertyAnimation,
+    QRectF,
+    QSize,
+    Qt,
 )
-from PySide6.QtGui import QPainter, QColor, QIcon
+from PySide6.QtCore import (
+    Signal as pyqtSignal,
+)
+from PySide6.QtGui import QColor, QIcon, QPainter
 from PySide6.QtWidgets import (
-    QWidget, QHBoxLayout, QLabel, QPushButton, QFrame,
-    QSizePolicy, QDialog, QDialogButtonBox, QLineEdit, QSpinBox,
-    QDoubleSpinBox, QVBoxLayout, QScrollArea, QButtonGroup, QToolButton,
+    QButtonGroup,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QScrollArea,
+    QSizePolicy,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
 )
 
-from .theme import t, ColorThemeManager, theme_pixmap, connect_visible_theme
+from .theme import ColorThemeManager, connect_visible_theme, t, theme_pixmap
 
 
 def _auto_retheme(widget):

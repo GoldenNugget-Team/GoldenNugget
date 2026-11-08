@@ -16,9 +16,9 @@ import asyncio
 import sys
 from pathlib import Path
 
+from pymobiledevice3.exceptions import MuxException
 from pymobiledevice3.lockdown import create_using_usbmux
 from pymobiledevice3.services.afc import AfcService
-from pymobiledevice3.exceptions import MuxException
 
 
 async def connect_device(udid=None):

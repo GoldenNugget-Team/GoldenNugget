@@ -24,14 +24,18 @@ import sys
 import threading
 from typing import Callable, Optional
 
-from shiboken6 import isValid
-
 from PySide6.QtCore import QCoreApplication, QEvent, QObject, QThread, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
-    QApplication, QDialog, QHBoxLayout, QLabel, QPlainTextEdit, QPushButton,
+    QApplication,
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QPlainTextEdit,
+    QPushButton,
     QVBoxLayout,
 )
+from shiboken6 import isValid
 
 from src.controllers.nugget_logger import get_log_path
 from src.exceptions import crash_handler as core

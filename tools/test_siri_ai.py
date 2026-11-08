@@ -1,24 +1,29 @@
 """Offline coverage for Siri AI payloads and protective manifest delivery."""
+import asyncio
 import hashlib
 import os
-from pathlib import Path
 import plistlib
 import sqlite3
 import sys
 import tempfile
 import unittest
 from contextlib import closing
-from unittest.mock import patch, AsyncMock, Mock
+from pathlib import Path
 from types import SimpleNamespace
-import asyncio
+from unittest.mock import AsyncMock, Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
-from src.tweaks.siri_ai import (
-    DOMAIN, RELATIVE_PATH, SiriAITweak, payload_file, require_protective_delivery)
 from src.exceptions.nugget_exception import NuggetException
 from src.restore.inject import inject_files_into_backup
+from src.tweaks.siri_ai import (
+    DOMAIN,
+    RELATIVE_PATH,
+    SiriAITweak,
+    payload_file,
+    require_protective_delivery,
+)
 from tools.test_inject_ownership import make_pruned_backup
 
 
@@ -112,10 +117,10 @@ class SiriAITests(unittest.TestCase):
                         self.assertEqual((dev / file_id[:2] / file_id).read_bytes(), file.contents)
 
     def test_registry_and_compatibility(self):
-        from src.tweaks.tweak_loader import load_plist_tweaks
-        from src.tweaks.tweaks import tweaks, TweakID
-        from src.tweaks.registry import SPECS_BY_ID
         from src.gui.ios.compat import compatibility_reasons
+        from src.tweaks.registry import SPECS_BY_ID
+        from src.tweaks.tweak_loader import load_plist_tweaks
+        from src.tweaks.tweaks import TweakID, tweaks
         load_plist_tweaks()
         for tid in (TweakID.SiriAI, TweakID.ResetSiriAIOverrides):
             self.assertIsInstance(tweaks[tid], SiriAITweak)

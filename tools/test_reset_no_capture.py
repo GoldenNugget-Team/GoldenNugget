@@ -202,7 +202,7 @@ def test_ios26_clears_app_mirrors():
 
 def test_registry_reset_coverage():
     print("\nReset covers registry preference files, including previously omitted domains")
-    from src.tweaks.registry import SPECS, Section, HOME_PREFIX, managed_pref_target
+    from src.tweaks.registry import HOME_PREFIX, SPECS, Section, managed_pref_target
     sections = {
         Page.Springboard: Section.SPRINGBOARD,
         Page.InternalOptions: Section.INTERNAL,
@@ -246,8 +246,7 @@ def test_ios26_daemons_page_still_written():
 
 def test_ios27_status_bar_resets_the_archive():
     print("\niOS 27 Status Bar reset: empty archive, no FeatureFlags write")
-    from src.tweaks.status_bar.statusbar_archive import (
-        is_reset_archive, carrier_names)
+    from src.tweaks.status_bar.statusbar_archive import carrier_names, is_reset_archive
 
     fake, errors, _ = run_reset("27.0", [Page.StatusBar])
     check("no exception escaped the reset", not errors, repr(errors[:1]))

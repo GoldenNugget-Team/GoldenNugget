@@ -1,6 +1,8 @@
-from typing import Any
-from .patch_session import current_patch_session
 import plistlib
+from typing import Any
+
+from .patch_session import current_patch_session
+
 
 def recursive_set(plist: dict, key: str, value: Any):
     new_plist: dict = plist

@@ -1,11 +1,11 @@
-from src.controllers.archive_safety import package_matches
-from . import TemplateOption
+import os
+from typing import Optional
 
+from src.controllers.archive_safety import package_matches
 from src.exceptions.nugget_exception import NuggetException
 from src.utils.i18n import QCoreApplication
 
-import os
-from typing import Optional
+from . import TemplateOption
 
 
 class ReplaceOption(TemplateOption):

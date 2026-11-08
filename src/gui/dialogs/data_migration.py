@@ -21,7 +21,12 @@ import sys
 from PySide6.QtCore import QCoreApplication, Qt, QThread, Signal
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import (
-    QDialog, QHBoxLayout, QLabel, QProgressBar, QPushButton, QVBoxLayout,
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QProgressBar,
+    QPushButton,
+    QVBoxLayout,
 )
 
 try:  # the artwork lives in the compiled resource bundle
@@ -31,8 +36,14 @@ except Exception:  # pragma: no cover - icons are cosmetic
 
 from src.gui.theme import ColorThemeManager, t
 from src.utils.user_data_migration import (
-    MigrationPlan, MigrationResult, clear_declined, format_bytes, is_declined,
-    mark_declined, plan_migration, run_migration,
+    MigrationPlan,
+    MigrationResult,
+    clear_declined,
+    format_bytes,
+    is_declined,
+    mark_declined,
+    plan_migration,
+    run_migration,
 )
 
 ICON_PX = 104

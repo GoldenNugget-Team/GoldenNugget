@@ -7,15 +7,15 @@ file into another project and import the classes directly.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import Callable, Dict, Optional
+from typing import Dict, Optional
 
 from PySide6.QtCore import (
     QEasingCurve,
     QParallelAnimationGroup,
     QPropertyAnimation,
     QSize,
-    QTimer,
     Qt,
+    QTimer,
     Signal,
 )
 from PySide6.QtGui import QColor, QPainter, QPainterPath

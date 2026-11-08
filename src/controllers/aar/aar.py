@@ -3,10 +3,12 @@ Created by Snoolie K (0xilis) on 2025 March 18.
 Licensed under MIT. Please credit if using.
 '''
 
-import struct
 import os
 import shutil
+import struct
+
 from src.utils.payload import open_payload
+
 
 # make a .aar of one contexts.plist file
 def wrap_in_aar(input_file, input_mov, output_file):
