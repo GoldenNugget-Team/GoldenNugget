@@ -291,6 +291,24 @@ if os.name == 'nt' and python3t_dll:
         )
     print(f"[+] Verified abi3t compat DLL in bundle: {landed}")
 
+# --- WINDOWS: force the Schannel TLS backend --------------------------------
+# PySide6's Windows wheel ships no OpenSSL DLLs, so its qopenssl backend
+# resolves libssl-3-x64.dll from PATH; any unrelated OpenSSL there (e.g.
+# C:\msys64\ucrt64\bin) hard-fails with "entry point not found" as a modal
+# dialog right when the first HTTPS request fires, and the app window looks
+# empty. Windows TLS goes through Schannel - remove the OpenSSL backend
+# plugin so it never loads.
+_qtls_plugin = os.path.join("dist", "GoldenNugget", "_internal",
+                            "PySide6", "plugins", "tls", "qopensslbackend.dll")
+if os.path.isfile(_qtls_plugin):
+    os.remove(_qtls_plugin)
+    print("[-] Windows Fix: removed qopensslbackend.dll (TLS runs on Schannel)")
+_vk_qtls = os.path.join("dist", "GoldenNugget", "PySide6", "plugins", "tls",
+                        "qopensslbackend.dll")
+if os.path.isfile(_vk_qtls):
+    os.remove(_vk_qtls)
+    print("[-] Windows Fix: removed qopensslbackend.dll (flat layout)")
+
 # --- LINUX: drop system-runtime libraries from the bundle -----------------
 # libgcc_s.so.1 (pulled in as a dependency of gn-sideload/the C++ runtime)
 # is a manylinux-policy whitelisted system library: every glibc distro ships

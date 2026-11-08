@@ -13,6 +13,17 @@ import sys
 import traceback
 import warnings
 
+# PySide6 provides no OpenSSL DLLs on Windows; its qopenssl backend resolves
+# libssl-3-x64.dll from PATH instead. On dev machines with an unrelated
+# OpenSSL on PATH (e.g. C:\msys64\ucrt64\bin) that load raises the native
+# "entry point not found" hard error as a modal dialog over the hidden window
+# and the app looks empty. Silencing loader hard-errors lets Qt fall back to
+# its Schannel backend, which is what the released bundle intends to use.
+if sys.platform == 'win32':
+    import ctypes
+    _sem = ctypes.windll.kernel32.SetErrorMode(0x0001)  # SEM_FAILCRITICALERRORS
+    ctypes.windll.kernel32.SetErrorMode(_sem | 0x0001)
+
 # Add src/qt to path so resources_rc can be found
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src", "qt"))
 
