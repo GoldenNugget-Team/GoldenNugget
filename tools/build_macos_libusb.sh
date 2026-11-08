@@ -10,7 +10,11 @@ if ! [[ "$jobs" =~ ^[1-9][0-9]*$ ]]; then
   echo "::error::GOLDENNUGGET_BUILD_JOBS must be a positive integer"
   exit 1
 fi
-curl --fail --location --retry 3 --output "$build_root/libusb.tar.bz2" \
+# --retry-all-errors: curled GitHub's release CDN sometimes drops the
+# transfer mid-flight (exit 56 with a 504 from the redirect target), which
+# plain --retry does not consider transient.
+curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 \
+  --connect-timeout 30 --output "$build_root/libusb.tar.bz2" \
   https://github.com/libusb/libusb/releases/download/v1.0.30/libusb-1.0.30.tar.bz2
 echo "fea36f34f9156400209595e300840767ab1a385ede1dc7ee893015aea9c6dbaf  $build_root/libusb.tar.bz2" | shasum -a 256 -c -
 tar -xjf "$build_root/libusb.tar.bz2" -C "$build_root"
