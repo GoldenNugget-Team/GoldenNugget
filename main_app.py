@@ -35,7 +35,7 @@ warnings.filterwarnings("ignore")
 # Silence noisy Qt Wayland textinput logs (zwp_text_input_v3_leave spam)
 os.environ.setdefault("QT_LOGGING_RULES", "qt.qpa.wayland.textinput=false")
 
-from PySide6.QtCore import QCoreApplication
+from PySide6.QtCore import QCoreApplication, QTimer
 
 from src.gui.crash_ui import CrashHandlerApp, install_crash_handler
 from src.gui.logger import get_logger, setup_logging
@@ -280,7 +280,6 @@ def main() -> int:
     # ACTIVE before the modal opens. Running them synchronously right after
     # show() (before app.exec()) can leave the parent unmapped/inactive,
     # which renders the dialog transparent, stuttering or unclickable.
-    from PySide6.QtCore import QTimer
 
     def prepare_control_pages():
         if widget.ios_tweaks.content._inner is None and not getattr(widget.ios_tweaks.content, "_building", False):
