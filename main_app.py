@@ -197,6 +197,20 @@ def main() -> int:
     from src.gui.bootstrap import restore_selected_preset
     restore_selected_preset(settings, logger)
 
+    # Win: auto-dismiss the "Entry Point Not Found" modal if qopensslbackend
+    # fires before QT_TLS_BACKEND=schannel takes effect (dev machines only).
+    if sys.platform == 'win32':
+        import ctypes
+        user32 = ctypes.windll.user32
+        def _kill_bad_dialog():
+            hwnd = user32.FindWindowW(None, "Entry Point Not Found")
+            if hwnd and user32.GetWindowThreadProcessId(hwnd, None)[0] == os.getpid():
+                user32.PostMessageW(hwnd, 0x0010, 0, 0)  # WM_CLOSE
+        timer = QTimer(app)
+        timer.setInterval(200)
+        timer.timeout.connect(_kill_bad_dialog)
+        timer.start()
+
     # Import the main window module while the device-manager preload is still
     # running: the GUI import graph no longer pulls in pymobiledevice3, so the
     # two heaviest imports overlap instead of running back-to-back.
