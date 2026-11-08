@@ -100,15 +100,18 @@ class ShellUI:
         self.centralwidget = QWidget()
 
         # Parked widgets: hidden label/buttons the dead classic code touches.
+        # Parentless widgets shown by a stray show() (the device gate does
+        # ``duyBtn.show()`` when no device is connected) would open a real
+        # 640x480 window, so they hang off the never-shown centralwidget.
         self.appVersionLbl = QLabel()
         self.appVersionLbl.hide()
         self.phoneNameLbl = QLabel()
         self.phoneNameLbl.hide()
         self.phoneVersionLbl = QLabel()
         self.phoneVersionLbl.hide()
-        self.jjtechBtn = QWidget()
+        self.jjtechBtn = QWidget(self.centralwidget)
         self.jjtechBtn.hide()
-        self.duyBtn = QWidget()
+        self.duyBtn = QWidget(self.centralwidget)
 
     def __getattr__(self, name: str) -> Any:
         # Any attribute beyond the built ones belongs to a widget that died
@@ -116,6 +119,6 @@ class ShellUI:
         # setStyleSheet()/setEnabled() on it keep working as no-ops.
         if name.startswith("_"):
             raise AttributeError(name)
-        stub = QWidget()
+        stub = QWidget(self.__dict__.get("centralwidget"))
         self.__dict__[name] = stub
         return stub

@@ -106,6 +106,30 @@ def _hotload_kill_or_none(dm, hotload):
         return None
 
 
+def _force_taskbar_icon(hwnd: int, ico_path: str) -> None:
+    """Win11 sometimes refuses to draw the pixmap-derived HICON Qt puts on
+    the taskbar button (Alt-Tab shows it fine). Set real .ico assets on the
+    window and its window class directly instead."""
+    import ctypes
+    user32 = ctypes.windll.user32
+    user32.LoadImageW.restype = ctypes.c_void_p
+    user32.SendMessageW.restype = ctypes.c_void_p
+    user32.SendMessageW.argtypes = (
+        ctypes.c_void_p, ctypes.c_uint, ctypes.c_size_t, ctypes.c_void_p)
+    user32.SetClassLongPtrW.restype = ctypes.c_void_p
+    user32.SetClassLongPtrW.argtypes = (
+        ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p)
+    LR_LOADFROMFILE, IMAGE_ICON = 0x10, 1
+    small = user32.LoadImageW(None, ico_path, IMAGE_ICON, 16, 16, LR_LOADFROMFILE)
+    big = user32.LoadImageW(None, ico_path, IMAGE_ICON, 32, 32, LR_LOADFROMFILE)
+    if small:
+        user32.SendMessageW(hwnd, 0x80, 0, small)   # WM_SETICON / ICON_SMALL
+        user32.SetClassLongPtrW(hwnd, -34, small)   # GCLP_HICONSM
+    if big:
+        user32.SendMessageW(hwnd, 0x80, 1, big)     # WM_SETICON / ICON_BIG
+        user32.SetClassLongPtrW(hwnd, -14, big)     # GCLP_HICON
+
+
 def main() -> int:
     """GUI + fallback CLI dispatcher entry point (importable for the wrapper)."""
 
@@ -216,8 +240,25 @@ def main() -> int:
     install_posterboard_prompts()
 
     from PySide6.QtGui import QIcon
-    icon_path = os.path.join(getattr(sys, "_MEIPASS", os.path.dirname(__file__)), "nugget.ico")
+    base_dir = getattr(sys, "_MEIPASS", os.path.dirname(__file__))
+    if sys.platform == "darwin":
+        # macOS wears the GoldenNugget-mobile app icon (user request); the
+        # .icns ships via --add-data=src/qt and doubles as the bundle icon.
+        icon_path = os.path.join(base_dir, "src", "qt", "mobile_icon.png")
+    else:
+        icon_path = os.path.join(base_dir, "nugget.ico")
     app.setWindowIcon(QIcon(icon_path))
+    # Windows: without an explicit AppUserModelID the taskbar associates the
+    # window with python.exe and shows its (cached/default) icon while
+    # Alt-Tab still draws the correct window icon. Freeze an identity BEFORE
+    # the first window is created so the taskbar button uses our icon.
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                "com.awesomenull.goldennugget")
+        except Exception:
+            pass
 
     from src.gui.bootstrap import restore_selected_preset
     restore_selected_preset(settings, logger)
@@ -283,6 +324,8 @@ def main() -> int:
     widget.resize(max(1000, min(1100, avail.width() - 80)),
                   max(600, min(760, avail.height() - 80)))
     widget.show()
+    if sys.platform == "win32":
+        _force_taskbar_icon(int(widget.winId()), icon_path)
     from src.gui.window_activation import WindowActivationController
     widget._activation_controller = WindowActivationController(app, widget)
 
@@ -292,12 +335,8 @@ def main() -> int:
     # show() (before app.exec()) can leave the parent unmapped/inactive,
     # which renders the dialog transparent, stuttering or unclickable.
 
-    def prepare_control_pages():
-        if widget.ios_tweaks.content._inner is None and not getattr(widget.ios_tweaks.content, "_building", False):
-            widget.ios_tweaks.content.rebuild()
-        widget.ios_daemons.prepare_content()
-
-    QTimer.singleShot(0, prepare_control_pages)
+    # Tweaks/Daemons build themselves on first visit (showEvent) - exactly
+    # what the user asked for; no startup pre-warm.
 
     from src.gui.startup_services import StartupServices
     app._startup_services = StartupServices(

@@ -66,7 +66,7 @@ Replacements (all under `src/utils/`, all Qt-free):
   Windows, `$XDG_DATA_HOME/gnugget` elsewhere (the cache follows the same rule
   under `~/Library/Caches`, `%LOCALAPPDATA%`, `$XDG_CACHE_HOME`). The module is
   the single source of truth for every path — never rebuild one by hand.
-  `brand_dir(root)` returns *root* unchanged when it already names the app's
+  `brand_dir(root)` returns _root_ unchanged when it already names the app's
   folder (including the pre-rename `GoldenNugget` names), so a backup volume
   chosen before the rename keeps its existing tree.
   `legacy_app_data_dirs()` / `legacy_cache_dirs()` / `legacy_generic_dirs()` are
@@ -117,6 +117,7 @@ nothing has written to the new folder yet. The window is deliberately shaped
 like a .dmg installer (black-and-white icon left, progress bar in the middle,
 colour icon right, Migrate button under the bar); the move itself is Qt-free
 `src/utils/user_data_migration.py`:
+
 - `plan_migration()` is read-only — it lists the top-level entries, their file
   count and size, so the window can show the cost before the user commits.
 - `run_migration()` `shutil.move`s every entry (a same-volume move is an
@@ -143,7 +144,6 @@ GoldenNugget`) move to `Caches/gnugget`.
   old `~/Library/Preferences/com.goldennugget*.plist` files stay untouched.
   Offline suites: `tools/test_user_data_migration.py`,
   `tools/test_data_migration_dialog.py`.
-
 
 **No dialogs in the backend — use ports.** Questions are injected by the GUI:
 `src/gui/dialogs/posterboard_prompts.py` (`install()` wires the PosterBoard
@@ -198,7 +198,7 @@ handled by `WindowChrome`:
   `WindowTitleChange` and is `WA_TransparentForMouseEvents`, so it never eats a
   drag.
 - **Zoom** — `toggle_zoom()` fills `screen().availableGeometry()` instead of
-  `showMaximized()`: a maximized *frameless* window covers the Windows taskbar,
+  `showMaximized()`: a maximized _frameless_ window covers the Windows taskbar,
   and this behaves identically on every desktop. The previous geometry is
   restored on the way back, and the rounded mask is dropped while zoomed,
   maximized or full screen.
@@ -206,7 +206,7 @@ handled by `WindowChrome`:
   (`src/gui/native_corners.py`) and falls back to a mask built by
   `rounded_region()` (`CORNER_RADIUS`). The clip is dropped while
   zoomed/maximized/full screen, where it would cut the window's edges.
-  - *Native* — a radius belongs to the window **frame**, which a frameless
+  - _Native_ — a radius belongs to the window **frame**, which a frameless
     window does not have and Qt has no API for, so the two platforms that
     expose one are driven directly: **macOS** clips the `NSWindow` content
     view's layer (`cornerRadius` + `masksToBounds`, through `ctypes`/`objc` —
@@ -215,15 +215,15 @@ handled by `WindowChrome`:
     failure on Windows 10 is the signal to keep the mask.
     `native_corners.prepare_window()` must run at install time: the macOS clip
     only shows through if the window is non-opaque, and Qt applies
-    `WA_TranslucentBackground` when it *creates* the native window. Setting the
+    `WA_TranslucentBackground` when it _creates_ the native window. Setting the
     attribute later leaves it opaque (verified).
-  - *Guard* — the backend is chosen by **platform plugin name**
+  - _Guard_ — the backend is chosen by **platform plugin name**
     (`QGuiApplication.platformName()`, `"cocoa"`/`"windows"`), not by
     `sys.platform`: under `QT_QPA_PLATFORM=offscreen` `winId()` is a made-up
     number, and handing it to `objc_msgSend` aborts the process inside AppKit
     (an Objective-C exception Python cannot catch). Every native call is also
     wrapped, and reports failure instead of raising.
-  - *Mask (fallback)* — exact in shape but a 1-bit `QRegion`, so that edge is
+  - _Mask (fallback)_ — exact in shape but a 1-bit `QRegion`, so that edge is
     hard. The region samples the arc itself (`CORNER_STEPS` per corner) because
     `QPainterPath.toFillPolygon` flattens a 10px corner into four vertices — a
     chamfer instead of a circle — and it is built one pixel past the window
@@ -278,7 +278,7 @@ used to cost 0.3-0.5 s on its own:
     access through `MainWindow.__getattr__` → `_build_lazy_page`;
   - `set_ios_page(index)` resolves the slot through `page_at(index)`, so
     navigation always shows the real page, never the placeholder;
-  - `built_page(name)` is the *probe* form — it returns None instead of
+  - `built_page(name)` is the _probe_ form — it returns None instead of
     building. Use it wherever code only wants to know whether a page exists
     (device gate, close/exit worker checks, `refresh_catalog_badge`);
   - `call_on_page(name, method, *args)` applies a startup call to a page that
@@ -385,7 +385,7 @@ used to cost 0.3-0.5 s on its own:
   over it with `raise_()`. Do **not** turn it into a top-level `Qt.Popup` or
   `Qt.Tool`: a Popup relies on Qt's implicit mouse/keyboard grab, which not
   every platform plugin provides (when the grab fails it is silently dismissed
-  right after `show()`), and *any* top-level window gets its own decorations
+  right after `show()`), and _any_ top-level window gets its own decorations
   and taskbar entry — which looks like a stray window instead of a list growing
   out of the button. Click-away/Escape still need the app-level `_DismissOnOutsideClick`
   filter, which builds its hit rect with `popup.mapToGlobal(QPoint(0, 0))` +
@@ -445,6 +445,7 @@ used to cost 0.3-0.5 s on its own:
 Remote safety rules (cached from
 `hotload_rules.json`) that warn on / block dangerous or broken tweaks, and can
 hide whole broken features. Behaviours per rule `action`:
+
 - (default) — **block**: a flagged tweak is never applied (`rule_for` matched
   in `device_manager._apply_tweak_pass`) and enabling it shows a warning
   (`confirm_flagged` in the iOS tweaks/daemons/preset pages).
@@ -487,7 +488,7 @@ when off, nothing is hidden or blocked.
 
 ## Preset Popup (src/gui/ios/preset_menu.py)
 
-Tapping *Manage* on the home-screen preset banner opens `PresetPopup` instead of
+Tapping _Manage_ on the home-screen preset banner opens `PresetPopup` instead of
 navigating to Settings. The module is deliberately split in two:
 
 - **Actions** — `load_preset_flow`, `save_preset_flow`, `delete_preset_flow`,
@@ -500,7 +501,7 @@ navigating to Settings. The module is deliberately split in two:
 - **The panel** — `PresetPopup` is deliberately minimal: a `_PresetRow` list
   (name + `model • iOS` + tags, ✓ on the active preset) with a single footer row
   holding nothing but **Delete, pinned to the far right** (behind a stretch). A
-  single click *selects* a preset, a **double click applies it** (which restarts
+  single click _selects_ a preset, a **double click applies it** (which restarts
   the app, so it must not be a single click). It scrolls at `MAX_VISIBLE_ROWS`.
   The full toolkit (save / import / export / partial export) lives only on the
   Settings page — do not add it back to the popup.
@@ -646,7 +647,9 @@ result). Do not call `create_using_usbmux` directly in new code.
 ## Thread Workers (src/gui/thread_workers/)
 
 ### PBDBThread
+
 **File**: `src/gui/thread_workers/pb_worker.py`
+
 - **Purpose**: Generic background thread for backup-driven operations (PosterBoard database, etc.)
 - **Signals**: `progress` (float), `infoLbl` (str), `alert` (object). There is **no declared `finished`** — callers use the inherited `QThread.finished`.
 - Used by the PosterBoard "Fetch Database File" wizard (`PosterBoardDBWizard`)
@@ -654,7 +657,9 @@ result). Do not call `create_using_usbmux` directly in new code.
 ## Apply / Reset Flow (src/devicemanagement/device_manager.py)
 
 ### `_apply_changes()`
+
 Main entry point for applying tweaks. Order:
+
 1. `_raise_if_unsupported()` — hard-block iOS < 26.2
 2. `_prepare_protective_backup()` — Phase 0, **iOS 27+ only** (no Phase 0 on iOS 26): builds the protective backup that Phase 3 will restore. Default (cache OFF): a **live** `perform_protective_backup()` fresh every apply, **always carrying the PosterBoard container when wallpapers are pending** (`include_posterboard`) so the extracted DB is never stale. With the experimental cache ON: incremental refresh of the cached master; the "reuse as-is" fast path never applies when wallpapers are pending, so the extracted DB is still always fresh. Returns (PreparedBackup, posterboard_db_ok); (None, False) only when there is no UDID. It is a thin wrapper that ends in `_require_media_copy()` — when the AFC media channel carried the photos, the apply refuses to continue (device still intact) unless the media store is **verified** complete; see the AFC media store section below
 3. PosterBoard DB delivery:
@@ -672,10 +677,12 @@ Main entry point for applying tweaks. Order:
 4. `_apply_tweak_pass()` — generate all tweak files, handle backup encryption, then `start_restore(prepared_backup_root=...)`
 
 ### Protective Backup Cache (src/restore/protective_cache.py)
+
 `ProtectiveBackupCache` keeps a per-device master copy of the protective
 backup in the persistent app-data store
 (`<app data>/backup_cache/master/<udid>`; `<app data>` is the `gnugget` folder
 from `src.utils.paths`):
+
 - **Storage location is configurable** — Settings → Backup →
   "Backup/Cache Location" (`backup_storage_dir` in the `Settings("settings")`
   QSettings store; env override `GOLDENNUGGET_BACKUP_DIR` for headless tools
@@ -686,7 +693,7 @@ from `src.utils.paths`):
   pointing them at e.g. `D:\GoldenNugget\` (the app folder is appended there
   only if the root does not already end in a brand name, see
   `src.utils.paths.brand_dir`). Unset → `<app data>/{backup_cache,protective,
-  PosterBoard,Backups}`. The recovery tools (`apply_worker.py`,
+PosterBoard,Backups}`. The recovery tools (`apply_worker.py`,
   `restore_cache.py`) also search the pre-rename `GoldenNugget` trees as a
   read-only fallback (recovery of caches that were never migrated).
 - **EXPERIMENTAL, ON BY DEFAULT** — the cache engages unless the user turns
@@ -866,18 +873,20 @@ from `src.utils.paths`):
 - Calls `start_restore(prepared_backup_root=...)` internally
 
 ### `start_restore()`
+
 - Entry point for all restores (apply and reset)
 - Opens a lockdown connection and delegates to `restore_files()`
 - Passes `backup_password` for encrypted backups and `prepared_backup_root` down to the three-phase restore
 
 ### `_reset_tweaks()`
+
 - Reset flow: `_raise_if_unsupported()` → build reset files → `start_restore()`
 - **No original-plist capture.** The device's own plists are NOT pulled before
   the reset; stock values are written straight to the device on every iOS
   version. The old iOS-27-only capture (`psysbackup`, module
   `src/restore/original_plist.py`) is gone — it cost a full selective backup
   plus a lockdown session and did not buy anything: the managed-preferences
-  copy the tweaks write to already holds the *tweaked* values, so restoring a
+  copy the tweaks write to already holds the _tweaked_ values, so restoring a
   captured "original" re-wrote the very tweaks the user asked to remove. A
   reset therefore discards any non-Nugget customisation in those plists.
 - Plist reset targets for Springboard, Liquid Glass and Internal come from
@@ -912,16 +921,19 @@ from `src.utils.paths`):
 ## Restore Module (src/restore/)
 
 ### `restore_files()`
+
 - Main restore orchestration
 - Builds a `backup.Backup` object from the `FileToRestore` list
 - Always delegates to `_restore_ios27()` (six-phase) — all supported devices (26.2+) go through this path
 
 ### `_restore_ios27()` — Six-Phase Restore
+
 > The code executes **six** phases; the older docs summarised it as three, but
 > Phase 3 ends at 90% and the last 10% belongs to a reboot-before-skip, the
 > setup skip and a final reboot.
 
 **Phase 1 (0-40%)**: Protective Backup
+
 - With `prepared_backup_root` (cached master -> snapshotted, then pruned + tweak-injected **in place** and used as the restore source; fresh Phase-0 live backup -> pruned in place, no copy): no device backup runs here. Without it: `perform_protective_backup()` runs live. With `skip_protective_backup`: the phase is skipped entirely (user opted out on low disk space)
 - Otherwise: `perform_protective_backup()` — selective backup of photos, Apple ID, settings
 - `clean_backup_for_restore()` — prunes manifest to protective files only
@@ -954,6 +966,7 @@ from `src.utils.paths`):
   so the abort made the apply unrecoverable.
 
 **Phase 2 (40-60%)**: Sparse Restore — **no reboot** (default, merged phases)
+
 - `perform_restore()` applies tweaks via sparse restore with `reboot=not merge_phases`; if it drops at 0% it waits 25 s and retries once on a fresh connection.
 - **Default (`merge_phases=True`, merged phases)**: the device is NOT rebooted
   after the sparse restore, so it never enters the iOS 27 "safe state recovery"
@@ -981,6 +994,7 @@ from `src.utils.paths`):
   compared.
 
 **Phase 3 (60-90%)**: Protective Restore
+
 - Merged mode (default): reuses the SAME live `lockdown_client` from Phase 2 —
   no reconnect, no `_wait_for_device`. If the device still rebooted itself
   (a tweak that demands the security recovery), the dead session is caught
@@ -998,31 +1012,32 @@ from `src.utils.paths`):
 - `_restore_protective_backup()` — restores the Phase 1 backup, with password if encrypted; retries **18 times at fixed 3 s**, only for `_is_transient_restore_error` results
 
 **Phase 4 (90-95%)**: `reboot_device()` — **before** the media restore and
-  setup skip, so `restore_media_via_afc()` and `skip_all_setup27` run on a
-  freshly-booted device (Phase 5). A merged still-live session would
-  otherwise already carry a cloud configuration and only raise
-  `CloudConfigurationAlreadyPresentError`.
+setup skip, so `restore_media_via_afc()` and `skip_all_setup27` run on a
+freshly-booted device (Phase 5). A merged still-live session would
+otherwise already carry a cloud configuration and only raise
+`CloudConfigurationAlreadyPresentError`.
 
 **Phase 5 (95-98%)**: `_wait_for_device()` reconnects (only after a Phase 4
-  reboot; the reused live session is closed first), then
-  `restore_media_via_afc()` pushes the AFC-pulled photos/videos back (media
-  travels only on that channel — it was excluded from the backup), then
-  `skip_all_setup27()` — runs whenever skip-setup is requested, on every
-  apply including the Phase 2-skipped ones (PosterBoard-only / unchanged
-  tweaks + added wallpapers). The media push is the rescue path, so it runs on
-  whatever store exists, but it **raises** instead of reporting success when
-  the store is missing/empty or any file failed to land (the pre-apply
-  `_require_media_copy` gate is what should have prevented the wipe). When the
-  device was never wiped it
-  typically already carries a cloud configuration and
-  `SetCloudConfiguration` raises `CloudConfigurationAlreadyPresentError`,
-  which is caught and treated as success (setup already handled) instead of
-  aborting the apply.
+reboot; the reused live session is closed first), then
+`restore_media_via_afc()` pushes the AFC-pulled photos/videos back (media
+travels only on that channel — it was excluded from the backup), then
+`skip_all_setup27()` — runs whenever skip-setup is requested, on every
+apply including the Phase 2-skipped ones (PosterBoard-only / unchanged
+tweaks + added wallpapers). The media push is the rescue path, so it runs on
+whatever store exists, but it **raises** instead of reporting success when
+the store is missing/empty or any file failed to land (the pre-apply
+`_require_media_copy` gate is what should have prevented the wipe). When the
+device was never wiped it
+typically already carries a cloud configuration and
+`SetCloudConfiguration` raises `CloudConfigurationAlreadyPresentError`,
+which is caught and treated as success (setup already handled) instead of
+aborting the apply.
 
 **Phase 6 (98-100%)**: `reboot_device()` — only when auto-reboot is on, so
-  the skipped setup takes effect on the next boot.
+the skipped setup takes effect on the next boot.
 
 ### `perform_protective_backup()` (src/restore/protective.py)
+
 - Creates a selective device backup via mobilebackup2. The module keeps the
   whole live-backup pipeline (`perform_protective_backup`,
   `make_protective_working_copy`, `prune_protective_backups`,
@@ -1068,6 +1083,7 @@ from `src.utils.paths`):
   Regression suite: `tools/test_posterboard_backup_space.py`.
 
 ### `targeted_posterboard_database_backup` (wizard channel)
+
 - The "Fetch Database File" wizard (`PosterBoardDBWizard`) backs up ONLY the
   PosterBoard container via `targeted_posterboard_database_backup` in
   `src/restore/posterboard_backup.py` — no full-device backup, nothing extra
@@ -1085,6 +1101,7 @@ from `src.utils.paths`):
 ## Error Handling
 
 ### Device Lock Detection
+
 - `is_device_locked_error()` — detects explicit device-lock messages,
   lockdown password/passcode-required errors, or code 208 (`ErrorCode` /
   `MBErrorDomain/208`), never an unrelated `MBErrorDomain` error (defined **once** in
@@ -1095,6 +1112,7 @@ from `src.utils.paths`):
 - User message: "Device locked - unlock and keep awake"
 
 ### Connection Error Detection
+
 - `is_connection_error()` — detects ConnectionTerminatedError, ConnectionError,
   OSError, asyncio.TimeoutError by `isinstance`, plus lowercase substring
   heuristics ("connection", "incomplete", "terminated") — same single
@@ -1136,6 +1154,7 @@ from `src.utils.paths`):
   `QApplication` exists yet.
 
 ### Backup Encryption Handling
+
 - Checks `get_will_encrypt()` before operations — but only ONCE per apply on the
   normal path: Phase 0's backup establishes the state, `_apply_tweak_pass`
   reuses `_known_backup_encryption` instead of opening a second lockdown
@@ -1156,6 +1175,7 @@ from `src.utils.paths`):
 ## Async/Await Patterns
 
 All device communication uses async/await with pymobiledevice3:
+
 - `create_using_usbmux()` — Lockdown connection
 - `Mobilebackup2Service` — Backup/restore operations
 - `AfcService` — File system access
@@ -1165,6 +1185,7 @@ All device communication uses async/await with pymobiledevice3:
 ## Progress Reporting
 
 Progress callbacks pass through the call chain:
+
 ```
 update_label (UI)
   → _backup_progress() / progress_callback
@@ -1267,3 +1288,4 @@ from the home header button (`IOSHomePage._logs_btn` → `open_logs`).
 
 NO hardcoded lines in tests or any other stuff.
 Example is "~/Projects/GoldenNugget" in test
+Always lift project via ruff and pyright

@@ -358,15 +358,11 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         # pages are built) so the tree is polished once, not twice.
         from src.gui.liquid.experience import LiquidExperience
         self.liquid = LiquidExperience(self)
-        # Pre-build the two control pages once the window has painted, so
-        # opening Tweaks/Daemons is instant without that work landing on the
-        # startup path (both pages are constructed lazily now). The timer is a
-        # child of the window, so closing before it fires cannot call into a
-        # deleted window (a bare singleShot with a bound method would).
-        self._prewarm_timer = QtCore.QTimer(self)
-        self._prewarm_timer.setSingleShot(True)
-        self._prewarm_timer.timeout.connect(self._prewarm_control_pages)
-        self._prewarm_timer.start(1200)
+        # Tweaks/Daemons are NOT pre-built: both rebuild themselves from
+        # showEvent(), so opening either page costs its build once — exactly
+        # what the user asked for ("build a page only when they enter it").
+        # A timer prewarm was tried and dropped: it landed back-to-back with
+        # the startup device scans/imports and multiplied the visible hitches.
 
     def _reserve_page(self, name: str, factory):
         """Reserve a stack slot for a page that is built on first access.
@@ -446,10 +442,6 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
             return self._build_lazy_page(name)
         raise AttributeError(
             f"{type(self).__name__!r} object has no attribute {name!r}")
-
-    def _prewarm_control_pages(self):
-        self.ios_tweaks.prepare_content(finish=False)
-        self.ios_daemons.prepare_content(finish=False)
 
     def run_first_launch_prompts(self):
         """Present the first-launch dialogs AFTER the window is on screen.
