@@ -17,9 +17,11 @@ import warnings
 # libssl-3-x64.dll from PATH instead. On dev machines with an unrelated
 # OpenSSL on PATH (e.g. C:\msys64\ucrt64\bin) that load raises the native
 # "entry point not found" hard error as a modal dialog over the hidden window
-# and the app looks empty. Silencing loader hard-errors lets Qt fall back to
-# its Schannel backend, which is what the released bundle intends to use.
+# and the app looks empty. Force the Schannel TLS backend before any Qt
+# import so the OpenSSL backend is never loaded; also silence loader hard
+# errors as a belt-and-suspenders for dev machines.
 if sys.platform == 'win32':
+    os.environ['QT_TLS_BACKEND'] = 'schannel'
     import ctypes
     _sem = ctypes.windll.kernel32.SetErrorMode(0x0001)  # SEM_FAILCRITICALERRORS
     ctypes.windll.kernel32.SetErrorMode(_sem | 0x0001)
