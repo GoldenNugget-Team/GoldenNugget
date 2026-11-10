@@ -448,13 +448,14 @@ class IOSDaemonsContent(QWidget):
             CATEGORY_ORDER,
             DAEMON_CATEGORIES,
             REPORTS_CATEGORY,
+            RISKY_DAEMON_NAMES,
         )
         grouped = {title: [] for title in CATEGORY_ORDER}
         for card, (daemon, switch) in zip(self.daemon_cards, self.daemon_switches):
             if any(key in self.daemons_tweak.never_enable for key in daemon.value):
                 card.hide()
                 continue
-            category = "Risky tweaks" if card in self._risky_cards else REPORTS_CATEGORY if daemon in ANALYTICS_DAEMONS else DAEMON_CATEGORIES.get(daemon.name, "System Services")
+            category = "Risky tweaks" if card in self._risky_cards or daemon.name in RISKY_DAEMON_NAMES else REPORTS_CATEGORY if daemon in ANALYTICS_DAEMONS else DAEMON_CATEGORIES.get(daemon.name, "System Services")
             card.setProperty("searchText", f'{self.tr(category)} {card.property("searchText")}')
             grouped[category].append(card)
         if self._screen_time_card is not None:

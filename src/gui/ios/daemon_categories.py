@@ -69,3 +69,36 @@ DAEMON_CATEGORIES = {'Diagnostics': 'Reports & Diagnostics',
 CATEGORY_ORDER = ('Apps & Media', 'Connections & Devices', 'Siri & Intelligence', 'Accounts & Cloud', 'Accessibility & Controls', 'Reports & Diagnostics', 'System Services', 'Risky tweaks')
 REPORTS_CATEGORY = 'Reports & Diagnostics'
 ACCOUNTS_CATEGORY = 'Accounts & Cloud'
+
+
+RISKY_DAEMON_NAMES = frozenset({
+    'ATWAKEUP',
+    'Location',
+    'Maps',
+    'MediaExperience',
+    'OTA',
+    'Spotlight',
+    'accessoryupdaterd',
+    'appprotectiond',
+    'appstorecomponentsd',
+    'batteryintelligenced',
+    'betaenrollmentd',
+    'carkitd',
+    'clocksyncd',
+    'donotdisturbd',
+    'fontservicesd',
+    'keychainsharingmessagingd',
+    'maps_geocorrectiond',
+    'maps_pushdaemon',
+    'mediaplaybackd',
+    'messagesescrowd',
+    'nanobackupd',
+    'ospredictiond',
+    'powerexceptionsd',
+    'powerexperienced',
+    'safari_historyd',
+    'storagedatad',
+    'storekitd',
+    'tzlinkd',
+    'watchconnectivityd',
+})
