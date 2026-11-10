@@ -5,6 +5,160 @@ from enum import Enum
 DANGEROUS_KEYS = frozenset()
 
 class Daemon(Enum):
+    appinstallationmetricsd = ['com.apple.AppInstallationMetrics']
+    geoanalyticsd = ['com.apple.geoanalyticsd']
+    hangtelemetryd = ['com.apple.hangtelemetryd']
+    fitnessintelligenced = ['com.apple.fitnessintelligenced']
+    icloudsubscriptionoptimizerd = ['com.apple.icloudsubscriptionoptimizerd']
+    gamepolicyd = ['com.apple.gamepolicyd']
+    batteryintelligenced = ['com.apple.batteryintelligenced']
+    anomalydetectiond = ['com.apple.anomalydetectiond']
+    callintelligenced = ['com.apple.callintelligenced']
+    appmanagedfeaturesd = ['com.apple.appmanagedfeaturesd']
+    appprotectiond = ['com.apple.appprotectiond']
+    iconservicesagent = ['com.apple.iconservices.iconservicesagent']
+    biomesyncd = ['com.apple.biomesyncd']
+    eligibilityd = ['com.apple.eligibilityd']
+    mlhostd = ['com.apple.mlhostd']
+    inboxupdaterd = ['com.apple.inboxupdaterd']
+    visioncompaniond = ['com.apple.visioncompaniond']
+    icloudmailagent = ['com.apple.icloudmailagent']
+    attributionkitd = ['com.apple.attributionkitd']
+    wirelessinsightsd = ['com.apple.wirelessinsightsd']
+    axauditd = ['com.apple.accessibility.axAuditDaemon.deviceservice']
+    bookdatastored = ['com.apple.bookdatastored']
+    bookassetd = ['com.apple.bookassetd']
+    calaccessd = ['com.apple.calaccessd']
+    callhistoryd = ['com.apple.callhistoryd']
+    chronod = ['com.apple.chronod']
+    cloudphotod = ['com.apple.cloudphotod']
+    donotdisturbd = ['com.apple.donotdisturbd']
+    photoanalysisd = ['com.apple.photoanalysisd']
+    stickersd = ['com.apple.stickersd']
+    storekitd = ['com.apple.storekitd']
+    appstorecomponentsd = ['com.apple.appstorecomponentsd']
+    avatarsd = ['com.apple.avatarsd']
+    medialibraryd = ['com.apple.medialibraryd']
+    mediaartworkd = ['com.apple.mediaartworkd']
+    liveactivitiesd = ['com.apple.liveactivitiesd']
+    contactsd = ['com.apple.contactsd']
+    postersyncd = ['com.apple.contacts.postersyncd']
+    fileproviderd = ['com.apple.FileProvider']
+    axremoted = ['com.apple.accessibility.axremoted']
+    motiontrackingd = ['com.apple.accessibility.motiontrackingd']
+    biomed = ['com.apple.biomed']
+    ckdiscretionaryd = ['com.apple.ckdiscretionaryd']
+    dataaccessd = ['com.apple.dataaccess.dataaccessd']
+    exchangesyncd = ['com.apple.exchangesyncd']
+    eyedropperd = ['com.apple.uikit.eyedropperd']
+    fontservicesd = ['com.apple.fontservicesd']
+    homeenergyd = ['com.apple.homeenergyd']
+    homeeventsd = ['com.apple.homeeventsd']
+    jetpackassetd = ['com.apple.jetpackassetd']
+    mstreamd = ['com.apple.mediastream.mstreamd']
+    pointeruid = ['com.apple.PointerUI.pointeruid']
+    previewsd = ['com.apple.dt.previewsd']
+    replicatord = ['com.apple.replicatord']
+    contentlinkingd = ['com.apple.synapse.contentlinkingd']
+    cloudtelemetryd = ['com.apple.cloudtelemetryd']
+    filederivatived = ['com.apple.filederivatived']
+    shazameventsd = ['com.apple.shazameventsd']
+    visualintelligenced = ['com.apple.visualintelligenced']
+    agentstored = ['com.apple.GenerativeFunctions.agentstored']
+    cksharingmanagementd = ['com.apple.cksharingmanagementd']
+    messagesescrowd = ['com.apple.messagesescrowd']
+    imageplaygroundd = ['com.apple.imageplaygroundd']
+    callverificationd = ['com.apple.callverificationd']
+    cameraispd = ['com.apple.cameraispd']
+    clocksyncd = ['com.apple.clocksyncd']
+    dbtelemetryd = ['com.apple.libsqlite3.dbtelemetryd']
+    diagnosticscheckupd = ['com.apple.diagnosticscheckupd']
+    fpassetmanagerd = ['com.apple.fpassetmanagerd']
+    hybridsearchd = ['com.apple.hybridsearchd']
+    riskdatad = ['com.apple.riskdatad']
+    sharereportingd = ['com.apple.sharereportingd']
+    symptomsd_darwin = ['com.apple.symptomsd-darwin']
+    inputanalyticsd = ['com.apple.inputanalyticsd']
+    metrickitd = ['com.apple.metrickitd']
+    photosfaced = ['com.apple.photosface']
+    sportsd = ['com.apple.sportsd']
+    wifivelocityd = ['com.apple.wifivelocityd']
+    textunderstandingd = ['com.apple.textunderstandingd']
+    proactiveeventtrackerd = ['com.apple.proactiveeventtrackerd']
+    locationpushd = ['com.apple.locationpushd']
+    modelmanagerd = ['com.apple.modelmanagerd']
+    gamesaved = ['com.apple.gamesaved']
+    syncdefaultsd = ['com.apple.syncdefaultsd']
+    securityuploadd = ['com.apple.securityuploadd']
+    watchlistd = ['com.apple.watchlistd']
+    swiftuitraced = ['com.apple.swiftuitracingsupport.xpc']
+    soundanalysisd = ['com.apple.soundanalysisd']
+    powerdatad = ['com.apple.powerdatad']
+    facemetricsd = ['com.apple.facemetricsd']
+    contactsdonationagent = ['com.apple.contacts.donation-agent']
+    voicebankingd = ['com.apple.voicebankingd']
+    voicememod = ['com.apple.voicememod']
+    amsondevicestoraged = ['com.apple.amsondevicestoraged']
+    intelligencetasksd = ['com.apple.intelligencetasksd']
+    accessoryupdaterd = ['com.apple.accessoryupdaterd']
+    deferredmediad = ['com.apple.deferredmediad']
+    mediaplaybackd = ['com.apple.mediaplaybackd']
+    mediasetupd = ['com.apple.mediasetupd']
+    enhancedloggingd = ['com.apple.enhancedloggingd']
+    betaenrollmentd = ['com.apple.betaenrollmentd']
+    remoteappintentsd = ['com.apple.remoteappintentsd']
+    safetyalertsd = ['com.apple.safetyalertsd']
+    relatived = ['com.apple.relatived']
+    naturallanguaged = ['com.apple.naturallanguaged']
+    textcontextd = ['com.apple.textcontextd']
+    ospredictiond = ['com.apple.ospredictiond']
+    locationaccessstored = ['com.apple.locationaccessstored']
+    powerexperienced = ['com.apple.powerexperienced']
+    powerexceptionsd = ['com.apple.powerexceptionsd']
+    proximitycontrold = ['com.apple.proximitycontrold']
+    webkit_adattributiond = ['com.apple.webkit.adattributiond']
+    privacyaccountingd = ['com.apple.privacyaccountingd']
+    parsec_fbf = ['com.apple.parsec-fbf']
+    sensorkitd = ['com.apple.sensorkitd']
+    activitysharingd = ['com.apple.activitysharingd']
+    activityawardsd = ['com.apple.activityawardsd']
+    maps_geocorrectiond = ['com.apple.Maps.geocorrectiond']
+    maps_pushdaemon = ['com.apple.Maps.mapspushd']
+    safarifetcherd = ['com.apple.safarifetcherd']
+    safari_historyd = ['com.apple.Safari.History']
+    safari_safebrowsing = ['com.apple.Safari.SafeBrowsing.Service']
+    webkit_webpushd = ['com.apple.webkit.webpushd']
+    textcomposerd = ['com.apple.textcomposerd']
+    speechmodeltrainingd = ['com.apple.speechmodeltrainingd']
+    reversetemplated = ['com.apple.reversetemplated']
+    featureaccessd = ['com.apple.featureaccessd']
+    cloudsettingssyncagent = ['com.apple.cloudsettingssyncagent']
+    recentsd = ['com.apple.recentsd']
+    keychainsharingmessagingd = ['com.apple.keychainsharingmessagingd']
+    assetcachelocatorservice = ['com.apple.AssetCacheLocatorService']
+    watchconnectivityd = ['com.apple.wcd']
+    announced = ['com.apple.announced']
+    barcodesupport_notification = ['com.apple.BarcodeSupport.BarcodeNotificationService']
+    photos_imageconversionservice = ['com.apple.photos.ImageConversionService']
+    photos_videoconversionservice = ['com.apple.photos.VideoConversionService']
+    quicklook_thumbnailsagent = ['com.apple.quicklook.ThumbnailsAgent']
+    healtheventsd = ['com.apple.healtheventsd']
+    webinspectord = ['com.apple.webinspectord']
+    abdatabasedoctor = ['com.apple.ABDatabaseDoctor']
+    asktod = ['com.apple.asktod']
+    progressd = ['com.apple.progressd']
+    storagedatad = ['com.apple.storagedatad']
+    tzlinkd = ['com.apple.tzlinkd']
+    businessservicesd = ['com.apple.businessservicesd']
+    carkitd = ['com.apple.carkitd']
+    useractivityd = ['com.apple.coreservices.useractivityd']
+    maps_destinationd = ['com.apple.maps.destinationd']
+    nanobackupd = ['com.apple.nanobackupd']
+    passcodenagd = ['com.apple.managedconfiguration.passcodenagd']
+    safetycheckd = ['com.apple.safetycheckd']
+    hearingaid_heard = ['com.apple.accessibility.heard']
+    cmfsyncagent = ['com.apple.cmfsyncagent']
+
     thermalmonitord = ["com.apple.thermalmonitord"]
     OTA = [
         "com.apple.mobile.softwareupdated",
@@ -187,6 +341,163 @@ INTERFACE_DAEMONS: frozenset["Daemon"] = frozenset({
     Daemon.DuetHeuristic, Daemon.DuetExpert, Daemon.Triald,
     Daemon.Sociald,
 } | set(RECOMMENDED_ANALYTICS) | set(NOTIFICATION_RECOVERY_DAEMONS))
+
+ADDITIONAL_DAEMONS = (
+    Daemon.appinstallationmetricsd,
+    Daemon.geoanalyticsd,
+    Daemon.hangtelemetryd,
+    Daemon.fitnessintelligenced,
+    Daemon.icloudsubscriptionoptimizerd,
+    Daemon.gamepolicyd,
+    Daemon.batteryintelligenced,
+    Daemon.anomalydetectiond,
+    Daemon.callintelligenced,
+    Daemon.appmanagedfeaturesd,
+    Daemon.appprotectiond,
+    Daemon.iconservicesagent,
+    Daemon.biomesyncd,
+    Daemon.eligibilityd,
+    Daemon.mlhostd,
+    Daemon.inboxupdaterd,
+    Daemon.visioncompaniond,
+    Daemon.icloudmailagent,
+    Daemon.attributionkitd,
+    Daemon.wirelessinsightsd,
+    Daemon.axauditd,
+    Daemon.bookdatastored,
+    Daemon.bookassetd,
+    Daemon.calaccessd,
+    Daemon.callhistoryd,
+    Daemon.chronod,
+    Daemon.cloudphotod,
+    Daemon.donotdisturbd,
+    Daemon.photoanalysisd,
+    Daemon.stickersd,
+    Daemon.storekitd,
+    Daemon.appstorecomponentsd,
+    Daemon.avatarsd,
+    Daemon.medialibraryd,
+    Daemon.mediaartworkd,
+    Daemon.liveactivitiesd,
+    Daemon.contactsd,
+    Daemon.postersyncd,
+    Daemon.fileproviderd,
+    Daemon.axremoted,
+    Daemon.motiontrackingd,
+    Daemon.biomed,
+    Daemon.ckdiscretionaryd,
+    Daemon.dataaccessd,
+    Daemon.exchangesyncd,
+    Daemon.eyedropperd,
+    Daemon.fontservicesd,
+    Daemon.homeenergyd,
+    Daemon.homeeventsd,
+    Daemon.jetpackassetd,
+    Daemon.mstreamd,
+    Daemon.pointeruid,
+    Daemon.previewsd,
+    Daemon.replicatord,
+    Daemon.contentlinkingd,
+    Daemon.cloudtelemetryd,
+    Daemon.filederivatived,
+    Daemon.shazameventsd,
+    Daemon.visualintelligenced,
+    Daemon.agentstored,
+    Daemon.cksharingmanagementd,
+    Daemon.messagesescrowd,
+    Daemon.imageplaygroundd,
+    Daemon.callverificationd,
+    Daemon.cameraispd,
+    Daemon.clocksyncd,
+    Daemon.dbtelemetryd,
+    Daemon.diagnosticscheckupd,
+    Daemon.fpassetmanagerd,
+    Daemon.hybridsearchd,
+    Daemon.riskdatad,
+    Daemon.sharereportingd,
+    Daemon.symptomsd_darwin,
+    Daemon.inputanalyticsd,
+    Daemon.metrickitd,
+    Daemon.photosfaced,
+    Daemon.sportsd,
+    Daemon.wifivelocityd,
+    Daemon.textunderstandingd,
+    Daemon.proactiveeventtrackerd,
+    Daemon.locationpushd,
+    Daemon.modelmanagerd,
+    Daemon.gamesaved,
+    Daemon.syncdefaultsd,
+    Daemon.securityuploadd,
+    Daemon.watchlistd,
+    Daemon.swiftuitraced,
+    Daemon.soundanalysisd,
+    Daemon.powerdatad,
+    Daemon.facemetricsd,
+    Daemon.contactsdonationagent,
+    Daemon.voicebankingd,
+    Daemon.voicememod,
+    Daemon.amsondevicestoraged,
+    Daemon.intelligencetasksd,
+    Daemon.accessoryupdaterd,
+    Daemon.deferredmediad,
+    Daemon.mediaplaybackd,
+    Daemon.mediasetupd,
+    Daemon.enhancedloggingd,
+    Daemon.betaenrollmentd,
+    Daemon.remoteappintentsd,
+    Daemon.safetyalertsd,
+    Daemon.relatived,
+    Daemon.naturallanguaged,
+    Daemon.textcontextd,
+    Daemon.ospredictiond,
+    Daemon.locationaccessstored,
+    Daemon.powerexperienced,
+    Daemon.powerexceptionsd,
+    Daemon.proximitycontrold,
+    Daemon.webkit_adattributiond,
+    Daemon.privacyaccountingd,
+    Daemon.parsec_fbf,
+    Daemon.sensorkitd,
+    Daemon.activitysharingd,
+    Daemon.activityawardsd,
+    Daemon.maps_geocorrectiond,
+    Daemon.maps_pushdaemon,
+    Daemon.safarifetcherd,
+    Daemon.safari_historyd,
+    Daemon.safari_safebrowsing,
+    Daemon.webkit_webpushd,
+    Daemon.textcomposerd,
+    Daemon.speechmodeltrainingd,
+    Daemon.reversetemplated,
+    Daemon.featureaccessd,
+    Daemon.cloudsettingssyncagent,
+    Daemon.recentsd,
+    Daemon.keychainsharingmessagingd,
+    Daemon.assetcachelocatorservice,
+    Daemon.watchconnectivityd,
+    Daemon.announced,
+    Daemon.barcodesupport_notification,
+    Daemon.photos_imageconversionservice,
+    Daemon.photos_videoconversionservice,
+    Daemon.quicklook_thumbnailsagent,
+    Daemon.healtheventsd,
+    Daemon.webinspectord,
+    Daemon.abdatabasedoctor,
+    Daemon.asktod,
+    Daemon.progressd,
+    Daemon.storagedatad,
+    Daemon.tzlinkd,
+    Daemon.businessservicesd,
+    Daemon.carkitd,
+    Daemon.useractivityd,
+    Daemon.maps_destinationd,
+    Daemon.nanobackupd,
+    Daemon.passcodenagd,
+    Daemon.safetycheckd,
+    Daemon.hearingaid_heard,
+    Daemon.cmfsyncagent,
+)
+INTERFACE_DAEMONS |= frozenset(ADDITIONAL_DAEMONS)
 
 # Interface-visible daemon keys: everything a user can toggle in the UI.
 # Any key outside this set is stripped from presets / the apply pass.

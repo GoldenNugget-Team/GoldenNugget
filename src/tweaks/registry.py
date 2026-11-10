@@ -1156,6 +1156,15 @@ def managed_pref_app_plists() -> frozenset:
         if target is not None:
             out.add(target)
     return frozenset(out)
+
+
+from .additional_preferences import SPECS as ADDITIONAL_SPECS
+from .local_catalog import SPECS as ADDITIONAL_LOCAL_SPECS
+
+_existing_ids = frozenset(spec.id for spec in SPECS)
+SPECS += tuple(spec for spec in (*ADDITIONAL_SPECS, *ADDITIONAL_LOCAL_SPECS)
+               if spec.id not in _existing_ids)
+
 LOCAL_ONLY_IDS: frozenset = frozenset()
 
 SPECS_BY_SECTION: dict[Section, list[TweakSpec]] = {

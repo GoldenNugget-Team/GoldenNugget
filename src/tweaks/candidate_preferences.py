@@ -2,7 +2,29 @@ import asyncio
 from datetime import datetime
 
 from .basic_plist_locations import FileLocation
+from .preference_validation import valid_bundle_identifier
 from .tweak_classes import BasicPlistTweak, TriStateBooleanPlistTweak
+
+
+class DuoLimitedResizingApp(BasicPlistTweak):
+    def __init__(self):
+        super().__init__(FileLocation.springboardPreferencesHomeDomain,
+                         'SBBundleIdentifiersToForceSupportLimitedResizing', value='')
+
+    @staticmethod
+    def _validate(value):
+        if not valid_bundle_identifier(value):
+            raise ValueError('Enter one app bundle identifier, such as com.example.app.')
+
+    def set_value(self, value, toggle_enabled=True):
+        self._validate(value)
+        super().set_value(value, toggle_enabled)
+
+    def apply_tweak(self, other_tweaks):
+        if self.enabled:
+            self._validate(self.value)
+            other_tweaks.setdefault(self.file_location, {})[self.key] = [self.value] if self.value else []
+        return other_tweaks
 
 
 class NestedNumericPreference(BasicPlistTweak):

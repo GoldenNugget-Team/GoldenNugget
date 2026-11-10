@@ -368,3 +368,17 @@ class DisableDynamicIslandTweak(ReversibleBooleanPlistTweak):
         value = other_tweaks[self.file_location]["SBSSystemApertureDisabled"]
         other_tweaks.setdefault(FileLocation.springboardPreferencesHomeDomain, {})["SBSSystemApertureDisabled"] = value
         return other_tweaks
+
+
+class HandoffPreferenceTweak(TriStateBooleanPlistTweak):
+    reset_key_paths = (('ActivityAdvertisingAllowed',), ('ActivityReceivingAllowed',))
+
+    def __init__(self):
+        super().__init__(FileLocation.userActivityPreferencesHomeDomain,
+                         'ActivityAdvertisingAllowed', on_value=False)
+
+    def apply_tweak(self, other_tweaks):
+        super().apply_tweak(other_tweaks)
+        if self.enabled:
+            other_tweaks[self.file_location]['ActivityReceivingAllowed'] = self.value
+        return other_tweaks

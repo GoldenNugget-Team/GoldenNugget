@@ -402,6 +402,16 @@ class IOSDaemonsContent(QWidget):
             yield
 
         self._analytics_cards = self.daemon_cards[analytics_start:]
+
+        from src.tweaks.additional_daemon_controls import ADDITIONAL_DAEMON_CONTROLS
+        from src.tweaks.daemons_tweak import ADDITIONAL_DAEMONS
+
+        for daemon in ADDITIONAL_DAEMONS:
+            title, description = ADDITIONAL_DAEMON_CONTROLS[daemon.name]
+            card, switch = self._make_daemon_switch(self.tr(title), daemon, self.tr(description))
+            self.daemon_cards.append(card)
+            self.daemon_switches.append((daemon, switch))
+            yield
         self._experimental_cards = []
         self._experimental_switches = []
         self._risky_cards = []
