@@ -47,11 +47,11 @@ Translator(app,settings).set_new_language({target!r},restart=True)
         page = SimpleNamespace(lang_indexes=['', 'ru'],
                                window=SimpleNamespace(settings=settings, translator=translator))
         IOSSettingsPage._on_lang_selected(page, 1)
-        translator.set_new_language.assert_called_once_with('ru', restart=True)
+        translator.set_new_language.assert_called_once_with('ru')
         translator.reset_mock()
         settings.value.return_value = 'ru'
         IOSSettingsPage._on_lang_selected(page, 0)
-        translator.set_new_language.assert_called_once_with('', restart=True)
+        translator.set_new_language.assert_called_once_with('')
         translator.reset_mock()
         IOSSettingsPage._on_lang_selected(page, 1)
         translator.set_new_language.assert_not_called()

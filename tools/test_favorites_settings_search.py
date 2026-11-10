@@ -66,7 +66,7 @@ class FavoritesSearchTests(unittest.TestCase):
         self.assertIn(tid.name, TweakFavorites().names())
         self.assertTrue(two._favorite_buttons[tid].isChecked())
         self.assertEqual(before, {tid: (t.enabled, repr(t.value)) for tid, t in tweaks.items()})
-        one.filter_control.setCurrentIndex(2)
+        one.filter_control.setCurrentIndex(3)
         self.assertEqual([tid for card, tid, *_ in one._search_rows if not card.isHidden()], [tid])
         one.rebuild()
         self.wait_for_rows(one)

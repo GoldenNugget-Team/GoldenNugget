@@ -402,6 +402,16 @@ class IOSDaemonsContent(QWidget):
             yield
 
         self._analytics_cards = self.daemon_cards[analytics_start:]
+
+        from src.tweaks.additional_daemon_controls import ADDITIONAL_DAEMON_CONTROLS
+        from src.tweaks.daemons_tweak import ADDITIONAL_DAEMONS
+
+        for daemon in ADDITIONAL_DAEMONS:
+            title, description = ADDITIONAL_DAEMON_CONTROLS[daemon.name]
+            card, switch = self._make_daemon_switch(self.tr(title), daemon, self.tr(description))
+            self.daemon_cards.append(card)
+            self.daemon_switches.append((daemon, switch))
+            yield
         self._experimental_cards = []
         self._experimental_switches = []
         self._risky_cards = []
@@ -438,13 +448,14 @@ class IOSDaemonsContent(QWidget):
             CATEGORY_ORDER,
             DAEMON_CATEGORIES,
             REPORTS_CATEGORY,
+            RISKY_DAEMON_NAMES,
         )
         grouped = {title: [] for title in CATEGORY_ORDER}
         for card, (daemon, switch) in zip(self.daemon_cards, self.daemon_switches):
             if any(key in self.daemons_tweak.never_enable for key in daemon.value):
                 card.hide()
                 continue
-            category = "Risky tweaks" if card in self._risky_cards else REPORTS_CATEGORY if daemon in ANALYTICS_DAEMONS else DAEMON_CATEGORIES.get(daemon.name, "System Services")
+            category = "Risky tweaks" if card in self._risky_cards or daemon.name in RISKY_DAEMON_NAMES else REPORTS_CATEGORY if daemon in ANALYTICS_DAEMONS else DAEMON_CATEGORIES.get(daemon.name, "System Services")
             card.setProperty("searchText", f'{self.tr(category)} {card.property("searchText")}')
             grouped[category].append(card)
         if self._screen_time_card is not None:

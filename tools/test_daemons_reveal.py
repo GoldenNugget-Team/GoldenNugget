@@ -75,6 +75,16 @@ def main():
     check("incremental row construction completes", not content._building)
     rows = content._rows
 
+    from src.gui.ios.daemon_categories import RISKY_DAEMON_NAMES
+    for card, (daemon, _) in zip(content.daemon_cards, content.daemon_switches):
+        if daemon.name in RISKY_DAEMON_NAMES:
+            check(f"{daemon.name} is grouped under Risky tweaks",
+                  str(card.property("searchText")).startswith("Risky tweaks "))
+        if daemon.name in {"abdatabasedoctor", "callhistoryd", "contactsd",
+                           "contactsdonationagent", "dataaccessd", "postersyncd", "recentsd"}:
+            check(f"{daemon.name} keeps its phone/contacts category",
+                  not str(card.property("searchText")).startswith("Risky tweaks "))
+
     check("categorized daemon cards belong to the row block",
           bool(content.daemon_cards) and all(rows.isAncestorOf(card) for card in content.daemon_cards))
     check("the analytics shortcut is inside the row block",

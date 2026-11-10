@@ -13,6 +13,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QDialog, QWidget
 
+import src.gui.widgets  # Configure the host theme adapter.
 from src.controllers.hotload import HotLoad
 from src.gui.dialogs.update_dialog import UpdateDialog
 from src.gui.startup_services import StartupServices
