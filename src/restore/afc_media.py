@@ -457,8 +457,8 @@ async def _device_media_inventory(afc) -> dict:
         except Exception as e:  # noqa: BLE001 - a tree we cannot read is not fatal
             log_warn(f"AFC media: could not list /{name} on the device: {e} "
                      f"— files below it will be re-pushed")
-    for _src, rel, st in entries:
-        inventory[rel] = int(st.get("st_size", 0))
+    for entry in entries:
+        inventory[entry.relative] = entry.size
     return inventory
 
 

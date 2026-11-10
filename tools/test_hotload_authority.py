@@ -57,6 +57,7 @@ class HotLoadAuthority(unittest.TestCase):
             pref_manager=SimpleNamespace(settings=None, supervised=False, organization_name=""),
             get_current_device_version=lambda: '27.0',
             get_current_device_model=lambda: 'iPhone13,2',
+            get_current_device_udid=lambda: 'TEST',
             _disable_unavailable_controls=Mock(return_value=set()),
             add_skip_setup=AsyncMock(), concat_file=Mock(), _add_community_files=Mock(),
             _known_backup_encryption=False, start_restore=AsyncMock(return_value="done"))

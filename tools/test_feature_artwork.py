@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from PySide6.QtGui import QBitmap, QRegion
 from PySide6.QtWidgets import QApplication, QFrame, QLabel, QToolButton
 
+import src.gui.widgets  # Configure the host theme adapter.
 from src.gui.ios.feature_icons import FEATURE_ICONS
 from src.gui.ios.home import IOSHomePage
 

@@ -206,6 +206,9 @@ class FakeLockdown:
 
 
 class FakeBackupClient:
+    async def get_will_encrypt(self):
+        return False
+
     async def __aenter__(self):
         return self
 

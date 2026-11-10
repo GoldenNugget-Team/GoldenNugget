@@ -4,7 +4,7 @@ Base: GoldenNugget `10.0` at `9fbe88d` (2026-11-10).
 
 ## Scope
 
-90 additional opt-in plist controls and 153 additional daemon controls. Existing registry definitions remain authoritative. All additions start unapplied; no personal preset or daemon selections are bundled. The restore, pairing, HotLoad implementation and awesomeUI submodule are unchanged.
+90 additional opt-in plist controls and 153 additional daemon controls. Existing registry definitions remain authoritative. All additions start unapplied; no personal preset or daemon selections are bundled. The restore strategy, pairing, HotLoad implementation and awesomeUI submodule are unchanged. The AFC media inventory reader is corrected to handle its current object entries, so unchanged media can be skipped.
 
 Research-only placeholders, FeatureFlag writers, deferred Safari AppDomain delivery and the local risky daemon groups are excluded. Descriptions retain the distinction between source evidence, restore delivery and visible effects. No battery improvement is guaranteed.
 
@@ -16,12 +16,13 @@ Local offline checks used Python 3.13 on macOS with offscreen Qt:
 
 - `python tools/test_additional_controls.py`: 4 tests passed, exercising every added factory, unapplied defaults, plist serialization, explicit false states, registry uniqueness and added daemon label exclusions.
 - Python syntax compilation and Ruff checks on changed files passed.
-- Full isolated offline runner: 60/76 suites passed.
-- Each of the 16 failures below was reproduced separately on untouched `10.0` at the same commit. No existing failing test was skipped, changed or relaxed in this PR.
+- Full isolated offline runner after fixture corrections: **76/76 suites passed**.
+- Each of the 16 original failures below was reproduced separately on untouched `10.0` at the same commit. The follow-up commit updates obsolete fixtures and expectations to current contracts; no suites are skipped. Whole-file reset expectations are replaced with refusal-without-history and recorded-key-removal coverage.
+- CI now checks out required submodules, including the pinned awesomeUI implementation.
 
-This PR remains a draft because the full offline gate is not green. Passing serialization checks does not establish a visible effect on every OS build.
+Passing offline checks and serialization checks does not establish a visible effect on every OS build. No physical-device restore was run during fixture repair.
 
-## Inherited offline failures
+## Resolved inherited offline failures
 
 - `test_afc_media_safety`
 - `test_autosave_option`

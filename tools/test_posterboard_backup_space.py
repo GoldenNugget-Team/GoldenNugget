@@ -108,6 +108,9 @@ class PosterBoardStorage(unittest.IsolatedAsyncioTestCase):
         owner = self
 
         class Backup:
+            async def get_will_encrypt(self):
+                return False
+
             def __init__(self, lockdown, include_posterboard=False):
                 owner.assertTrue(include_posterboard)
 
@@ -205,6 +208,9 @@ class PosterBoardStorage(unittest.IsolatedAsyncioTestCase):
 
     async def test_protective_backup_does_not_blame_device_storage(self):
         class Backup:
+            async def get_will_encrypt(self):
+                return False
+
             def __init__(self, *args, **kwargs):
                 pass
 

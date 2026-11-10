@@ -18,6 +18,7 @@ Run: python tools/test_fast_cache.py
 """
 import json
 import os
+import plistlib
 import sqlite3
 import sys
 import tempfile
@@ -34,6 +35,7 @@ from src.restore.protective import (
     discard_restore_view,
     make_restore_view,
 )
+from src.restore.protective_cache import CACHE_FILTER_REVISION
 
 UDID = "00008101-FASTCACHE"
 PASS = 0
@@ -84,8 +86,9 @@ def make_cache(tmp: Path, **info_extra):
         ("HomeDomain", "Library/SMS/sms.db", b"sms"),
     ])
     for name in ("Manifest.plist", "Status.plist", "Info.plist"):
-        (cache.device_dir / name).write_bytes(b"x" * 300)
+        (cache.device_dir / name).write_bytes(plistlib.dumps({"IsEncrypted": False}) if name == "Manifest.plist" else b"x" * 300)
     info = {"udid": UDID, "product_version": "27.0", "encrypted": False,
+    "filter_revision": CACHE_FILTER_REVISION,
             "media_afc": True, "created_ts": int(time.time()),
             "media_ts": int(time.time())}
     info.update(info_extra)

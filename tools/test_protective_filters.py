@@ -84,21 +84,9 @@ for label, rel in (
         check(f"drop {label}", not _is_protective_file("HomeDomain", rel))
         check(f"drop-device {label}", not is_protective_device_file(f"HomeDomain/{rel}"))
 
-print("== Managed-pref app mirrors stay out of the backup ==")
-# mcxd copies each managed preference into the target app's own cfprefs
-# domain on disk. Phase 3 restores Library/Preferences/* AFTER the sparse
-# reset cleared the managed entry, which resurrected the stale value (the
-# Dynamic Island stayed hidden after a reset). These must never be kept.
-check("springboard mirror dropped",
-      not _is_protective_file("HomeDomain", "Library/Preferences/com.apple.springboard.plist"))
-check("uikit mirror dropped",
-      not _is_protective_file("HomeDomain", "Library/Preferences/com.apple.UIKit.plist"))
-check("sharingd mirror dropped",
-      not _is_protective_file("HomeDomain", "Library/Preferences/com.apple.sharingd.plist"))
-check("registry covers every managed target", all(
-    not _is_protective_file("HomeDomain", rel) for rel in managed_pref_app_plists()))
-check("global preferences mirror dropped",
-      not _is_protective_file("HomeDomain", "Library/Preferences/.GlobalPreferences.plist"))
+print("== Preference baselines are retained for keyed merging ==")
+for rel in sorted(managed_pref_app_plists()):
+    check(f"baseline retained: {rel}", _is_protective_file("HomeDomain", rel))
 # neighbouring user prefs in the same directory are untouched
 check("IconState prefs kept",
       _is_protective_file("HomeDomain", "Library/Preferences/IconState.plist"))
