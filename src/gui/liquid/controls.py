@@ -466,15 +466,32 @@ class LiquidBrand(LiquidButton):
                            (.8,'#C99744'),(1,'#91602D')):
             gradient.setColorAt(stop,QColor(color))
         hover=max(0.0,min(1.0,self.hover))
-        if hover:
-            p.setOpacity(hover*.18)
-            p.setBrush(gradient)
-            p.drawRoundedRect(QRectF(2,3,46,42),13,13)
-            p.setOpacity(1.0)
         fitted=self.logo.size().scaled(38,38,Qt.KeepAspectRatio)
         x=(50-fitted.width())/2
         y=(48-fitted.height())/2
-        p.drawPixmap(QRectF(x,y,fitted.width(),fitted.height()),self.logo,QRectF(self.logo.rect()))
+        icon_rect=QRectF(x,y,fitted.width(),fitted.height())
+        p.drawPixmap(icon_rect,self.logo,QRectF(self.logo.rect()))
+        if hover:
+            sheen=QPixmap(fitted)
+            sheen.fill(Qt.transparent)
+            overlay=QPainter(sheen)
+            overlay.drawPixmap(sheen.rect(),self.logo,QRectF(self.logo.rect()))
+            overlay.setCompositionMode(QPainter.CompositionMode_SourceIn)
+            width,height=sheen.width(),sheen.height()
+            center=(-.4+1.8*self.phase)*width
+            flowing=QLinearGradient(center-width*.4,0,center+width*.4,height*.25)
+            flowing.setColorAt(0,QColor(173,101,17,0))
+            flowing.setColorAt(.25,QColor(224,149,28,90))
+            flowing.setColorAt(.5,QColor(255,222,119,230))
+            flowing.setColorAt(.75,QColor(235,169,44,100))
+            flowing.setColorAt(1,QColor(173,101,17,0))
+            overlay.fillRect(sheen.rect(),flowing)
+            overlay.end()
+            p.setOpacity(hover*.85)
+            p.setCompositionMode(QPainter.CompositionMode_Screen)
+            p.drawPixmap(icon_rect,sheen,QRectF(sheen.rect()))
+            p.setCompositionMode(QPainter.CompositionMode_SourceOver)
+            p.setOpacity(1.0)
         if self.compact:
             return
         p.setOpacity(self.reveal)
