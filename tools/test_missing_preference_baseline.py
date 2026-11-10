@@ -237,6 +237,26 @@ def main():
             check("corrupt baseline payload still aborts loudly", False,
                   "no exception raised")
 
+    # ---- A clear-file (nullify) payload replaces the file, never merges -----
+    # The "Clear ScreenTimeAgent.plist" tweak delivers b"" and aborted every
+    # apply on a device that had the file in its backup, because an empty
+    # patch cannot parse. Whole-file payloads must bypass the baseline merge
+    # whether the baseline is readable or corrupt.
+    for baseline in (plistlib.dumps({"ScreenTime": 1}), b"\x00corrupt"):
+        with tempfile.TemporaryDirectory() as tmp:
+            dev = make_core_backup(Path(tmp), "UDID")
+            make_row(dev, "HomeDomain",
+                     "Library/Preferences/com.apple.ScreenTimeAgent.plist", baseline)
+            injected, unchanged, failed, created = inject(Path(tmp), "UDID", [
+                ("HomeDomain", "Library/Preferences/com.apple.ScreenTimeAgent.plist",
+                 b"", mode, 501, 501)])
+            check("nullify payload delivers over an existing baseline",
+                  (failed, injected) == (0, 1), f"{injected}/{unchanged}/{failed}")
+            check("nullify payload is delivered verbatim",
+                  read_payload(dev, "HomeDomain",
+                               "Library/Preferences/com.apple.ScreenTimeAgent.plist") == b"",
+                  f"baseline={baseline[:8]}")
+
     print(f"\nALL {PASS} CHECKS PASSED")
 
 

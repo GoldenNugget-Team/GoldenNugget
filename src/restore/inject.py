@@ -150,6 +150,14 @@ def _prepare_preference_merges(conn, device_dir, files):
     omitted_managed = []
     for domain, path, contents, mode, owner, group in files:
         if _is_preference_target(domain, path) or isinstance(contents, PreferenceKeyReset):
+            if (isinstance(contents, (bytes, bytearray)) and not contents
+                    and not isinstance(contents, PreferenceKeyReset)):
+                # A clear-file tweak (NullifyFileTweak) replaces the whole
+                # file with an empty one — there are no keys to merge onto
+                # the baseline, and an empty payload never parses. Deliver
+                # it verbatim; the baseline state is irrelevant.
+                prepared.append((domain, path, contents, mode, owner, group))
+                continue
             row = conn.execute('SELECT fileID FROM Files WHERE domain=? AND relativePath=? AND flags=1',
                                (domain, path)).fetchone()
             if row is None:
