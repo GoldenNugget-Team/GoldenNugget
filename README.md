@@ -261,6 +261,12 @@ When changing Qt resources, regenerate the resource module:
 pyside6-rcc --compress-algo zlib src/qt/resources.qrc -o src/qt/resources_rc.py
 ```
 
+UI icons: prefer [Lucide](https://lucide.dev) icons over custom or Bootstrap artwork when
+adding features. Copy the SVG from the Lucide repo, set `stroke="white"` (the tint pipeline
+recolors via SourceIn), register it in `src/qt/resources.qrc`, regenerate the resource module,
+and render it through `theme_pixmap(...)` with the target size — never `QPixmap(path).scaled()`
+(it rasterizes at the intrinsic viewBox size and blurs when the widget scales it up).
+
 Translations live in the [gNugget-i18n repository][i18n] and are synced into
 `src/qt/translations/` automatically, so do not edit the `Nugget_*.ts` files here.
 See [I18N_SETUP.md](I18N_SETUP.md) for the sync, the local Russian catalog and the

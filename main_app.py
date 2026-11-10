@@ -68,6 +68,7 @@ if sys.platform == 'win32':
 # request would load qopensslbackend with wrong PATH OpenSSL; phone-connected
 # path loads cryptography/ssl early via DeviceMonitorThread).
 import ssl
+
 _ = ssl.OPENSSL_VERSION
 
 

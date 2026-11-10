@@ -232,7 +232,12 @@ class LiquidNavBar(GlassPanel):
     def set_icon(self,path):
         self.icon_lbl.setVisible(bool(path))
         if path:
-            self.icon_lbl.setPixmap(QPixmap(path).scaled(28,28,Qt.KeepAspectRatio,Qt.SmoothTransformation))
+            # theme_pixmap rasterises SVGs at the requested size (device-ratio
+            # aware); a QPixmap(path).scaled() here drew the 24px intrinsic
+            # frame blown up 28+ — the "shaky" gear in the nav header.
+            self.icon_lbl.setPixmap(theme_pixmap(
+                path, ColorThemeManager.instance().colors.text_primary,
+                28, self.devicePixelRatioF()))
 
     def set_categories(self,categories):
         while self._category_layout.count():
