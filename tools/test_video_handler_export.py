@@ -24,10 +24,9 @@ import numpy
 
 from src.controllers import video_handler
 
-# This OpenCV build decodes/encodes through AVFoundation with avc1 (the
-# default FFMPEG backend is absent, and mp4v/MJPG writers refuse to open).
-_CAPTURE_API = cv2.CAP_AVFOUNDATION
-_FOURCC = cv2.VideoWriter_fourcc(*'avc1')
+# macOS uses its native encoder; Linux/Windows OpenCV wheels use FFmpeg.
+_CAPTURE_API = cv2.CAP_AVFOUNDATION if sys.platform == "darwin" else cv2.CAP_ANY
+_FOURCC = cv2.VideoWriter_fourcc(*("avc1" if sys.platform == "darwin" else "mp4v"))
 
 
 def _write_video(path: str, frames: int, fps: float, size: tuple) -> tuple:
