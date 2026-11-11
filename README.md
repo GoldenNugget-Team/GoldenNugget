@@ -57,6 +57,26 @@ to open the interface with mock devices and no iPhone connected.
 | Linux (release) | glibc 2.34+ (x86_64) | The frozen build runs where PySide6 itself runs. Debian 12, Ubuntu 22.04, RHEL 9, Mint 21+. Source runs on Python 3.10+ on any distro (release builds use 3.15). |
 | Python | 3.10+ | Use the pinned packages in `requirements.txt`. |
 
+## FAQ
+
+<details>
+<summary>Why does GoldenNugget make its own backup if I already have one?</summary>
+
+On iOS 27, most applies do not wipe the phone. GoldenNugget still makes a protective backup right before applying and puts your data back from that backup, not from your own backup, so this step can't be skipped. By default the phone stays up and that backup is restored without the safe-state-recovery reboot. The wipe happens only if the phone reboots into safe state recovery, and the sparse restore that triggers it is skipped for wallpaper-only applies or an unchanged tweak set. iOS 26 does not wipe. Keep your own backup as well, in case something goes wrong. Make sure the computer has enough free space, and never delete the protective backup or cache while an apply or recovery is in progress. You can move it in **Settings → Backup → Backup/Cache Location**.
+</details>
+
+<details>
+<summary>How do I install the macOS app?</summary>
+
+Download `GoldenNugget-macOS-Universal2.dmg` from the [latest release](https://github.com/GoldenNugget-Team/GoldenNugget/releases/latest), open it and copy GoldenNugget to Applications. It needs macOS 14.4 or newer. The app isn't notarized, so on first launch go to **System Settings → Privacy & Security** and choose **Open Anyway**.
+</details>
+
+<details>
+<summary>Apply is stuck. What should I do?</summary>
+
+Keep the phone connected and unlocked, and don't close GoldenNugget. While the phone reboots, the app waits up to 20 minutes for it to come back and then offers **Abort** or **Resume**. Choose **Resume** if the phone is still restarting. If nothing moves, recover your data with **Settings → Backup → Restore Data From Backup**, then report the bug with **Settings → Support → App Log → Export Diagnostics** attached. The same export is available from **Open application log** on the apply result card.
+</details>
+
 ## Discord server
 Need support? Join our [Discord Server][server].
 
