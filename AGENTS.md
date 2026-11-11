@@ -787,6 +787,10 @@ backup in the persistent app-data store
 - Retries up to **18 times, fixed 3s between attempts** (`max_retries = 18`), and
   only for results matching `_is_transient_restore_error` (SpringBoard /
   mobilebackup2 startup delay)
+- The pre-start Find My wait inside `_restore_once` is bounded: the first
+  swallowed failure opens ONE window (`_PHASE3_WAIT_WINDOW_SEC`, 15 min) that
+  spans every outer retry attempt; on expiry the last error surfaces as a
+  final NuggetException — a wedged device can no longer hang Phase 3 forever
 - Accepts `backup_password` for encrypted backups
 
 ## PosterBoard Backup (src/gui/dialogs/pb_dialog.py)

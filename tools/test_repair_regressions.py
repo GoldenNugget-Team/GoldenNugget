@@ -340,6 +340,48 @@ class Repairs(unittest.TestCase):
         sparse.assert_not_called()
         protective.assert_not_called()
 
+    def test_phase3_prestart_wait_window_is_bounded(self):
+        # A Find My error opens the swallow-retry loop in _restore_once; a
+        # device that then keeps failing before the restore starts used to be
+        # retried forever (no exception escaped the outer async_retry bound).
+        async def scenario():
+            from src.restore.find_my_wait import current_find_my_wait
+            control = SimpleNamespace(finish=Mock(), wait_for_retry=AsyncMock())
+            token = current_find_my_wait.set(control)
+            try:
+                attempts = {'n': 0}
+
+                class _FakeMB:
+                    async def restore(self, *args, **kwargs):
+                        attempts['n'] += 1
+                        if attempts['n'] == 1:
+                            raise Exception('Find My must be disabled on the device')
+                        raise OSError('connection dropped')
+
+                @asynccontextmanager
+                async def fake_mobilebackup2(client):
+                    yield _FakeMB()
+
+                @asynccontextmanager
+                async def fake_session(*args, **kwargs):
+                    yield SimpleNamespace()
+
+                with patch.object(restore, '_start_mobilebackup2', fake_mobilebackup2), \
+                        patch.object(restore, '_PHASE3_WAIT_WINDOW_SEC', 0), \
+                        patch('src.devicemanagement.session.lockdown_session', fake_session):
+                    with self.assertRaises(NuggetException) as caught:
+                        await restore._restore_protective_backup(
+                            SimpleNamespace(), str(self.root), 'device', False,
+                            lambda value: None)
+                self.assertIn('could not start within', str(caught.exception))
+                self.assertTrue(control.finish.called)
+                # one Find My failure + one post-window failure — never a loop
+                self.assertEqual(attempts['n'], 2)
+            finally:
+                current_find_my_wait.reset(token)
+
+        asyncio.run(scenario())
+
 
 if __name__ == '__main__':
     unittest.main()

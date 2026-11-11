@@ -358,6 +358,14 @@ def _start_mobilebackup2(lc: LockdownClient) -> Mobilebackup2Service:
     return Mobilebackup2Service(lc)
 
 
+# Bound for the pre-start wait inside _restore_once: while Find My is (or was
+# believed to be) on, pre-start transient/connection/lock failures are
+# swallowed and retried every ~5 s. Without this deadline a wedged device
+# (restore never starts) is retried forever, bypassing the outer
+# async_retry(18) bound because no exception ever escapes.
+_PHASE3_WAIT_WINDOW_SEC = 15 * 60
+
+
 async def _restore_protective_backup(lc: LockdownClient, backup_root: str,
                                       udid: str, reboot: bool,
                                       progress_callback, backup_password: str = "",
@@ -377,6 +385,9 @@ async def _restore_protective_backup(lc: LockdownClient, backup_root: str,
     from src.restore.find_my_wait import ApplyCancelledError, current_find_my_wait
     wait_control = current_find_my_wait.get()
     restore_started = False
+    # Set when the first failure is swallowed; ONE window covers the whole
+    # Phase 3 restore, across every outer async_retry attempt.
+    wait_started_at = None
 
     async def _perform_restore(client):
         nonlocal restore_started
@@ -402,6 +413,7 @@ async def _restore_protective_backup(lc: LockdownClient, backup_root: str,
             wait_control.finish()
 
     async def _restore_once():
+        nonlocal wait_started_at
         blocked_by_find_my = False
         while True:
             try:
@@ -417,6 +429,20 @@ async def _restore_protective_backup(lc: LockdownClient, backup_root: str,
             except Exception as error:
                 if wait_control is None:
                     raise
+                now = time.monotonic()
+                if wait_started_at is None:
+                    wait_started_at = now
+                elif now - wait_started_at >= _PHASE3_WAIT_WINDOW_SEC:
+                    # Window spent: surface the real failure instead of
+                    # retrying forever. A plain NuggetException is not
+                    # transient, so the outer async_retry stops immediately.
+                    wait_control.finish()
+                    raise NuggetException(QCoreApplication.tr(
+                        "The restore could not start within {0} minutes of "
+                        "retries (the device stayed locked, unreachable, or "
+                        "protected). Last error: {1}: {2}").format(
+                            _PHASE3_WAIT_WINDOW_SEC // 60,
+                            type(error).__name__, error)) from error
                 if is_find_my_error(error):
                     blocked_by_find_my = True
                     progress_callback(QCoreApplication.tr(
