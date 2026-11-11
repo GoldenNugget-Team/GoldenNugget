@@ -1,22 +1,30 @@
+from packaging.version import InvalidVersion, Version
+from PySide6.QtCore import QCoreApplication, QSize, Qt, QTimer
+from PySide6.QtWidgets import (
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
+
 from src.controllers.settings import Settings
 from src.devicemanagement.device_capabilities import device_os_name
-from PySide6.QtCore import Qt, QCoreApplication, QTimer, QSize
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, QLabel,
-    QDialog, QPushButton, QMessageBox
-)
-from packaging.version import Version, InvalidVersion
-
-from src.gui.widgets import (
-    IOSCard, IOSSectionHeader, IOSSwitch,
-)
-from src.gui.ios.components import TextInputDialog, NumberInputDialog
-from src.gui.theme import ColorThemeManager, theme_icon, t
-from src.tweaks.tweaks import tweaks, TweakID
-from src.tweaks.status_bar.status_setter import StatusBarItem
+from src.gui.ios.components import NumberInputDialog, TextInputDialog
 from src.gui.liquid.cards import ControlGrid, prepare_card
 from src.gui.liquid.selection_card import bind_selection_card
 from src.gui.liquid.value_entry import GlassValueEntry
+from src.gui.theme import ColorThemeManager, t, theme_icon
+from src.gui.widgets import (
+    IOSCard,
+    IOSSectionHeader,
+    IOSSwitch,
+)
+from src.tweaks.status_bar.status_setter import StatusBarItem
+from src.tweaks.tweaks import TweakID, tweaks
 
 
 class StatusValueEntry(GlassValueEntry):
@@ -228,6 +236,7 @@ class IOSStatusBarPage(QWidget):
             "Nugget",
             "iOS 27 replaced the status bar override file, so only the carrier "
             "entry can be changed here: its name, service badge, signal bars and network type. "
+            "Leave the carrier name blank to hide the label entirely. "
             "The badge and bars apply to the carrier name, so set one first. "
             "Signal bars are omitted unless explicitly set. Network type is a fixed "
             "visual badge, not the actual connection. "
@@ -272,7 +281,7 @@ class IOSStatusBarPage(QWidget):
             group.setVisible(visible)
             header.setVisible(visible)
         self._ios27_note.setText(QCoreApplication.translate("Nugget",
-            "{0} 27 supports carrier names, service badges, cellular bars, and fixed network labels. Set a carrier name first. These are visual overrides, not connection changes.").format(device_os_name(self.window.device_manager.get_current_device_model())))
+            "{0} 27 supports carrier names, service badges, cellular bars, and fixed network labels. Leave a carrier name blank to hide the label. These are visual overrides, not connection changes.").format(device_os_name(self.window.device_manager.get_current_device_model())))
         self._ios27_note.setVisible(is_ios27)
         pages = getattr(self.window, "ios_pages", None)
         if pages is not None and hasattr(self.window, "ios_nav"):
@@ -372,6 +381,7 @@ class IOSStatusBarPage(QWidget):
             dialog.deleteLater()
             return
         from shiboken6 import isValid
+
         from src.gui.liquid.value_editor import ValueEditor
         old = getattr(self, '_value_editor_panel', None)
         if old is not None and isValid(old):
@@ -490,7 +500,7 @@ class IOSStatusBarPage(QWidget):
 
         card.setProperty("overrideValue", current)
         value_lbl = StatusValueEntry(title)
-        value_lbl.setText(current if overridden else QCoreApplication.translate("Nugget", "Default"))
+        value_lbl.setText(self._text_display(current, overridden))
         row.addWidget(value_lbl)
 
         switch = IOSSwitch(overridden)
@@ -506,12 +516,20 @@ class IOSStatusBarPage(QWidget):
         self._finish_card(card, switch, survives_ios27)
         return switch
 
+    def _text_display(self, value: str, shown: bool) -> str:
+        """Value label of a text row: 'Default' when unset, 'Hidden' when the
+        override is enabled with a blank text (that blank *is* the hide --
+        issue #83)."""
+        if not shown:
+            return QCoreApplication.translate("Nugget", "Default")
+        return value if value else QCoreApplication.translate("Nugget", "Hidden")
+
     def _on_text_row_toggled(self, checked: bool, setter, unsetter, label, value_lbl, current: str):
         if checked:
             setter(current)
         else:
             unsetter()
-        value_lbl.setText(current if checked else QCoreApplication.translate("Nugget", "Default"))
+        value_lbl.setText(self._text_display(current, checked))
 
     def _on_text_row_edit(self, title: str, current: str, setter, label, value_lbl, pattern: str = None, placeholder: str = None):
         if not value_lbl.isEnabled():
@@ -532,7 +550,7 @@ class IOSStatusBarPage(QWidget):
             switch.blockSignals(True)
             switch.setChecked(True)
             switch.blockSignals(False)
-            value_lbl.setText(value if value else QCoreApplication.translate("Nugget", "Default"))
+            value_lbl.setText(self._text_display(value, True))
             label.setText(title)
         self._open_value_editor(value_lbl, dialog, title, save)
 

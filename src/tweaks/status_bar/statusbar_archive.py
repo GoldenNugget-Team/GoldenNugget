@@ -93,10 +93,12 @@ def _class_def(classname, chain):
 
 
 def _truncate(name):
-    if not name:
+    # An explicit "" is a blank override (hide the label entirely, issue #83):
+    # keep it as "" so build_archive writes a hiding entry instead of
+    # collapsing the override into the reset record. Only None means unset.
+    if name is None:
         return None
-    name = str(name)[:MAX_CARRIER_LENGTH]
-    return name or None
+    return str(name)[:MAX_CARRIER_LENGTH]
 
 
 def _truncate_badge(text):
@@ -181,13 +183,13 @@ def build_archive(
         return add(entry)
 
     entries = []
-    if primary:
+    if primary is not None:
         entry_uid = add_cellular(
             primary, _truncate_badge(primary_badge), primary_bars, primary_network_type
         )
         data_obj["cellularEntry"] = entry_uid
         entries.append(entry_uid)
-    if secondary:
+    if secondary is not None:
         entry_uid = add_cellular(
             secondary, _truncate_badge(secondary_badge), secondary_bars, secondary_network_type
         )
