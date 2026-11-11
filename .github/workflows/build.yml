@@ -361,10 +361,18 @@ jobs:
           # libdbus-1-dev: isideload's keyring backend (dbus-secret-service)
           # links the system D-Bus on Linux; without its headers and dbus-1.pc
           # the libdbus-sys build script aborts the engine build.
+          # The ubuntu-24.04-arm runner intermittently loses DNS for
+          # ports.ubuntu.com for the WHOLE job (minutes on end) - pin a public
+          # resolver so apt can reach the archive at all.
+          echo "nameserver 1.1.1.1" | sudo tee /etc/resolv.conf > /dev/null
           for attempt in 1 2 3; do
             if sudo apt-get update && \
                sudo apt-get install -y libssl-dev pkg-config libdbus-1-dev; then
               break
+            fi
+            if [ "$attempt" = 3 ]; then
+              echo "::error::apt-get failed after 3 attempts"
+              exit 1
             fi
             echo "::warning::apt-get failed (attempt $attempt/3) - retrying in 30s"
             sleep 30
