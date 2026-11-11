@@ -624,18 +624,19 @@ async def rebuild_posterboard(udid: str, manager,
         prepared_root, _pb_ok = await manager._prepare_protective_backup(
             update_label, needs_posterboard=False, prompt_password=prompt_password)
     except Exception as e:
-        if "disk space" in str(e).lower() or "NotEnoughDiskSpace" in type(e).__name__:
-            if prompt_choice is None:
-                raise
-            decision = prompt_choice(
-                "Not Enough Disk Space",
-                "The protective backup failed because there is not enough free "
-                "disk space.\n\nContinue anyway WITHOUT data protection?\n"
-                "(Photos, settings and app data may be lost.)")
-            if decision != "resume":
-                raise NuggetException("Rebuild cancelled.")
-        else:
-            raise
+        from src.exceptions.nugget_exception import BackupDiskSpaceError, BackupStorageError
+        disk = ("disk space" in str(e).lower()
+                or "NotEnoughDiskSpace" in type(e).__name__
+                or isinstance(e, (BackupDiskSpaceError, BackupStorageError)))
+        if disk:
+            raise NuggetException(
+                "The protective backup did not finish, so the rebuild was stopped before the device was changed.",
+                detailed_text=(
+                    f"{e}\n\nNothing on the iPhone was modified. "
+                    "Free space on the backup drive and try again."
+                ),
+            ) from e
+        raise
 
     update_label(f"Pushing {len(plan.repacked)} repacked wallpaper(s) back...")
     await manager.start_restore(

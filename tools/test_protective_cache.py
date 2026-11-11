@@ -240,9 +240,11 @@ def main():
           not enc_cache.has_valid_master())
     (enc_device / "Manifest.plist").write_bytes(plistlib.dumps({"IsEncrypted": True}))
 
-    # --- a failed refresh invalidates the marker ------------------------
-    # The master's metadata is indeterminate after a dead transfer, so the
-    # next apply must rebuild instead of diffing against a broken mirror.
+    # --- a failed refresh restores the retained previous master -----------
+    # The refresh writes into the master. Before it starts, the valid master
+    # is copied aside. A dead transfer rolls that copy's metadata back and
+    # keeps the marker, instead of leaving a truncated mirror marked usable
+    # or throwing the last good copy away.
     import asyncio
     from src.restore import protective as _protective
 
@@ -257,10 +259,12 @@ def main():
             asyncio.run(enc_cache.refresh(None))
         except RuntimeError:
             pass
-        check("failed refresh drops the cache marker",
-              not (enc_base / f"{enc_udid}.json").exists())
+        check("failed refresh restores the retained previous master marker",
+              (enc_base / f"{enc_udid}.json").is_file())
         check("failed refresh keeps the payload files",
               (enc_device / "Manifest.db").is_file())
+        check("failed refresh keeps the previous copy until a restore finishes",
+              (enc_base / "previous" / enc_udid / "Manifest.db").is_file())
     finally:
         _protective.perform_protective_backup = original_backup
 

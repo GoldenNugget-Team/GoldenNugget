@@ -42,7 +42,7 @@ from .protective import (
     make_restore_view,
     new_protective_backup_dir,
     perform_protective_backup,
-    prune_protective_backups,
+    retire_previous_backups,
     verify_backup_payloads,
     WORKING_COPY_PREFIX,
 )
@@ -798,6 +798,25 @@ async def _finish_restore_phases(session, udid, media_dir, progress_callback, op
         session.client = lc
 
 
+def _refuse_unverified_ios27_apply() -> None:
+    """Stop before the sparse restore when there is no verified backup.
+
+    On iOS 27 that restore can reboot the device into safe-state recovery,
+    which erases user data. There is nothing to put back if the selective
+    backup did not finish and pass verification.
+    """
+    raise NuggetException(
+        QCoreApplication.translate(
+            "Nugget",
+            "The protective backup was not verified, so the apply was stopped before the device was changed."),
+        detailed_text=QCoreApplication.translate(
+            "Nugget",
+            "iOS 27 can erase the device while applying tweaks. GoldenNugget did not "
+            "start that step because there is no selective backup that finished and "
+            "was checked. Nothing on the iPhone was modified."),
+    )
+
+
 async def _restore_ios27(back: backup.Backup, reboot: bool,
                           lockdown_client: LockdownClient, progress_callback,
                           backup_password: str = "",
@@ -855,6 +874,8 @@ async def _restore_ios27(back: backup.Backup, reboot: bool,
     Phase 6 (98-100%): Reboot again so the skipped setup takes effect on the
                        next boot.
     """
+    if skip_protective_backup:
+        _refuse_unverified_ios27_apply()
     options = RestoreOptions(
         backup_password=backup_password, reboot=reboot, skip_setup=skip_setup, skip_protective_backup=skip_protective_backup,
         include_keychain=include_keychain, merge_phases=merge_phases,
@@ -984,11 +1005,13 @@ async def _restore_ios27(back: backup.Backup, reboot: bool,
                 include_keychain=include_keychain,
                 include_afc_media=bool(media_dir),
             )
-            # Only retire the previous run once this one is solid (see the same
-            # after-success prune in device_manager._live_backup).
-            prune_protective_backups(udid)
+            # The previous run stays until this restore finishes. See
+            # retire_previous_backups on the success path below.
         backup_complete = not skip_protective_backup
+        if not backup_complete:
+            _refuse_unverified_ios27_apply()
 
+        removed_rows, removed_files = 0, 0
         if backup_complete:
             removed_rows, removed_files = await asyncio.to_thread(
                 clean_backup_for_restore, backup_root, udid,
@@ -1318,6 +1341,17 @@ async def _restore_ios27(back: backup.Backup, reboot: bool,
         kept_at = protective_dir or (prepared_backup_root.root
                                      if prepared_backup_root else backup_root)
         log_info(f"Protective backup kept at: {kept_at}")
+        # The restore has finished, so the previous copy is no longer the only
+        # way back. Live runs keep the newest one; a cache master drops the
+        # pre-refresh snapshot taken in ProtectiveBackupCache.refresh.
+        if protective_dir:
+            removed = retire_previous_backups(udid, restore_finished=True)
+            log_info(f"Retired {removed} older live protective backup(s) "
+                     "after the restore finished")
+        if (using_cache and prepared_backup_root is not None
+                and getattr(prepared_backup_root, "master", False)):
+            from src.restore.protective_cache import discard_previous_master
+            discard_previous_master(prepared_backup_root.root)
     log_info(f"iOS 27 restore completed successfully in {time.monotonic() - started:.1f}s")
     progress_callback(100)
 
@@ -1513,6 +1547,8 @@ async def restore_files(files: list[FileToRestore], reboot: bool = False, lockdo
                  "security-recovery wipe)")
 
     if device_ver >= _V("27.0"):
+        if skip_protective_backup and os.environ.get("GOLDENNUGGET_NO_PROTECTIVE_BACKUP") != "1":
+            _refuse_unverified_ios27_apply()
         if skip_protective_backup:
             if stage_callback:
                 stage_callback("backup", "skipped")

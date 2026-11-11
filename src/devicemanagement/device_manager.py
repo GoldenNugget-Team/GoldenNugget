@@ -193,8 +193,8 @@ class DeviceManager:
         # most applies — Phase 0 already paid for the check.
         self._known_backup_encryption: Optional[bool] = None
 
-        # Set when the user chose to continue without data protection (e.g.
-        # out of disk space) — Phase 1 must not re-run the protective backup.
+        # Set only by GOLDENNUGGET_NO_PROTECTIVE_BACKUP=1. A failed backup must
+        # not set this: that would start the iOS 27 restore with nothing to put back.
         self._protective_backup_skipped = False
 
         # ETA estimator for the three-phase restore (reset before each restore).
@@ -806,9 +806,9 @@ class DeviceManager:
             should_prepare = partially_supported and not raw_sparse
             if should_prepare:
                 self._report_operation_stage("backup")
-                # On NotEnoughDiskSpaceError the user can choose to continue
-                # without it — tweaks still apply, but there is no data
-                # protection (photos/settings get wiped).
+                # A storage failure stops the apply. Continuing would reach the
+                # sparse restore, which on iOS 27 can erase the device, with
+                # no verified backup to put back.
                 try:
                     prepared_root, pb_from_cache = await self._prepare_protective_backup(
                         update_label, needs_posterboard=needs_posterboard,
@@ -816,32 +816,21 @@ class DeviceManager:
                 except Exception as e:
                     log_error(f"Protective backup failed: {type(e).__name__}: {e}")
                     from pymobiledevice3.exceptions import NotEnoughDiskSpaceError
-                    if isinstance(e, (BackupStorageError, NotEnoughDiskSpaceError)):
-                        # The Yes/No decision must be asked on the main thread
-                        # (this runs on ApplyThread — a QMessageBox here is a
-                        # cross-thread-widget bug). Relay via ``prompt_choice``;
-                        # "resume" == continue without protection, "abort" ==
-                        # refuse. Without a callback (headless) default to abort.
-                        if prompt_choice is None:
-                            log_warn("Protective backup failed (disk space) and no "
-                                     "prompt_choice callback — aborting apply")
-                            return
-                        decision = prompt_choice(
-                            QCoreApplication.tr("Not Enough Disk Space"),
+                    if isinstance(e, (BackupStorageError, BackupDiskSpaceError, NotEnoughDiskSpaceError)):
+                        raise NuggetException(
                             QCoreApplication.tr(
-                                "The protective backup reported a storage error:\n{0}\n\n"
-                                "Continue anyway WITHOUT data protection?\n"
-                                "(Photos, settings and app data may be lost.)").format(str(e)))
-                        if decision == "resume":
-                            log_warn("User chose to continue without protective backup")
-                            self._report_operation_stage("backup", "skipped")
-                            prepared_root = None
-                            pb_from_cache = False
-                            self._protective_backup_skipped = True
-                        else:
-                            return
-                    else:
-                        raise
+                                "The protective backup did not finish, so the apply was stopped before the device was changed."),
+                            detailed_text=QCoreApplication.tr(
+                                "Nothing on the iPhone was modified.\n\n{0}\n\n"
+                                "Free space on the backup drive and try again."
+                            ).format(str(e)),
+                        ) from e
+                    try:
+                        e.add_note(
+                            "The protective backup did not finish. The device was not modified.")
+                    except AttributeError:
+                        pass
+                    raise
             else:
                 log_info("Phase 0 skipped: no iOS 27 protective restore required")
 
@@ -1017,8 +1006,7 @@ Returns (PreparedBackup, posterboard_db_ok). When the PosterBoard
     
         from src.restore.protective import (
             PreparedBackup, extract_posterboard_db, is_backup_encrypted,
-            new_protective_backup_dir, perform_protective_backup,
-            prune_protective_backups)
+            new_protective_backup_dir, perform_protective_backup)
     
         def _register_pb_db(backup_root: str) -> bool:
             """Extract the fresh PosterBoard sqlite and register it for editing.
@@ -1080,13 +1068,13 @@ Returns (PreparedBackup, posterboard_db_ok). When the PosterBoard
             except Exception:
                 # A failed run carries no/useless Manifest.db, so
                 # list_protective_backups excludes it and prune would never
-                # reclaim it — remove the partial dir right here.
+                # reclaim it — remove the partial dir right here. The previous
+                # good run is a sibling directory and is left alone.
                 shutil.rmtree(backup_root, ignore_errors=True)
                 raise
-            # Only retire the previous run once this one is solid — pruning
-            # early would delete the last good backup before the new run exists.
-            if not force_standard_media:
-                prune_protective_backups(udid)
+            # Do not retire the previous run here. This backup is not verified
+            # yet, and the restore that puts it back has not finished. The
+            # previous run is removed only after that restore succeeds.
             self._known_backup_encryption = is_encrypted
             media_src = afc_media_dir_for(backup_root) if use_afc_media else ""
             log_info(f"Phase 0: live protective backup ready (always fresh; "
