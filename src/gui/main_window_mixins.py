@@ -1041,9 +1041,14 @@ class NavigationMixin(_WindowBase):
         if index in (2, 4) and self._defer_until_posterboard_ready(
                 "navigation", lambda: self.set_ios_page(index, animate)):
             return
-        # Reserved pages are constructed on first navigation (see
-        # MainWindow._reserve_page); this also puts them in the slot itself.
-        target = self.page_at(index)
+        # First navigation to a reserved page takes the deferred path: the
+        # reserved slot (a "Loading… Please Wait" screen) is shown right away
+        # and the page is built after it paints — MainWindow._defer_page_build.
+        name = self._page_names.get(index)
+        if name in self._lazy_pages:
+            self._defer_page_build(index, name)
+            return
+        target = self.ios_pages.widget(index)
         if target is None:
             return
         if getattr(target, "_device_rebuild_pending", False):

@@ -8,6 +8,7 @@ something asks for it.
 import os
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -74,8 +75,14 @@ class LazyPages(unittest.TestCase):
     def test_navigation_builds_the_page_in_its_reserved_slot(self):
         window = self.build_window()
         window.set_ios_page(4, animate=False)
+        # The first open shows the reserved loading screen and queues the
+        # build; pump the timer until it completes (bounded, no hidden waits).
+        deadline = time.monotonic() + 5
+        while window.built_page("ios_settings") is None:
+            self.assertLess(time.monotonic(), deadline,
+                            "deferred first-open build never completed")
+            QApplication.processEvents()
         settings_page = window.built_page("ios_settings")
-        self.assertIsNotNone(settings_page)
         self.assertIs(window.ios_pages.widget(4), settings_page)
         self.assertIs(window.ios_pages.currentWidget(), settings_page)
 

@@ -1,7 +1,8 @@
+import logging
 import sys
 from typing import TYPE_CHECKING
 
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import QCoreApplication
 
 try:
@@ -95,6 +96,109 @@ _CLASSIC_BORDERED_BTNS = [
     "duyBtn", "jjtechBtn", "qtBtn",
 ]
 
+class _PageSpinner(QtWidgets.QWidget):
+    """Rotating-arc busy indicator for the first-open loading screen."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(26, 26)
+        self._angle = 0
+        self._timer = QtCore.QTimer(self)
+        self._timer.timeout.connect(self._tick)
+
+    def showEvent(self, event):
+        self._timer.start(40)
+        super().showEvent(event)
+
+    def hideEvent(self, event):
+        self._timer.stop()
+        super().hideEvent(event)
+
+    def _tick(self):
+        self._angle = (self._angle + 24) % 360
+        self.update()
+
+    def paintEvent(self, event):
+        # The accent is read at paint time: no retheme wiring needed and the
+        # indicator always shows the current accent. Theme slots are hex
+        # strings, so a QColor has to be built here (QPen takes a color
+        # string only solo, without the width).
+        #
+        # Paint is guarded: a raise inside paintEvent poisons the whole
+        # backing store on Windows (cascading "painter not active" until
+        # restart), so the spinner must never contribute one.
+        try:
+            pen = QtGui.QPen(
+                QtGui.QColor(ColorThemeManager.instance().colors.accent), 2.5)
+            pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
+            painter = QtGui.QPainter(self)
+            painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+            painter.setPen(pen)
+            painter.drawArc(self.rect().adjusted(3, 3, -3, -3),
+                            self._angle * 16, 300 * 16)
+        except Exception:
+            logging.getLogger("GoldenNugget.gui").exception("loading spinner paint failed")
+
+
+class PageLoadingSlot(QtWidgets.QWidget):
+    """Placeholder stack slot of a reserved page: spinner + Loading text.
+
+    While a page is not built yet this is what the user sees on first
+    navigation; the real page replaces it in the same slot (MainWindow.
+    _finish_page_build) and stays cached there afterwards.
+    """
+
+    SLIDE_PX = 16  # intro lift: the content slides up by this while fading in
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        # One animated wrapper: the slot centers it, and showEvent fades the
+        # wrapper in while it settles SLIDE_PX upward. The spinner is shared
+        # (keeps one QTimer) and the label sits inside the same wrapper.
+        self._body = QtWidgets.QWidget(self)
+        body_layout = QtWidgets.QVBoxLayout(self._body)
+        body_layout.setContentsMargins(0, 0, 0, 0)
+        body_layout.addWidget(_PageSpinner(), 0,
+                              QtCore.Qt.AlignmentFlag.AlignHCenter)
+        body_layout.addSpacing(10)
+        self.label = QtWidgets.QLabel(
+            QCoreApplication.translate("Nugget", "Loading… Please Wait"))
+        # A styled QLabel is a styled-background widget and would paint a
+        # dark box over the themed page — keep it transparent (styling
+        # contract) and let the window-wide color rule pick the text color.
+        self.label.setStyleSheet("background-color: transparent;")
+        self.label.setAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
+        body_layout.addWidget(self.label, 0,
+                              QtCore.Qt.AlignmentFlag.AlignHCenter)
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addStretch(1)
+        layout.addWidget(self._body, 0)
+        layout.addStretch(2)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        # One event-loop pass so the layout has placed _body; the intro
+        # animates from a true position, not (0, 0).
+        QtCore.QTimer.singleShot(0, self._play_intro)
+
+    def _play_intro(self):
+        """Fade the loading content in and let it settle upward.
+
+        Uses the house ``animate`` helper, so the accessibility
+        ``liquid_reduce_motion`` switch plays it instantly.
+        """
+        from awesomeui.liquid.motion import animate
+        body = self._body
+        effect = QtWidgets.QGraphicsOpacityEffect(body)
+        body.setGraphicsEffect(effect)
+        animate(self, 0.0, 1.0, effect.setOpacity, duration=240)
+        y = body.y()
+        body.move(QtCore.QPoint(0, y + self.SLIDE_PX))
+        animate(self, y + self.SLIDE_PX, y,
+                lambda value: body.move(QtCore.QPoint(0, round(value))),
+                duration=280)
+
+
 class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
                  NavigationMixin, ApplyMixin):
     IOS_CONTENT_MAX_WIDTH = 1200
@@ -184,6 +288,10 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         # tables below stable.
         self._lazy_pages = {}
         self._pending_page_calls = {}
+        # First-open builds queued by navigation (see _defer_page_build):
+        # between scheduling and the deferred construction the reserved slot
+        # keeps its PageLoadingSlot and page_at must not build under it.
+        self._pending_page_builds = set()
         self._page_names = {0: "ios_home"}
         self.ios_home = IOSHomePage(self)
         self.ios_pages.addWidget(self.ios_home)
@@ -369,9 +477,10 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
 
         The placeholder keeps every page index stable (the title/action tables
         and navigation code address pages by number), while deferring the
-        widget construction until something actually asks for it.
+        widget construction until something actually asks for it. The
+        placeholder is the first-open loading screen (spinner + label).
         """
-        index = self.ios_pages.addWidget(QtWidgets.QWidget())
+        index = self.ios_pages.addWidget(PageLoadingSlot())
         self._lazy_pages[name] = (index, factory)
         self._page_names[index] = name
 
@@ -379,10 +488,14 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         """Return the page in a stack slot, building it if still reserved.
 
         Page navigation goes through the index (``set_ios_page``), so the slot
-        has to resolve to the real widget before the stack shows it.
+        has to resolve to the real widget before the stack shows it. While a
+        first-open build is queued (see ``_defer_page_build``) the loading
+        screen stays in the slot instead of building under the spinner.
         """
         name = getattr(self, "_page_names", {}).get(index)
         if name is not None and name in self._lazy_pages:
+            if name in self._pending_page_builds:
+                return self.ios_pages.widget(index)
             return self._build_lazy_page(name)
         return self.ios_pages.widget(index)
 
@@ -412,6 +525,65 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
             except Exception:  # a missing hook must never break navigation
                 pass
         return page
+
+    def _defer_page_build(self, index: int, name: str):
+        """First navigation to a reserved page: show the loading screen now.
+
+        The stack is switched to the reserved slot immediately (currentChanged
+        updates the shared header), so the spinner + "Loading… Please Wait"
+        paint while the real page is constructed one timer pass later instead
+        of freezing the click handler. Once built the page lives in the slot
+        and every later navigation takes the normal cached path.
+        """
+        if name in self._lazy_pages and name not in self._pending_page_builds:
+            self._pending_page_builds.add(name)
+            logging.getLogger("GoldenNugget.gui").info(
+                "Page %s: loading screen shown, build deferred", name)
+            QtCore.QTimer.singleShot(
+                50, lambda: self._finish_page_build(index, name))
+        stack = self.ios_pages
+        if stack.currentIndex() != index:
+            self._stop_page_slide()
+            stack.setCurrentIndex(index)
+            logging.getLogger("GoldenNugget.gui").info(
+                "Page %s: loading screen is now current (index %s)", name, index)
+
+    def _finish_page_build(self, index: int, name: str):
+        """Deferred first-open build: construct the page in its reserved slot."""
+        self._pending_page_builds.discard(name)
+        if name not in self._lazy_pages:
+            logging.getLogger("GoldenNugget.gui").info(
+                "Page %s: deferred build skipped — built elsewhere already", name)
+            return
+        try:
+            self._build_lazy_page(name)
+        except RuntimeError:
+            return  # window torn down while the build was queued
+        except Exception:
+            # The build failing must never leave the loading screen in the
+            # slot with no visible signal; surface it through the crash
+            # machinery (which presents a dialog on the GUI thread) rather
+            # than silently parking the user on the spinner.
+            logging.getLogger("GoldenNugget.gui").exception(
+                "Page %s: deferred build failed", name)
+            import traceback
+
+            from src.gui.crash_ui import show_error_dialog
+            show_error_dialog(
+                f"Failed to load the {index} page ({name})",
+                traceback.format_exc())
+            return
+        logging.getLogger("GoldenNugget.gui").info(
+            "Page %s: first-open build finished", name)
+        if self.ios_pages.currentIndex() != index:
+            return  # navigated elsewhere while loading — keep that page up
+        page = self.ios_pages.widget(index)
+        if (hasattr(page, "_retheme")
+                and getattr(page, "_applied_theme_revision", -1)
+                != self._color_theme.revision):
+            page._retheme()
+            page._applied_theme_revision = self._color_theme.revision
+        self._update_shared_nav(index)
 
     def call_on_page(self, name: str, method: str, *args, **kwargs):
         """Call a page method now if the page exists, else when it is built.
