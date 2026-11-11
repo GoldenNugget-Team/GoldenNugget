@@ -1,10 +1,11 @@
-from sys import platform, argv
 import os
+import platform as _platform_mod
 import re
-import shutil # Added for the macOS fix
+import shutil  # Added for the macOS fix
 import subprocess
 import sys
-import platform as _platform_mod
+from sys import argv, platform
+
 import PyInstaller.__main__
 
 target_arch = next((arg for arg in argv if arg.startswith("--target-arch=")), None)

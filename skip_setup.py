@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import argparse
-import sys
 import asyncio
+import sys
 
 from pymobiledevice3.lockdown import create_using_usbmux
 from pymobiledevice3.services.mobile_config import MobileConfigService
 
 from restore_cache import _list_connected_devices
 from src.restore.skip_setup27 import SKIP_ALL_PANES
+
 
 async def apply_skip_all_setup(udid: str | None = None):
     ld = await create_using_usbmux(serial=udid)

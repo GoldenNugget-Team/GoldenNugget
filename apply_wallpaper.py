@@ -15,8 +15,8 @@ import sys
 
 
 def _qapp():
-    from PySide6.QtWidgets import QApplication
     from PySide6.QtCore import QCoreApplication
+    from PySide6.QtWidgets import QApplication
     QCoreApplication.setOrganizationDomain("com.leemin")
     QCoreApplication.setApplicationName("GoldenNugget")
     return QApplication.instance() or QApplication(sys.argv)
@@ -43,7 +43,7 @@ def _pick_udid(dm, manager_settings, update_label, show_alert) -> str:
 def apply_one_tendie(tendie: str, udid: str = None, list_devices: bool = False) -> int:
     from src.controllers.settings import Settings
     from src.devicemanagement.device_manager import DeviceManager
-    from src.tweaks.tweaks import tweaks, TweakID
+    from src.tweaks.tweaks import TweakID, tweaks
 
     _qapp()
     settings = Settings("settings")
