@@ -45,6 +45,8 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
+        with:
+          submodules: recursive
       - name: Install universal Python 3.15
         run: |
           curl --fail --location --retry 3 --output "$RUNNER_TEMP/python.pkg" \
@@ -93,6 +95,8 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: '14.4'
     steps:
       - uses: actions/checkout@v5
+        with:
+          submodules: recursive
       - uses: actions/download-artifact@v7
         with:
           name: macOS-Qt-universal2
@@ -192,6 +196,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          submodules: recursive
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -258,6 +264,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          submodules: recursive
 
       - name: Install Rust + engine build dependencies
         run: |
@@ -340,6 +348,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          submodules: recursive
 
       - name: Setup Python
         uses: actions/setup-python@v6
