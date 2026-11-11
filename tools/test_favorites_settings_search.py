@@ -2,20 +2,26 @@
 import os
 import sys
 import tempfile
+import unittest
 from pathlib import Path
 from types import SimpleNamespace
-import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
-from PySide6.QtCore import QSettings, QElapsedTimer
+from PySide6.QtCore import QElapsedTimer, QSettings
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit
+from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QVBoxLayout, QWidget
+
 from src.controllers.favorites import TweakFavorites
-from src.gui.ios.tweaks import IOSSectionContent
+from src.gui.ios.components import (
+    IOSCollapsibleSection,
+    IOSSearchEmpty,
+    IOSSearchField,
+    IOSSectionHeader,
+)
 from src.gui.ios.settings import IOSSettingsPage
-from src.gui.ios.components import IOSSectionHeader, IOSSearchField, IOSSearchEmpty, IOSCollapsibleSection
+from src.gui.ios.tweaks import IOSSectionContent
 from src.tweaks.tweaks import tweaks
 
 

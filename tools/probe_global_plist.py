@@ -11,8 +11,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pymobiledevice3.lockdown import create_using_usbmux
-from pymobiledevice3.usbmux import list_devices
 from pymobiledevice3.services.afc import AfcService
+from pymobiledevice3.usbmux import list_devices
 
 
 async def main() -> int:

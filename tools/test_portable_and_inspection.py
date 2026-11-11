@@ -6,26 +6,27 @@ import contextlib
 import io
 import json
 import os
-from pathlib import Path
 import plistlib
 import stat
 import sys
 import tempfile
-from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock, patch
 import zipfile
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src' / 'qt'))
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
 from PySide6.QtWidgets import QApplication
+
+from src.cli.main import dispatch
+from src.controllers.diagnostics import collect_diagnostics, write_diagnostics
 from src.controllers.preset_bundle import export_bundle, import_bundle
 from src.controllers.preset_manager import PresetManager
 from src.controllers.wallpaper_validation import validate_wallpaper
-from src.controllers.diagnostics import collect_diagnostics, write_diagnostics
-from src.cli.main import dispatch
 
 APP = QApplication.instance() or QApplication([])
 
@@ -142,7 +143,7 @@ class PortablePresets(Workspace):
         with patch('src.tweaks.hidden.current_hidden_tweak_names', return_value=set()), \
              patch('PySide6.QtWidgets.QMessageBox.exec', side_effect=AssertionError('Unexpected dialog')):
             self.assertTrue(pm._apply(imported))
-        from src.tweaks.tweaks import tweaks, TweakID
+        from src.tweaks.tweaks import TweakID, tweaks
         template = tweaks[TweakID.Templates].templates[0]
         self.assertEqual(template.name, 'Demo')
         self.assertEqual(template.min_version, '27.0')
@@ -150,8 +151,9 @@ class PortablePresets(Workspace):
             tweaks[TweakID.Templates].apply_tweak([], str(self.root), [], '26.2', False)
 
     def test_gui_transfer_runs_on_worker_and_returns_result(self):
-        from src.gui.dialogs.file_task import run_file_task
         from PySide6.QtCore import QThread
+
+        from src.gui.dialogs.file_task import run_file_task
         main_thread = QThread.currentThread()
         self.assertTrue(run_file_task(None, 'Local file transfer',
                                      lambda: QThread.currentThread() != main_thread))
@@ -172,6 +174,11 @@ class WallpaperReports(Workspace):
     def test_rejects_traversal_links_duplicates_and_broken_documents(self):
         for entry in ('../escape', '/absolute', 'C:/windows', 'a\\b'):
             path = self.zip('bad.tendies', {entry: b'bad'})
+            if entry == 'a\\b' and zipfile.ZipInfo(entry).filename != entry:
+                # zipfile itself folds the OS separator at read time on
+                # Windows ('a\b' becomes 'a/b'), so the hostile byte can
+                # never reach the name check there — nothing to assert.
+                continue
             self.assertFalse(validate_wallpaper(path)['valid'], entry)
         path = self.zip('bad.tendies', {'descriptors/A/bad.plist': b'not a plist'})
         self.assertFalse(validate_wallpaper(path)['valid'])

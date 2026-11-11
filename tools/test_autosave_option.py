@@ -168,6 +168,7 @@ def test_loaded_preset_survives_the_restart():
     brings back the old configuration and the loaded preset is lost."""
     print("\na loaded preset is still there after the restart")
     from unittest import mock
+
     from src.gui.ios import preset_menu
 
     class StatefulPresets(FakePresetManager):

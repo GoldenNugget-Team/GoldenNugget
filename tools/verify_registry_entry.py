@@ -55,12 +55,16 @@ def _stub_pyside6() -> None:
 
 _stub_pyside6()
 
+from src.tweaks.basic_plist_locations import FileLocation  # noqa: E402
 from src.tweaks.registry import (  # noqa: E402
-    SPECS, SPECS_BY_ID, SPECS_BY_SECTION, SECTION_FEATURES, Kind,
+    SECTION_FEATURES,
+    SPECS,
+    SPECS_BY_ID,
+    SPECS_BY_SECTION,
+    Kind,
 )
 from src.tweaks.tweak_classes import BasicPlistTweak  # noqa: E402
 from src.tweaks.tweak_names import TweakID  # noqa: E402
-from src.tweaks.basic_plist_locations import FileLocation  # noqa: E402
 
 _FAILURES: list[str] = []
 
@@ -137,7 +141,7 @@ def verify(name: str) -> bool:
 def main() -> int:
     args = sys.argv[1:]
     if args:
-        ok = all(verify(a) for a in args)
+        return int(not all(verify(a) for a in args))
     else:
         print("=== 全量一致性 ===")
         bad = [s.id for s in SPECS if not isinstance(s.id, TweakID)]
@@ -145,7 +149,6 @@ def main() -> int:
         orphans = [m for m in TweakID if not any(s.id is m for s in SPECS)]
         print(f"  INFO  TweakID 中未出现在 SPECS 的成员: {len(orphans)}"
               f"{' → ' + ', '.join(m.name for m in orphans[:8]) + (' ...' if len(orphans) > 8 else '') if orphans else ''}")
-        ok = not bad
 
     print()
     if _FAILURES:

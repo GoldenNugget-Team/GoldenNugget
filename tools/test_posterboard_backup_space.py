@@ -1,10 +1,10 @@
 """Offline regressions for issue #60: backup volume and DeviceLink space refusal."""
 import errno
 import os
-from pathlib import Path
 import tempfile
-from types import SimpleNamespace
 import unittest
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 from pymobiledevice3.exceptions import NotEnoughDiskSpaceError, PyMobileDevice3Exception

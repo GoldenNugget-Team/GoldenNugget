@@ -131,7 +131,15 @@ def test_variants():
     print("\nvariants")
     check("primary only", carrier_names(build_archive("A", None)) == ("A", None))
     check("secondary only", carrier_names(build_archive(None, "B")) == (None, "B"))
-    check("empty strings are treated as unset", is_reset_archive(build_archive("", "")))
+    check("blank names build hiding entries, not a reset",
+          not is_reset_archive(build_archive("", ""))
+          and carrier_names(build_archive("", "")) == ("", ""))
+    check("blank primary only", carrier_names(build_archive("", None)) == ("", None))
+    check("blank secondary only", carrier_names(build_archive(None, "")) == (None, ""))
+    hiding = cell_entries(build_archive("", None))
+    check("a hiding entry still replaces the whole live entry",
+          len(hiding) == 1 and hiding[0]["enabled"] is True
+          and hiding[0]["status"] == 5)
     check("no args is a reset", is_reset_archive(build_archive()))
     check("build_reset_archive matches build_archive()",
           build_reset_archive() == build_archive(None, None))
@@ -322,6 +330,31 @@ def test_tweak_passes_badge_and_bars_to_the_archive():
           is_reset_archive(staged[0].contents))
 
 
+def test_tweak_blank_carrier_overrides_the_label():
+    """Enabled with a blank name, the tweak must stage a hiding entry.
+
+    OG Nugget hid the label entirely when "change carrier text" was enabled
+    with no input (issue #83); a blank override must not collapse into the
+    reset record, which is what brings the stock carrier name back.
+    """
+    try:
+        from src.tweaks.status_bar.status_bar_tweak import StatusBarTweak
+    except Exception as e:  # needs the cffi-backed struct; skip bare
+        print(f"  skipped: {type(e).__name__}: {e}")
+        return
+
+    tweak = StatusBarTweak()
+    tweak.enabled = True
+    tweak.set_carrier_override("")
+    staged: list = []
+    tweak.apply_ios27_tweak(staged)
+    check("one file staged for a blank name", len(staged) == 1, len(staged))
+    check("a blank name is not the reset record",
+          staged and not is_reset_archive(staged[0].contents))
+    check("a blank name stages a hiding entry",
+          staged and carrier_names(staged[0].contents) == ("", None))
+
+
 def test_network_types():
     from src.tweaks.status_bar.status_bar_tweak import StatusBarTweak
 
@@ -356,6 +389,7 @@ test_badge_and_bars_are_sanitised()
 test_rejects_foreign_payloads()
 test_delivery_path()
 test_tweak_stages_the_archive()
+test_tweak_blank_carrier_overrides_the_label()
 test_tweak_passes_badge_and_bars_to_the_archive()
 
 print(f"\nALL {PASS} CHECKS PASSED")

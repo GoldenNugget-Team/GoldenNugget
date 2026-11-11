@@ -1,9 +1,9 @@
 """Offline digital-twin regressions: what is drawn for a selection (no device)."""
 import os
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src' / 'qt'))
@@ -116,6 +116,7 @@ class TwinState(unittest.TestCase):
 
     def test_stock_icons_from_the_device_cache(self):
         from unittest import mock
+
         from src.controllers import device_icons
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)

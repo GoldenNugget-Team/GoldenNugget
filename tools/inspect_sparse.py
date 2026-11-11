@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Inspect a sparse backup directory (sqlite Manifest.db + plists + payloads)."""
-from pathlib import Path
 import plistlib
 import sqlite3
 import sys
+from pathlib import Path
 
 root = Path(sys.argv[1] if len(sys.argv) > 1 else "/tmp/gn_sparse_debug")
 db = sqlite3.connect(f"file:{root / 'Manifest.db'}?mode=ro", uri=True)

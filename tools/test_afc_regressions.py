@@ -1,16 +1,25 @@
 """Offline AFC transfer regressions: python -m unittest tools.test_afc_regressions."""
 import asyncio
+import tempfile
+import unittest
 from contextlib import asynccontextmanager
 from pathlib import Path
-import tempfile
 from types import SimpleNamespace
-import unittest
 from unittest.mock import AsyncMock, Mock, patch
 
 from src.devicemanagement import session
 from src.exceptions.nugget_exception import NuggetException
 from src.restore import afc_media as media
 from src.restore.pause_control import RestorePauseControl, current_pause_control
+
+
+def _symlink(link, target, **kw):
+    # Windows without admin/Developer Mode refuses os.symlink (WinError 1314):
+    # the escape tests need a real link, so skip instead of failing the run.
+    try:
+        link.symlink_to(target, **kw)
+    except OSError as exc:
+        raise unittest.SkipTest(f"symlinks unavailable: {exc}") from exc
 
 
 class MemoryAfc:
@@ -131,7 +140,7 @@ class AfcTransfers(unittest.IsolatedAsyncioTestCase):
     async def test_pull_never_follows_predictable_part_symlink(self):
         victim = self.root / 'victim'
         victim.write_bytes(b'keep')
-        (self.root / 'photo.part').symlink_to(victim)
+        _symlink(self.root / 'photo.part', victim)
         afc = MemoryAfc({'/DCIM/photo': b'photo'})
         self.assertEqual(await self.pull(afc), 5)
         self.assertEqual(victim.read_bytes(), b'keep')
@@ -185,7 +194,7 @@ class AfcTransfers(unittest.IsolatedAsyncioTestCase):
     async def test_marker_write_does_not_follow_old_temporary_symlink(self):
         victim = self.root / 'victim'
         victim.write_bytes(b'keep')
-        (self.root / (media.MEDIA_STATE_FILE + '.tmp')).symlink_to(victim)
+        _symlink(self.root / (media.MEDIA_STATE_FILE + '.tmp'), victim)
         media._write_media_state(str(self.root), 0, 0, 0, {})
         self.assertEqual(victim.read_bytes(), b'keep')
         self.assertEqual(media.media_store_state(str(self.root))['entries'], {})
@@ -242,7 +251,7 @@ class AfcTransfers(unittest.IsolatedAsyncioTestCase):
         outside = self.root / 'outside'
         outside.mkdir()
         (outside / 'photo').write_bytes(b'old')
-        (self.root / 'DCIM').symlink_to(outside, target_is_directory=True)
+        _symlink(self.root / 'DCIM', outside, target_is_directory=True)
         media._write_media_state(str(self.root), 1, 3, 0, {'DCIM/photo': 3})
         self.assertFalse(media.media_store_verified(str(self.root)))
         afc = MemoryAfc({'/DCIM/photo': b'new'})

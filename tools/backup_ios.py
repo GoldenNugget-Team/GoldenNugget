@@ -2,16 +2,17 @@
 """Create a full or incremental iTunes-style backup with the current async API."""
 import argparse
 import asyncio
-from pathlib import Path
 import sys
 import time
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.devicemanagement.session import lockdown_session
 from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service
+
+from src.devicemanagement.session import lockdown_session
 
 
 def progress_callback(message):

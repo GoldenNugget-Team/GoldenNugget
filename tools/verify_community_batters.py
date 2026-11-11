@@ -32,8 +32,13 @@ sys.path.insert(0, BUILDER)
 
 from batter_builder import batter as batter_io  # noqa: E402
 from batter_builder import rules  # noqa: E402
+
 from src.tweaks.posterboard.community_tweaks import (  # noqa: E402
-    MAX_SOURCE_BYTES, MAX_TOTAL_SOURCE_BYTES, parse_tweaks, collect)
+    MAX_SOURCE_BYTES,
+    MAX_TOTAL_SOURCE_BYTES,
+    collect,
+    parse_tweaks,
+)
 
 
 def source_reader(archive: zipfile.ZipFile, config_name: str):

@@ -1,7 +1,7 @@
 """Offline reconnect regressions. Run: python -m unittest tools.test_restore_reconnect"""
 import asyncio
-from types import SimpleNamespace
 import unittest
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, call, patch
 
 from pymobiledevice3.exceptions import DeviceNotFoundError, MuxException, NotPairedError

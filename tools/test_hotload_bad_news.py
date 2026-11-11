@@ -12,6 +12,7 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QDialog, QWidget
+
 from src.controllers.hotload import HotLoad
 from src.gui.dialogs.update_dialog import UpdateDialog
 from src.gui.startup_services import StartupServices

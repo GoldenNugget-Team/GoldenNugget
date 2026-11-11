@@ -8,8 +8,8 @@ import ast
 import hashlib
 import os
 import plistlib
-import sqlite3
 import shutil
+import sqlite3
 from pathlib import Path
 
 REAL_DB = os.path.expanduser(

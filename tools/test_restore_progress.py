@@ -8,12 +8,13 @@ from unittest.mock import Mock
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from PySide6.QtCore import QObject, QEvent
+from PySide6.QtCore import QEvent, QObject
 from PySide6.QtWidgets import QApplication
-from src.qt import resources_rc
-from src.gui.ios.restore_progress import RestoreProgressCard
+
 from src.devicemanagement.device_manager import DeviceManager
 from src.devicemanagement.progress_status import BackupStatus
+from src.gui.ios.restore_progress import RestoreProgressCard
+from src.qt import resources_rc
 
 
 class HideSpy(QObject):

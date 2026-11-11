@@ -1,12 +1,12 @@
 """Offline preset catalog regressions: validation, index, submitting and the CI tool."""
 import json
 import os
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
 import zipfile
+from pathlib import Path
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -369,6 +369,7 @@ class Dialogs(unittest.TestCase):
 
     def test_templates_page_links_to_batter_builder(self):
         from types import SimpleNamespace
+
         from src.gui.ios import templates
         page = templates.IOSTemplatesPage(SimpleNamespace(settings=None, device_manager=None))
         self.addCleanup(page.deleteLater)
@@ -383,6 +384,7 @@ class Dialogs(unittest.TestCase):
 
     def test_catalog_refreshes_the_dedicated_templates_page(self):
         from types import SimpleNamespace
+
         from src.gui.dialogs.preset_catalog import refresh_template_list
         templates = mock.Mock()
         posterboard = mock.Mock()
@@ -392,8 +394,11 @@ class Dialogs(unittest.TestCase):
 
     def test_templates_page_import_and_empty_refresh(self):
         from types import SimpleNamespace
+
         from src.gui.ios import templates
-        from src.tweaks.posterboard.template_options.templates_tweak import TemplatesTweak
+        from src.tweaks.posterboard.template_options.templates_tweak import (
+            TemplatesTweak,
+        )
         holder = TemplatesTweak()
         with mock.patch.dict(templates.tweaks, {templates.TweakID.Templates: holder}):
             page = templates.IOSTemplatesPage(SimpleNamespace(
@@ -416,9 +421,9 @@ class Dialogs(unittest.TestCase):
             self.assertEqual(page.templates_layout.count(), 3)
 
     def test_embedded_page_mode(self):
-        from PySide6.QtWidgets import QPushButton
+        from PySide6.QtWidgets import QPushButton, QWidget
+
         from src.gui.dialogs.preset_catalog import CatalogDialog
-        from PySide6.QtWidgets import QWidget
         host = QWidget()
         self.addCleanup(host.deleteLater)
         with mock.patch.object(preset_catalog, 'read_cache', return_value=(None, 0)):

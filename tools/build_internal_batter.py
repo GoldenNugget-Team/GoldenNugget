@@ -46,12 +46,12 @@ sys.path.insert(0, REPO)
 sys.path.insert(0, BUILDER)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from batter_builder.model import Template  # noqa: E402
-from batter_builder import rules  # noqa: E402
 from batter_builder import batter as batter_io  # noqa: E402
+from batter_builder import rules  # noqa: E402
+from batter_builder.model import Template  # noqa: E402
+from build_community_batters import AUTHOR, spec_to_tweak  # noqa: E402
 
 from src.tweaks.registry import SPECS, Section  # noqa: E402
-from build_community_batters import AUTHOR, spec_to_tweak  # noqa: E402
 
 # Archive-delivered eligibility overrides with their own guarded class; see
 # the module docstring for why a plist write cannot carry them.

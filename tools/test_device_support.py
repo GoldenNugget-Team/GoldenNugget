@@ -1,15 +1,15 @@
 """Offline coverage of compatibility explanations and safety restrictions."""
 import sys
+import unittest
 from pathlib import Path
 from types import SimpleNamespace
-import unittest
 from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src.gui.dialogs.device_support import support_lines
 from src.controllers.hotload import HotLoad
-from src.tweaks.tweak_names import TweakID
+from src.gui.dialogs.device_support import support_lines
 from src.tweaks.registry import SPECS_BY_ID
+from src.tweaks.tweak_names import TweakID
 
 
 class DeviceSupportTests(unittest.TestCase):

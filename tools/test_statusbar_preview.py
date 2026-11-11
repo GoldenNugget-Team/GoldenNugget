@@ -1,18 +1,24 @@
 """Offline checks for the Status Bar page's live preview."""
 import os
-from pathlib import Path
 import sys
 import unittest
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src' / 'qt'))
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
-from PySide6.QtCore import QTime, QRectF
-from PySide6.QtGui import QImage, QPainter, QColor
+from PySide6.QtCore import QRectF, QTime
+from PySide6.QtGui import QColor, QImage, QPainter
 from PySide6.QtWidgets import QApplication
 
-from src.gui.ios.statusbar_preview import MAX_BARS, MAX_WIFI_BARS, StatusBarPreview, paint_status_bar, preview_state
+from src.gui.ios.statusbar_preview import (
+    MAX_BARS,
+    MAX_WIFI_BARS,
+    StatusBarPreview,
+    paint_status_bar,
+    preview_state,
+)
 from src.tweaks.status_bar.status_setter import StatusBarItem
 
 APP = QApplication.instance() or QApplication([])

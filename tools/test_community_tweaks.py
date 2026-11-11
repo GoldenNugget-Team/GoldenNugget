@@ -1,12 +1,12 @@
 """Community tweaks in .batter templates: parsing, merging, presets and validation."""
 import json
 import os
-from pathlib import Path
 import plistlib
 import sys
 import tempfile
 import unittest
 import zipfile
+from pathlib import Path
 from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -22,7 +22,12 @@ from src.controllers.preset_manager import PresetManager
 from src.controllers.wallpaper_validation import validate_wallpaper
 from src.devicemanagement.device_manager import DeviceManager
 from src.exceptions.nugget_exception import NuggetException
-from src.tweaks.posterboard.community_tweaks import CommunityTweakError, check_path, collect, parse_tweaks
+from src.tweaks.posterboard.community_tweaks import (
+    CommunityTweakError,
+    check_path,
+    collect,
+    parse_tweaks,
+)
 from src.tweaks.posterboard.template_file import TemplateFile
 from src.tweaks.posterboard.template_options.templates_tweak import TemplatesTweak
 from src.utils.file_to_restore import FileToRestore
@@ -228,7 +233,7 @@ class Safety(unittest.TestCase):
 
     def test_preview_lists_each_tweak(self):
         from src.controllers.apply_preview import capture_preview, preview_lines
-        from src.tweaks.tweaks import tweaks, TweakID
+        from src.tweaks.tweaks import TweakID, tweaks
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)
         holder = tweaks[TweakID.Templates]
@@ -255,7 +260,12 @@ class ResetRecord(unittest.TestCase):
         self.addCleanup(patcher.stop)
 
     def test_record_merges_and_plans_reset(self):
-        from src.tweaks.posterboard.community_tweaks import clear_record, load_record, reset_plan, write_record
+        from src.tweaks.posterboard.community_tweaks import (
+            clear_record,
+            load_record,
+            reset_plan,
+            write_record,
+        )
         write_record('U', {SPRINGBOARD: ({'A': 1}, 501)}, {})
         write_record('U', {SPRINGBOARD: ({'B': 1}, 501), '/var/mobile/Library/Preferences/a.plist': ({'C': 1}, 501)},
                      {'/var/mobile/x.bin': (b'', 501)})
@@ -268,6 +278,7 @@ class ResetRecord(unittest.TestCase):
 
     def test_reset_without_baseline_preserves_record_and_writes_nothing(self):
         import asyncio
+
         from src.tweaks.posterboard.community_tweaks import load_record, write_record
         from src.utils.pages import Page, get_resettable_pages
         dm = DeviceManager.__new__(DeviceManager)

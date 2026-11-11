@@ -2,11 +2,11 @@
 import base64
 import json
 import os
-from pathlib import Path
 import sys
 import tempfile
 import unittest
 import zlib
+from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -22,7 +22,12 @@ import resources_rc  # noqa: F401  (icons used by the dialogs)
 from src.controllers import share_code
 from src.controllers.hotload import HotLoad
 from src.controllers.preset_manager import PresetManager
-from src.controllers.risk_assessment import TWEAK_RISKS, RiskLevel, apply_factors, assess
+from src.controllers.risk_assessment import (
+    TWEAK_RISKS,
+    RiskLevel,
+    apply_factors,
+    assess,
+)
 
 ON = {'enabled': True, 'value': True}
 

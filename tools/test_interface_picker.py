@@ -1,20 +1,21 @@
 """First-run previews use actual Home and never persist preview choices."""
 import os
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
-from PySide6.QtCore import QSettings, QCoreApplication, QEvent
-from PySide6.QtGui import QFontDatabase, QFont
+from PySide6.QtCore import QCoreApplication, QEvent, QSettings
+from PySide6.QtGui import QFont, QFontDatabase
 from PySide6.QtWidgets import QApplication, QDialog
-from src.gui.theme import ColorThemeManager
+
 from src.gui.interface_picker import InterfacePickerDialog, _interface_preview
+from src.gui.theme import ColorThemeManager
 
 APP = QApplication.instance() or QApplication([])
 QFontDatabase.addApplicationFont(str(ROOT / 'src/qt/fonts/InterVariable.ttf'))

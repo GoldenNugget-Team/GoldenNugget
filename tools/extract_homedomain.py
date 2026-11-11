@@ -14,7 +14,6 @@ import sqlite3
 import sys
 from pathlib import Path
 
-
 S_IFDIR  = 0o0040000
 S_IFREG  = 0o0100000
 

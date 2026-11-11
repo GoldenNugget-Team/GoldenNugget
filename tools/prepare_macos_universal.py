@@ -3,13 +3,13 @@ from __future__ import annotations
 
 import importlib.metadata as metadata
 import platform
-from pathlib import Path
 import shutil
 import subprocess
 import sys
 import sysconfig
 import tempfile
 import zipfile
+from pathlib import Path
 
 from packaging.utils import canonicalize_name, parse_wheel_filename
 

@@ -141,9 +141,10 @@ async def main():
 
     # --- widget-level flow: filter + selection, offscreen -------------------
     from PySide6.QtWidgets import QApplication
+
     from src.gui.dialogs.app_list_dialog import AppListExportDialog
 
-    app = QApplication.instance() or QApplication([])
+    app = QApplication.instance() or QApplication([])  # noqa: F841 -- keeps the QApplication alive
 
     class _FakeManager:
         def get_current_device_udid(self):

@@ -108,6 +108,7 @@ check("iOS27: payload file staged under the hash layout",
 
 # --- AppBundle registration in both formats ---
 from src.restore.backup import AppBundle
+
 app = AppBundle(identifier="com.apple.PosterBoard",
                 path="/Applications/PosterBoard.app",
                 container_content_class="Data/Application", version="1.0")

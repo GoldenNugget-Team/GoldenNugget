@@ -21,8 +21,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.exceptions.nugget_exception import NuggetException
 from src.tweaks.posterboard.db_validate import (
-    IncompletePosterBoardSnapshot, POSTERBOARD_TABLES, is_encrypted_database,
-    posterboard_db_is_snapshot_ok, snapshot_problem)
+    POSTERBOARD_TABLES,
+    IncompletePosterBoardSnapshot,
+    is_encrypted_database,
+    posterboard_db_is_snapshot_ok,
+    snapshot_problem,
+)
 
 TMP = tempfile.mkdtemp(prefix="nugget_pb_snapshot_test_")
 FAILURES = []
@@ -141,6 +145,7 @@ check("missing required table is named in the reason",
 
 print("\n== require_usable_snapshot ==")
 from src.tweaks.posterboard.db_validate import require_usable_snapshot
+
 try:
     require_usable_snapshot(good)
     check("usable snapshot does not raise", True)
@@ -183,6 +188,7 @@ labels = []
 fake = FakeExtraction()
 
 import src.restore.protective as protective
+
 real_extractor = protective.extract_posterboard_db
 protective.extract_posterboard_db = fake
 

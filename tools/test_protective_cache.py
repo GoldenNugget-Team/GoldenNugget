@@ -246,6 +246,7 @@ def main():
     # keeps the marker, instead of leaving a truncated mirror marked usable
     # or throwing the last good copy away.
     import asyncio
+
     from src.restore import protective as _protective
 
     original_backup = _protective.perform_protective_backup

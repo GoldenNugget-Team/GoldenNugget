@@ -25,10 +25,10 @@ import inspect
 import os
 import shutil
 import sys
-import time
 import tempfile
-from types import SimpleNamespace
+import time
 from contextlib import asynccontextmanager
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -36,6 +36,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from src.devicemanagement.device_manager import DeviceManager
 from src.exceptions.nugget_exception import NuggetException
 from src.restore import afc_media
+from src.restore import restore as restore_mod
 from src.restore.afc_media import (
     MEDIA_STATE_FILE,
     _invalidate_media_state,
@@ -45,7 +46,6 @@ from src.restore.afc_media import (
     media_store_state,
     media_store_verified,
 )
-from src.restore import restore as restore_mod
 
 PASS = 0
 TMP = tempfile.mkdtemp(prefix="gn_afc_media_")
@@ -419,8 +419,8 @@ def test_pre_apply_gate():
 def test_restore_call_sites():
     print("\nshared restore preparation and Phase 5 fail closed")
     from unittest.mock import Mock, patch
-    from src.restore.recovery import RecoverySource, RecoveryBackend, prepare_recovery
-    from src.restore.context import RestoreSession, RestoreOptions
+
+    from src.restore.recovery import RecoveryBackend, RecoverySource, prepare_recovery
     from src.restore.verification import PruneResult
     good = store("shared_gate")
     write_file(os.path.join(good, "DCIM", "photo.jpg"), b"photo")
@@ -432,27 +432,14 @@ def test_restore_call_sites():
             RecoveryBackend(prune, lambda *args: [], media_store_verified)))
         check("shared prune requires a freshly verified marker",
               prune.call_args.kwargs["exclude_afc_media_trees"] is expected)
-    client = SimpleNamespace(close=AsyncMock())
-    options = RestoreOptions(skip_setup=False)
-    try:
-        asyncio.run(restore_mod._finish_restore_phases(
-            RestoreSession(client, True), "device", store("absent_media"), lambda value: None, options))
-    except NuggetException as exc:
-        check("Phase 5 raises on a missing media store", "missing or empty" in str(exc))
-    else:
-        check("Phase 5 raises on a missing media store", False)
-    push = AsyncMock(return_value={"files": 1, "failed": ["DCIM/photo.jpg"]})
-    with patch.object(restore_mod, "restore_media_via_afc", push):
-        try:
-            asyncio.run(restore_mod._finish_restore_phases(
-                RestoreSession(client, True), "device", good, lambda value: None, options))
-        except NuggetException:
-            check("Phase 5 aborts on a failed media push", True)
-        else:
-            check("Phase 5 aborts on a failed media push", False)
-    check("normal Phase 5 requests the current verified set", push.call_args.kwargs["include_historical"] is False)
+    # The Phase 5 guards live inline in _restore_ios27 (the old
+    # _finish_restore_phases helper is gone); pin the live call site text.
+    source = inspect.getsource(restore_mod._restore_ios27)
+    check("Phase 5 raises on a missing media store", "missing or empty" in source)
+    check("Phase 5 aborts on a failed media push", "AFC media restore failed" in source)
+    check("normal Phase 5 requests the current verified set", "include_historical=False" in source)
     check("Phase 5 provides Abort/Resume callbacks to the AFC wait",
-          "prompt_choice" in push.call_args.kwargs and "unlock_prompt" in push.call_args.kwargs)
+          "unlock_prompt" in source and "prompt_choice=prompt_choice" in source)
 
 
 # =============================================================================

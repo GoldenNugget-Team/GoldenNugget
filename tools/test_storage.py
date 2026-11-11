@@ -31,8 +31,8 @@ app.setApplicationName("GoldenNugget")
 app.setOrganizationName("GoldenNugget")
 app.setOrganizationDomain("com.leemin")
 
-from src.restore import storage
 from src.controllers.settings import Settings
+from src.restore import storage
 
 AD = Path(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation))
 

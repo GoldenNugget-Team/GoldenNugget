@@ -14,12 +14,12 @@ import sys
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from PySide6.QtCore import QEventLoop, QTimer, QElapsedTimer
+from PySide6.QtCore import QElapsedTimer, QEventLoop, QTimer
 from PySide6.QtWidgets import QApplication
 
-from src.gui.ios.daemons import IOSDaemonsContent, _NO_MAX_HEIGHT
-from src.tweaks.tweaks import tweaks, TweakID
+from src.gui.ios.daemons import _NO_MAX_HEIGHT, IOSDaemonsContent
 from src.tweaks.tweak_loader import load_daemons
+from src.tweaks.tweaks import TweakID, tweaks
 
 PASS = 0
 

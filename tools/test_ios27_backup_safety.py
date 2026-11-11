@@ -178,8 +178,8 @@ class UnverifiedApply(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(any("not modified" in note for note in seen["error"].__notes__))
 
     async def test_rebuild_does_not_continue_without_a_backup(self):
-        from src.tweaks.posterboard.posterboard_rebuild import rebuild_posterboard
         import src.restore.posterboard_backup as pb
+        from src.tweaks.posterboard.posterboard_rebuild import rebuild_posterboard
 
         manager = type("M", (), {})()
         manager._prepare_protective_backup = AsyncMock(

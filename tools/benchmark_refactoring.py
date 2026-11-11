@@ -1,9 +1,8 @@
 """Reproducible local probes for the rewrite; no device or persistent settings."""
-import ast
 import argparse
+import ast
 import gc
 import json
-from pathlib import Path
 import platform
 import statistics
 import subprocess
@@ -12,6 +11,7 @@ import tempfile
 import time
 import tracemalloc
 import types
+from pathlib import Path
 
 BASELINE = "HEAD"
 ROOT = Path(__file__).resolve().parents[1]

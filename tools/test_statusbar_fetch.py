@@ -127,7 +127,10 @@ def test_falls_back_to_flat_backup_dir():
 
 
 def test_describe_reports_the_schema():
-    from src.tweaks.status_bar.statusbar_archive import build_archive, build_reset_archive
+    from src.tweaks.status_bar.statusbar_archive import (
+        build_archive,
+        build_reset_archive,
+    )
 
     report = sf.describe(build_archive("MegaFone", "BeeLine"))
     for needed in ("_SBSystemStatusStatusBarOverridesArchiveRecord",

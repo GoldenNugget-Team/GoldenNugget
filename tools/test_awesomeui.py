@@ -3,21 +3,22 @@ import ast
 import hashlib
 import json
 import os
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
-from PySide6.QtCore import QSettings, QCoreApplication, QEvent
+from PySide6.QtCore import QCoreApplication, QEvent, QSettings
 from PySide6.QtWidgets import QApplication
+
 from awesomeui import Sidebar
-from src.gui.widgets import NavigationSidebar
 from src.gui.theme import ColorThemeManager
+from src.gui.widgets import NavigationSidebar
 
 APP = QApplication.instance() or QApplication([])
 
@@ -84,18 +85,15 @@ class AwesomeUIIntegration(unittest.TestCase):
                         self.assertEqual(window.ui.sidebar.current_item_id(), name)
                         self.assertIs(getattr(window.ui, name), window.ui.sidebar.item(name))
                     self.assertIs(window.ios_pages.widget(14), window.ios_templates)
-                    self.assertEqual(window.ios_posterboard.tab_stack.count(), 2)
+                    self.assertEqual(window.ios_posterboard.tab_stack.count(), 3)
                     window.ios_posterboard.video_tab_btn.click()
                     self.assertIs(window.ios_posterboard.tab_stack.currentWidget(),
                                   window.ios_posterboard.video_page)
                     self.assertFalse(hasattr(window.ios_posterboard, 'templates_tab_btn'))
-                    self.assertEqual(len(window.ios_home._tiles), 7)
-                    for card, index in ((window.ios_home.posterboard_card, 2),
-                                        (window.ios_home.templates_card, 14)):
-                        card.mousePressEvent(None)
-                        APP.processEvents()
-                        self.assertEqual(window.ios_pages.currentIndex(), index)
-                    self.assertEqual(window.ios_nav.title_lbl.text(), 'Templates')
+                    self.assertEqual(len(window.ios_home._tiles), 6)
+                    window.ios_home.posterboard_card.mousePressEvent(None)
+                    APP.processEvents()
+                    self.assertEqual(window.ios_pages.currentIndex(), 2)
                     import_action = window.ios_nav._right_btn
                     with patch.object(window.ios_templates, 'show_add_templates_dialog') as import_templates:
                         window._nav_right_actions[14] = ('+ Import Templates', import_templates)
@@ -111,12 +109,10 @@ class AwesomeUIIntegration(unittest.TestCase):
                     self.assertTrue(window.ui.posterboardPageBtn.isHidden())
                     self.assertTrue(window.ui.daemonsPageBtn.isHidden())
                     self.assertFalse(window.ui.templatesPageBtn.isHidden())
-                    self.assertFalse(window.ios_home.templates_card.isHidden())
                     with patch('src.gui.main_window_mixins._hidden_feature_names',
                                return_value={'Templates'}):
                         window._apply_hidden_feature_gating()
                     self.assertTrue(window.ui.templatesPageBtn.isHidden())
-                    self.assertTrue(window.ios_home.templates_card.isHidden())
                     self.assertFalse(window.ios_home.posterboard_card.isHidden())
                     # Hidden sidebars must catch up when they become visible.
                     ColorThemeManager.instance().set_accent('purple')

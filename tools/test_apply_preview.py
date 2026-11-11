@@ -1,25 +1,26 @@
 """Offline preview regression: no USB, backups, or real preference writes."""
 import asyncio
 import os
-from pathlib import Path
 import sys
 import tempfile
-from types import SimpleNamespace
 import unittest
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtWidgets import QApplication, QPushButton
+
 from src.controllers import apply_preview as preview
 from src.devicemanagement import device_manager as dm
+from src.tweaks.basic_plist_locations import FileLocation
+from src.tweaks.registry import SPECS
+from src.tweaks.status_bar.status_bar_tweak import StatusBarTweak
 from src.tweaks.tweak_classes import AdvancedPlistTweak
 from src.tweaks.tweak_loader import _build_spec
-from src.tweaks.registry import SPECS
 from src.tweaks.tweak_names import TweakID
-from src.tweaks.basic_plist_locations import FileLocation
-from src.tweaks.status_bar.status_bar_tweak import StatusBarTweak
 
 
 class PreviewTests(unittest.TestCase):
@@ -78,8 +79,9 @@ class PreviewTests(unittest.TestCase):
         self.assertEqual(preview.preview_rows(self.state, self.state['entries']), [])
 
     def test_table_groups_queue_safety_and_changes_without_editing(self):
+        from PySide6.QtWidgets import QAbstractItemView, QTreeWidgetItemIterator
+
         from src.gui.dialogs.apply_preview import ApplyPreviewDialog
-        from PySide6.QtWidgets import QTreeWidgetItemIterator, QAbstractItemView
         app = QApplication.instance() or QApplication([])
         old = {'Example': dict(self.entry, value=False), 'Removed': dict(self.entry, title='Removed')}
         self.state['queued'] = [['PosterBoard', '<wallpaper>.tendies']]
@@ -159,8 +161,8 @@ class PreviewTests(unittest.TestCase):
             write.assert_called_once_with('one', '26.2', self.state)
 
     def test_preview_button_does_not_accept_summary(self):
-        from src.gui.ios.components import IOSSummaryDialog
         from src.gui.dialogs.apply_preview import ApplyPreviewDialog
+        from src.gui.ios.components import IOSSummaryDialog
         from src.gui.theme import ColorThemeManager
         app = QApplication.instance() or QApplication([])
         opened = []

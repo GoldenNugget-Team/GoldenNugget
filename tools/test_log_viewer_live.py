@@ -26,16 +26,18 @@ _TMP_DIR = tempfile.mkdtemp(prefix="gn_logviewer_live_")
 os.environ["GOLDENNUGGET_LOG_FILE"] = os.path.join(_TMP_DIR, "session.log")
 
 import logging
-from PySide6.QtCore import QEventLoop, QTimer, QSettings
-from PySide6.QtWidgets import QStackedWidget, QApplication, QWidget
+
+from PySide6.QtCore import QEventLoop, QSettings, QTimer
+from PySide6.QtWidgets import QApplication, QStackedWidget, QWidget
 
 app = QApplication.instance() or QApplication([])
 
+from src.controllers.nugget_logger import get_log_path, init_logging
 from src.qt import resources_rc  # noqa: F401
-from src.controllers.nugget_logger import init_logging, get_log_path
+
 init_logging()
-from src.gui.ios.home import IOSHomePage
 from src.gui.dialogs import log_viewer as lv
+from src.gui.ios.home import IOSHomePage
 
 PASS = 0
 

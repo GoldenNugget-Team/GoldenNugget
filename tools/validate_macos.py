@@ -1,9 +1,18 @@
 """Validate both Mach-O slices, dependency closure and the macOS 14.4 floor."""
-from pathlib import Path
+import json
+import subprocess
+import sys
 from functools import lru_cache
-import json, subprocess, sys
+from pathlib import Path
+
+from macholib.mach_o import (
+    LC_BUILD_VERSION,
+    LC_LOAD_WEAK_DYLIB,
+    LC_RPATH,
+    LC_VERSION_MIN_MACOSX,
+)
 from macholib.MachO import MachO
-from macholib.mach_o import LC_RPATH, LC_LOAD_WEAK_DYLIB, LC_BUILD_VERSION, LC_VERSION_MIN_MACOSX
+
 app = Path(sys.argv[1]).resolve()
 frameworks = app / 'Contents/Frameworks'
 executable = app / 'Contents/MacOS'

@@ -15,12 +15,12 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from src.exceptions.device_errors import is_connection_error  # noqa: E402
 from src.restore import protective  # noqa: E402  (installs the shims on import)
 from src.restore.device_link_adapter import (  # noqa: E402
     DeviceLinkStalled,
     recv_timeout_secs,
 )
-from src.exceptions.device_errors import is_connection_error  # noqa: E402
 
 PASS = 0
 

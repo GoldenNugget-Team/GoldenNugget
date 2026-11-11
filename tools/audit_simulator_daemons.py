@@ -5,11 +5,11 @@ Never targets the host launchd. Results apply only to the specified runtime.
 Usage: python tools/audit_simulator_daemons.py REPORT_DIRECTORY
 """
 import json
-from pathlib import Path
 import re
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 root = Path(sys.argv[1]).resolve()
 config = json.loads((root / 'inventory.json').read_text())
