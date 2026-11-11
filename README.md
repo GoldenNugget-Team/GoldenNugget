@@ -8,7 +8,7 @@
 > [!WARNING]
 > **Back up your device before applying tweaks.** GoldenNugget can cause data loss, boot loops, or other unexpected device problems. Use this project at your own risk; the authors are not responsible for damage to your device or data. See the [full disclaimer](docs/DISCLAIMER.md).
 
-Unlock your device's full potential, with iOS 27 support!
+Unlock your device's full potential, with experimental iOS 27 support!
 
 Customize your device with animated wallpapers, disable pesky daemons, and more!
 
@@ -23,7 +23,7 @@ See the [installation guide](https://github.com/GoldenNugget-Team/GoldenNugget/w
 ## Running from source
 Requirements
 Python 3.10+
-QT 6.9.6+
+Qt 6.12.0+
 Rust (Mobile companion)
 
 1. Install the device connection tools listed in [Requirements](#requirements).
@@ -54,7 +54,7 @@ to open the interface with mock devices and no iPhone connected.
 | iOS | 26.2–27.x | Older versions are blocked by the app. |
 | Windows | Apple Devices or iTunes | Install one before connecting an iPhone. |
 | Linux | `usbmuxd` and `libimobiledevice` | Both are required for USB access. |
-| Linux (release) | glibc 2.34+ (x86_64) | The frozen build runs where PySide6 itself runs. Debian 12, Ubuntu 22.04, RHEL 9, Mint 21+. Source runs on any Python 3.15 distro. |
+| Linux (release) | glibc 2.34+ (x86_64) | The frozen build runs where PySide6 itself runs. Debian 12, Ubuntu 22.04, RHEL 9, Mint 21+. Source runs on Python 3.10+ on any distro (release builds use 3.15). |
 | Python | 3.10+ | Use the pinned packages in `requirements.txt`. |
 
 ## Discord server
@@ -184,7 +184,7 @@ with GoldenNugget's rules, previews it on a virtual iPhone and submits it to the
 
 </details>
 
-## Contributors 
+## Contributors
 
 <div align="center">
 
@@ -209,14 +209,14 @@ Want to see your name here? Open a [Pull Request](https://github.com/GoldenNugge
 </a>
 
 <div align="center">
-<br>We think you can star this repo if you think this is a good project.</br>
+If you find this project useful, consider starring the repo.
 </div>
 
 > [!NOTE]
 > ## Mobilegestalt
 > Don't even ask me for it. It will be NEVER implemented again. 
 
-## Requirements:
+## Requirements
 <details>
 <summary>Windows</summary>
   
@@ -292,12 +292,12 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contributions and [FORKING.md](FORKIN
 - [kik4311] Co-developer
 - [mekabrine][mekabrineDiscord] for icons artwork in new ui.
 - [oma][EazvyGitHub] for interface improvements.
-- [Lucide contributors][LucideGitHub] for the some interface icons.
+- [Lucide contributors][LucideGitHub] for some of the interface icons.
 - [Rasmus Andersson][rsmsGitHub] for the Inter font.
 - Translations crowdsourced using [gNugget-i18n repository][i18n]
 - [Prognosticate-X] for [Status Bar research][sbr] on iOS 27
 - [LeminLimez] for creating Nugget.
-- [0xjonhnnydev] for [AirLift]
+- [0xjohnnydev] for [AirLift]
 - [LEGACY] Old translations were crowdsourced using [Nugget POEditor][POEditorJoin]. Thank you everyone who assisted in the translation effort!
 - [PosterRestore][PosterRestoreDiscord] for their help with PosterBoard
   - Special thanks to [dootskyre][dootskyreX], [Middo][MiddoX], [dulark][dularkGitHub], forcequitOS, and pingubow for their work on nugget. It would not have been possible without them!
@@ -361,7 +361,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contributions and [FORKING.md](FORKIN
 [HuyTwitter]: https://x.com/Little_34306
 [iTechExpertTwitter]: https://twitter.com/iTechExpert21
 [server]: https://discord.gg/Rm6r4zeE3y
-[0xjonhnnydev]: https://github.com/0xjohnnydev
+[0xjohnnydev]: https://github.com/0xjohnnydev
 [awesomenull]: https://github.com/awesomenull-dev
 [kik4311]: https://github.com/kik4311
 [AirLift]: https://github.com/0xjohnnydev/airlift

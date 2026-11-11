@@ -1,33 +1,34 @@
 # Roadmap
 
-GoldenNugget's plan for the next versions, from 9.3.3 to 9.4.2. What each one means for you.
+What has already shipped, and what is next. This is a plan, not a promise.
 
-## 9.3.3 — small cleanup, nothing new to see
+9.3 through 9.5.3 are already released. The notes below are the later releases in that range, taken from their release notes.
 
-A tiny update that fixes a few rough edges under the hood. No new features, no new buttons — just less chance of hiccups and a cleaner codebase so the next big update goes smoothly.
+## Already shipped (9.3 – 9.7.6)
 
-> Status: done, ready to ship.
+### 9.6
 
-## 9.4 — the big under-the-hood overhaul
+9.6.0 added a preset manager, an apply preview, operation history, and a session log viewer on the home screen. It also added tweak favorites, settings search, search in the tweak and daemon lists, Russian UI translations, conflicting-tweak warnings, validation of imported presets, a rollback preset, and warnings for unsafe device setups. Startup got faster by importing heavy modules lazily, a time estimate is shown before applying, and operation results stay on screen. PosterBoard was reworked, the converter was improved, and the interface gained a "no device connected" placeholder, polished navigation, and a language choice that is saved before restart. Python 3.15 compatibility was fixed.
 
-To you, GoldenNugget will look almost the same. But inside, a lot gets rebuilt: the way the app talks to your device, handles errors, and keeps its own code organized.
+9.6.2, the last 9.6 update, added a community presets page, packaged the macOS build as a universal2 DMG, fixed the status bar, and fixed issues #58 and #59.
 
-Practical results you *might* actually notice:
-- fewer random failures when connecting to / backing up your device
-- the app's window won't freeze while it scans for devices
-- errors during apply/reset become more predictable — and if something goes wrong, the app handles it more gracefully
-- Speed up (maybe)
+### 9.7
 
-This release does the heavy lifting so all the version after it can focus on **stuff you can actually see**.
+9.7.0 added a community catalog for presets and `.batter` templates, with community tweaks (switches, sliders, text fields, and choices), catalog update indicators, and download size and SHA-256 checks. Those tweaks show up in the apply summary, the risk assessment, and the Reset dialog. New tweaks: Disable Icon Shimmer (iOS 26.4+) and experimental Disable Icon Glass Outline and SpringBoard RSSI indicator. Legacy wallpaper conversion runs only on iOS 27 and newer. First-run interface selection (Sidebar or Modern) came back, with English screenshots instead of the old preview SVGs. Media-cache verification checks every recorded file and its size, and an apply no longer reports success when tweak delivery or media restoration is incomplete.
 
-## 9.4.1 — new tweaks & quality of life
+### 9.7.4
 
-The first version *for* user, not just at the code: new tweak categories and/or new tweaks (maybe), plus smaller UX improvements to make the app more comfortable to use.
+The desktop app can install the mobile version onto the phone. The packaged app ships as GoldenNugget. Preference tweaks whose file had no backup baseline are delivered as new files instead of aborting the apply. Fixes include issues #80 and #81, Calendar Access timers stopping on close, removal of retired feature-flag writers, OTA daemon delivery separated from the MobileAsset preference, and nested preferences kept on reset.
 
-## 9.4.2 — more tweaks & quality of life
+### 9.7.5
 
-Whatever doesn't fit in 9.4.1 lands here — more tweaks, more small usability wins.
+Mobile Helper was simplified, and pairing moved from a lockdown record to remote pairing.
 
----
+### 9.7.6
 
-Roadmap is a plan, not a promise — items can shift between versions if needed.
+Critical bug fixes, including issue #87, plus a fix for PNG icons not rendering in the compiled build.
+
+## Next
+
+- Safety on iOS 27: never start an apply unless the selective backup completed and verified, and never overwrite the previous backup before restore finishes; mark iOS 27 features as verified or experimental.
+- If the selective backup does not finish, the apply stops and says the device was not changed. The previous backup stays on this computer until that restore finishes.
