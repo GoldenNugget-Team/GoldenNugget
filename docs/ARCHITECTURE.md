@@ -142,7 +142,7 @@ Key methods:
 ```
 apply_changes()
  ├─ _raise_if_unsupported()                    iOS < 26.2 hard-blocked
- ├─ _prepare_protective_backup()               Phase 0 (cache, see below)
+ ├─ _prepare_protective_backup()               Phase 0, iOS 27 only (cache, see below)
  │    ├─ encrypted? prompt password / bypass cache
  │    └─ wallpapers applied? include PB container + extract DB after refresh
  ├─ _backup_posterboard_database(force=True)   only if the cache could not
@@ -152,7 +152,10 @@ apply_changes()
       ├─ skip-setup + .GlobalPreferences copy  HomeDomain survival copies
       ├─ backup-encryption password handling   (iOS 27+)
       └─ start_restore(files, prepared_backup_root)
-           └─ restore_files → _restore_ios27   six phases, below
+           └─ restore_files
+                ├─ iOS >= 27.0 → _restore_ios27   six phases, below
+                └─ iOS 26.2–26.x → perform_restore
+                     plain sparse restore; no protective backup and no wipe
 ```
 
 ---
@@ -300,7 +303,16 @@ the apply path preserves it instead of reporting a missing PosterBoard DB.
 Offline regressions: `tools/test_posterboard_backup_space.py`.
 
 ### `restore.py` — six-phase restore (`_restore_ios27`)
-All supported devices (26.2+) take this path:
+iOS 27 only. `restore_files` calls `_restore_ios27` when
+`product_version >= 27.0`. iOS 26.2–26.x takes the other branch: a plain
+`perform_restore`, with no protective backup and no safe-state-recovery wipe.
+
+By default `merge_phases` is true, so Phase 2 does not reboot and the phone
+is not wiped; the protective restore lands on the still-live device.
+`GOLDENNUGGET_NO_MERGE_PHASES=1` restores the classic reboot into safe state
+recovery. Phase 2 is also skipped entirely when the protective restore
+already carries the apply (wallpaper-only, or an unchanged tweak set plus
+new wallpapers).
 
 ```
 Phase 0 (in device_manager): protective backup + PosterBoard DB
@@ -315,10 +327,11 @@ Phase 1 (0-40%):  cache master → a disposable restore VIEW (pruned manifest
                   backup is pruned IN PLACE (no /tmp copy ever)
                   → clean_backup_for_restore() prune
                   → inject PosterBoard files (pb_inject_files, AppDomain)
-Phase 2 (40-60%): perform_restore() sparse restore → reboot
-                  → iOS 27 "safe state recovery" wipes data volume
-                  (SKIPPED when Phase 2 has nothing new to deliver and the
-                  protective restore already carries the apply:
+Phase 2 (40-60%): perform_restore() sparse restore. Default merge_phases
+                  does not reboot, so there is no safe-state-recovery wipe.
+                  GOLDENNUGGET_NO_MERGE_PHASES=1 reboots into that wipe.
+                  Skipped entirely when the protective restore already
+                  carries the apply:
                   • PosterBoard-only applies — every payload is diverted to
                     pb_inject_files, the incidental scaffolding files are
                     dropped, the sparse list is empty

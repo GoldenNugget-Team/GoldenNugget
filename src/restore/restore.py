@@ -843,9 +843,9 @@ async def _restore_ios27(back: backup.Backup, reboot: bool,
                       refresh): a fresh live run is pruned IN PLACE, a cache
                       master is restored from a disposable view (pruned and
                       tweak-injected there), so the master itself is never
-                      modified. With ``skip_protective_backup`` the whole phase
-                      (and Phase 3) is skipped — the user opted out on low
-                      disk space.
+                      modified. ``skip_protective_backup`` does not opt out:
+                      low disk space stops the apply before the device is
+                      changed, and this function refuses if that flag is set.
     Phase 2 (40-60%): Apply tweaks via sparse restore → reboot, which
                       triggers the iOS 27 "safe state recovery" wipe. By
                       default (``merge_phases``) the reboot is skipped: the

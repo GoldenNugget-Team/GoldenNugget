@@ -62,7 +62,7 @@ to open the interface with mock devices and no iPhone connected.
 <details>
 <summary>Why does GoldenNugget make its own backup if I already have one?</summary>
 
-On iOS 27, most applies do not wipe the phone. GoldenNugget still makes a protective backup right before applying and puts your data back from that backup, not from your own backup, so this step can't be skipped. By default the phone stays up and that backup is restored without the safe-state-recovery reboot. The wipe happens only if the phone reboots into safe state recovery, and the sparse restore that triggers it is skipped for wallpaper-only applies or an unchanged tweak set. iOS 26 does not wipe. Keep your own backup as well, in case something goes wrong. Make sure the computer has enough free space, and never delete the protective backup or cache while an apply or recovery is in progress. You can move it in **Settings → Backup → Backup/Cache Location**.
+On iOS 27, GoldenNugget restores your data from the protective backup it makes right before applying, not from your own backup, so don't skip this step. If there isn't enough disk space for that backup, the apply stops before the phone is changed. On iOS 27 the phone is usually not wiped, but in rare cases it reboots into a recovery mode that erases its data, and then that backup is the only way back. iOS 26 never wipes, and it does not make this backup. Keep your own backup as well, in case something goes wrong. Make sure the computer has enough free space, and never delete the protective backup or cache while an apply or recovery is in progress. You can move it in **Settings → Backup → Backup/Cache Location**.
 </details>
 
 <details>
