@@ -35,13 +35,13 @@ class DeviceSupportTests(unittest.TestCase):
     def text(self):
         return '\n'.join(support_lines(self.manager))
 
-    def test_version_limits_and_experimental_status(self):
-        self.assertIn('experimental', self.text())
+    def test_version_limits_and_support_status(self):
+        self.assertIn('This iOS version is supported by GoldenNugget.', self.text())
         self.assertIn(SPECS_BY_ID[TweakID.ForceSolariumFallback].title + ': supports iOS 26.99 or older', self.text())
         self.manager.get_current_device_version = lambda: '26.2'
-        self.manager.get_current_device_partially_supported = lambda: False
         self.assertIn(SPECS_BY_ID[TweakID.DisallowGlassButtons].title + ': requires iOS 27.0 or newer', self.text())
         self.manager.get_current_device_is_supported_by_fork = lambda: False
+        self.assertIn('Applying tweaks requires iOS 26.2 or newer.', self.text())
         self.assertIn('Available registry tweaks (0)', self.text())
 
     def test_safety_reason_and_disabled_rules(self):
