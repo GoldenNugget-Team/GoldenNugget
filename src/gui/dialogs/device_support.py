@@ -28,8 +28,6 @@ def support_report(manager):
     lines = [tr("Device: {0} · iOS {1}").format(model, version)]
     if not supported:
         lines.append(tr("Applying tweaks requires iOS 26.2 or newer."))
-    elif manager.get_current_device_partially_supported():
-        lines.append(tr("Developer beta warning: iOS 27 support is experimental and uses a beta backup and restore workflow. Newer tweaks may behave unpredictably and can cause boot loops or require recovery. Keep a separate backup and use newer tweaks cautiously."))
     else:
         lines.append(tr("This iOS version is supported by GoldenNugget."))
     lines.append(tr("Availability below follows the app's compatibility rules; it is not a test of effects on the device."))
@@ -105,7 +103,6 @@ def support_report(manager):
         lines.extend(["", tr("HotLoad safety rules are turned off in Settings.")])
     lines.extend(["", f"{tr('Available registry tweaks')} ({len(available)})", *available])
     return dict(lines=lines, groups=groups, supported=supported,
-                partial=supported and manager.get_current_device_partially_supported(),
                 model=model, version=version, hidden=hidden_features, pages=pages,
                 forced=forced, safety_enabled=safety.is_enabled())
 
@@ -148,9 +145,9 @@ class DeviceSupportDialog(QDialog):
         heading = QHBoxLayout()
         name = getattr(manager, "get_current_device_name", lambda: None)() or report["model"]
         heading.addWidget(self._label(name, "compatDevice"), 1)
-        state = "limited" if report["partial"] else "supported" if report["supported"] else "unsupported"
-        status = self._label(self._tr({"limited": QT_TRANSLATE_NOOP("Nugget", "Limited Support"), "supported": QT_TRANSLATE_NOOP("Nugget", "Supported"),
-                                      "unsupported": QT_TRANSLATE_NOOP("Nugget", "Not Supported")}[state]), "compatBadge")
+        state = "supported" if report["supported"] else "unsupported"
+        status = self._label(self._tr({"supported": QT_TRANSLATE_NOOP("Nugget", "Supported"),
+                                       "unsupported": QT_TRANSLATE_NOOP("Nugget", "Not Supported")}[state]), "compatBadge")
         status.setProperty("supportState", state)
         heading.addWidget(status, 0, Qt.AlignTop)
         device_layout.addLayout(heading)
@@ -159,12 +156,7 @@ class DeviceSupportDialog(QDialog):
         if build:
             info += self._tr(" · Build {0}").format(build)
         device_layout.addWidget(self._label(info, "compatMuted"))
-        if report["partial"]:
-            explanation = self._tr(
-                "Support for this iOS version is experimental. The backup and restore workflow "
-                "is in beta, and newer tweaks may cause boot loops or require recovery. "
-                "Keep a separate backup before applying changes.")
-        elif report["supported"]:
+        if report["supported"]:
             explanation = self._tr("Your iOS version is supported. Some tweaks may still depend on your device or iOS version.")
         else:
             explanation = self._tr("Applying tweaks requires iOS 26.2 or newer. This device cannot apply tweaks with GoldenNugget.")
