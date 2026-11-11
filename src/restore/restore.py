@@ -61,6 +61,7 @@ from .protective import (
     log_info,
     log_warn,
     make_restore_view,
+    mark_restore_ok,
     new_protective_backup_dir,
     perform_protective_backup,
     prune_protective_backups,
@@ -583,238 +584,51 @@ async def _deliver_sparse_phase(back, lockdown_client, udid, progress_callback, 
     return sparse_failure
 
 
-async def _restore_protective_phase(session, lockdown_client, udid, backup_root,
-                                    inject_files, progress_callback, options):
-    """Restore protective data, preserving resume and merged-session fallback."""
-    backup_password = options.backup_password
-    skip_protective_backup = options.skip_protective_backup
-    merge_phases = options.merge_phases
-    prompt_choice = options.prompt_choice
-    merge_fallback_done = False
-    if merge_phases:
-        # Merged mode: the sparse restore never rebooted, so there is no
-        # security recovery to wait for — the device is still connected and
-        # its data was never wiped. Reuse the SAME session for the
-        # protective restore, exactly like the PosterBoard-only path does
-        # (that path proves a protective restore over a live, un-wiped
-        # device works — to iOS it looks like a normal full restore).
-        log_info("Phase 3: merged mode — device never rebooted, restoring "
-                 "protective backup on the live session (no security "
-                 "recovery, no data wipe)")
-        lc = lockdown_client
-        await asyncio.sleep(1)
-    else:
-        log_info("Phase 3: Waiting for device to reconnect after security recovery")
-        lc = await _wait_for_device(udid, progress_callback,
-                                    prompt_choice=prompt_choice)
-    try:
-        # brief settle time after reconnect — _restore_protective_backup
-        # retries handle any remaining startup delay
-        await asyncio.sleep(1)
-        if skip_protective_backup or not session.backup_complete:
-            log_warn("Phase 3: skipping protective restore (user opted out "
-                     "of data protection)")
-        else:
-            # A bootlooping daemon keeps the device stuck on the passcode
-            # screen — mobilebackup2 refuses to start with
-            # PasswordRequiredError before a single retry. Offer the same
-            # Abort/Resume choice as the reconnect wait instead of crashing.
-            while True:
-                try:
-                    await _restore_protective_backup(
-                        lc, backup_root, udid, False,
-                        progress_callback,
-                        backup_password=backup_password,
-                        skip_apps=not any(
-                            getattr(f, "domain", "").startswith("AppDomain")
-                            for f in (inject_files or [])))
-                    break
-                except PasswordRequiredError:
-                    if prompt_choice is None:
-                        raise
-                    log_info("Phase 3: protective restore blocked — device "
-                             "locked (bootloop signature); asking user to "
-                             "resume or abort")
-                    title = QCoreApplication.tr("Device locked — cannot restore backup")
-                    text = QCoreApplication.tr(
-                        "The phone is asking for a passcode to start the "
-                        "restore service. This usually means the applied "
-                        "tweaks are preventing it from booting properly.\n\n"
-                        "  \u2022 Resume \u2014 unlock the device, then keep "
-                        "trying to restore the backup.\n"
-                        "  \u2022 Abort \u2014 stop now. The protective backup "
-                        "is kept on this computer for a later restore.")
-                    try:
-                        decision = prompt_choice(title, text)
-                    except Exception:
-                        raise
-                    if decision != "resume":
-                        raise
-                    log_info("Phase 3: user chose resume — reconnecting and retrying")
-                    try:
-                        await lc.close()
-                    except Exception:
-                        pass
-                    lc = await _wait_for_device(udid, progress_callback,
-                                                prompt_choice=prompt_choice)
-                except NuggetException as e:
-                    # `_on_failure` wraps the last retry error into a
-                    # NuggetException (raise ... from e), so a merged-mode
-                    # self-reboot surfaces here wrapped instead of as a raw
-                    # ConnectionTerminatedError/OSError. Unwrap and route
-                    # connection drops through the classic reconnect path
-                    # too; anything else (device-locked, invalid service,
-                    # real protocol errors) keeps its friendly message.
-                    cause = e.__cause__ or e.__context__ or e
-                    if not is_connection_error(cause):
-                        raise
-                    if not merge_phases or merge_fallback_done:
-                        raise
-                    log_warn(f"Phase 3: merged-mode session dropped "
-                             f"({type(cause).__name__}: {cause}) — falling "
-                             "back to the classic reconnect path")
-                    try:
-                        await lc.close()
-                    except Exception:
-                        pass
-                    lc = await _wait_for_device(udid, progress_callback,
-                                                prompt_choice=prompt_choice)
-                    merge_fallback_done = True
-                except (ConnectionTerminatedError, ConnectionError,
-                        OSError, asyncio.TimeoutError) as e:
-                    # Merged mode reuses the Phase 2 session; if the device
-                    # rebooted itself anyway (a tweak that demands the
-                    # security-recovery wipe), that client is now dead —
-                    # fall back to the classic reconnect + fresh session
-                    # instead of failing the whole apply.
-                    if not merge_phases or merge_fallback_done:
-                        raise
-                    log_warn(f"Phase 3: merged-mode session dropped "
-                             f"({type(e).__name__}: {e}) — falling back to "
-                             "the classic reconnect path")
-                    try:
-                        await lc.close()
-                    except Exception:
-                        pass
-                    lc = await _wait_for_device(udid, progress_callback,
-                                                prompt_choice=prompt_choice)
-                    merge_fallback_done = True
-            log_info("Phase 3: Protective backup restored successfully")
+async def _push_afc_media(lc, media_dir, progress_callback, prompt_choice,
+                          stage_callback=None):
+    """Phase 5 media push: photos/videos travel ONLY over this AFC channel.
 
-    finally:
-        session.client = lc
-
-
-async def _finish_restore_phases(session, udid, media_dir, progress_callback, options):
-    """Reboot, reconnect, deliver media, skip setup, then perform the final reboot."""
-    reboot = options.reboot
-    skip_setup = options.skip_setup
-    supervised = options.supervised
-    organization_name = options.organization_name
-    prompt_choice = options.prompt_choice
-    stage_callback = options.stage_callback
-    lc = session.client
-    try:
-        # === Phase 4: reboot before the media restore + setup skip (90-95%) ===
-        # Swapped with the old skip-setup phase: on a merged (never-rebooted)
-        # live session the device still carries its cloud configuration and
-        # SetCloudConfiguration only raises AlreadyPresent. Rebooting first
-        # gives the media restore and skip_all_setup27 a freshly-booted
-        # device (Phase 5) and the final reboot (Phase 6) lets the skip take
-        # effect on the next boot.
-        if stage_callback:
-            stage_callback("restore", "restart" if reboot and skip_setup else "waiting")
-        pre_skip_reboot = reboot and skip_setup
-        if pre_skip_reboot:
-            progress_callback("Rebooting device...")
-            log_info("Phase 4: Rebooting device before skipping setup")
-            await reboot_device(reboot=True, lockdown_client=lc)
-            log_info("Phase 4: Reboot command sent")
-
-
-        # === Phase 5: reconnect (if rebooted) + push media + skip setup (95-98%) ===
-        if pre_skip_reboot:
-            try:
-                await lc.close()
-            except Exception:
-                pass
-            lc = await _wait_for_device(udid, progress_callback,
-                                        prompt_choice=prompt_choice)
-
-        # Photos/videos pulled over AFC are pushed back now that the device
-        # is back up and accepting AFC connections (after the Phase 4
-        # reboot, on the freshly-reconnected session; or straight on the
-        # live session when no reboot happened). This is the ONLY channel
-        # that carries them on an AFC apply — the protective restore ships
-        # only the non-media scope (media rows were not in its backup).
-        if media_dir:
-            # The media store is the ONLY copy of the photos at this point
-            # (the device was just wiped), so anything short of a complete
-            # push is a data-loss event and must abort loudly rather than
-            # let the apply report success.
-            if not os.path.isdir(media_dir) or not os.listdir(media_dir):
-                raise NuggetException(
-                    f"AFC media store is missing or empty ({media_dir}) — "
-                    f"the photos were not backed up before the wipe. "
-                    f"Aborting instead of pretending the restore finished.")
-            if stage_callback:
-                stage_callback("media", "photos")
-            progress_callback(0)
-            log_info(f"Phase 5: Pushing photos/videos back over AFC "
-                     f"({describe_media_store(media_dir, verify=False)})")
-            pushed = await restore_media_via_afc(
-                lc, media_dir,
-                include_historical=False,
-                progress_callback=progress_callback,
-                prompt_choice=prompt_choice,
-                unlock_prompt=(
-                    QCoreApplication.tr("Device stayed locked"),
-                    QCoreApplication.tr(
-                        "The device has not been unlocked long enough to "
-                        "push your photos and videos back after the "
-                        "reboot.\n\n"
-                        "Unlock it, enter your passcode, and keep it "
-                        "connected via USB, then choose:\n\n"
-                        "  \u2022 Resume \u2014 keep waiting for the device "
-                        "to be unlocked and push your photos.\n"
-                        "  \u2022 Abort \u2014 stop now. Your photos are "
-                        "still safe in the backup cache on this computer, "
-                        "but they will not be on the device yet.")
-                ))
-            if pushed.get("failed"):
-                raise NuggetException(
-                    f"AFC media restore failed for {len(pushed['failed'])} "
-                    f"file(s) (e.g. {pushed['failed'][:3]}) — the photos on "
-                    f"the device are incomplete")
-            log_info("Phase 5: Media restored over AFC")
-
-        if skip_setup:
-            if stage_callback:
-                stage_callback("setup", "settings")
-            progress_callback("Skipping setup panes...")
-            log_info("Phase 5: Skipping setup panes via MobileConfigService")
-            try:
-                await skip_all_setup27(lc, udid, supervised=supervised,
-                                       organization_name=organization_name,
-                                       progress_callback=progress_callback)
-            except CloudConfigurationAlreadyPresentError:
-                log_info("Phase 5: device already has a cloud configuration "
-                         "— setup already handled, nothing to skip")
-            else:
-                log_info("Phase 5: Setup panes skipped successfully")
-            progress_callback(98)
-
-        # === Phase 6: final reboot so the skipped setup takes effect (98-100%) ===
-        if reboot:
-            if stage_callback:
-                stage_callback("setup", "restart")
-            progress_callback("Rebooting device...")
-            log_info("Phase 6: Rebooting device")
-            await reboot_device(reboot=True, lockdown_client=lc)
-            log_info("Phase 6: Reboot command sent")
-        progress_callback(100)
-    finally:
-        session.client = lc
+    The media store is the ONLY copy of the photos at this point (the device
+    was just wiped), so anything short of a complete push is a data-loss event
+    and must abort loudly rather than let the apply report success.
+    """
+    if not os.path.isdir(media_dir) or not os.listdir(media_dir):
+        raise NuggetException(
+            f"AFC media store is missing or empty ({media_dir}) — "
+            f"the photos were not backed up before the wipe. "
+            f"Aborting instead of pretending the restore finished.")
+    if stage_callback:
+        stage_callback("media", "photos")
+    progress_callback(0)
+    log_info(f"Phase 5: Pushing photos/videos back over AFC "
+             f"({describe_media_store(media_dir)})")
+    pushed = await restore_media_via_afc(
+        lc, media_dir,
+        # The store also keeps files the user deleted on the device before the
+        # pull — include_historical would resurrect them on the wiped phone.
+        include_historical=False,
+        progress_callback=progress_callback,
+        prompt_choice=prompt_choice,
+        unlock_prompt=(
+            QCoreApplication.tr("Device stayed locked"),
+            QCoreApplication.tr(
+                "The device has not been unlocked long enough to "
+                "push your photos and videos back after the "
+                "reboot.\n\n"
+                "Unlock it, enter your passcode, and keep it "
+                "connected via USB, then choose:\n\n"
+                "  \u2022 Resume \u2014 keep waiting for the device "
+                "to be unlocked and push your photos.\n"
+                "  \u2022 Abort \u2014 stop now. Your photos are "
+                "still safe in the backup cache on this computer, "
+                "but they will not be on the device yet.")
+        ))
+    if pushed.get("failed"):
+        raise NuggetException(
+            f"AFC media restore failed for {len(pushed['failed'])} "
+            f"file(s) (e.g. {pushed['failed'][:3]}) — the photos on "
+            f"the device are incomplete")
+    log_info("Phase 5: Media restored over AFC")
 
 
 async def _restore_ios27(back: backup.Backup, reboot: bool,
@@ -1193,6 +1007,7 @@ async def _restore_ios27(back: backup.Backup, reboot: bool,
                                                     prompt_choice=prompt_choice)
                         merge_fallback_done = True
                 log_info("Phase 3: Protective backup restored successfully")
+                mark_restore_ok(udid)
                 mark_phase("3 protective restore")
 
             # === Phase 4: reboot before the media restore + setup skip (90-95%) ===
@@ -1228,46 +1043,8 @@ async def _restore_ios27(back: backup.Backup, reboot: bool,
             # that carries them on an AFC apply — the protective restore ships
             # only the non-media scope (media rows were not in its backup).
             if media_dir:
-                # The media store is the ONLY copy of the photos at this point
-                # (the device was just wiped), so anything short of a complete
-                # push is a data-loss event and must abort loudly rather than
-                # let the apply report success.
-                if not os.path.isdir(media_dir) or not os.listdir(media_dir):
-                    raise NuggetException(
-                        f"AFC media store is missing or empty ({media_dir}) — "
-                        f"the photos were not backed up before the wipe. "
-                        f"Aborting instead of pretending the restore finished.")
-                if stage_callback:
-                    stage_callback("media", "photos")
-                progress_callback(0)
-                log_info(f"Phase 5: Pushing photos/videos back over AFC "
-                         f"({describe_media_store(media_dir)})")
-                pushed = await restore_media_via_afc(
-                    lc, media_dir,
-                    progress_callback=progress_callback,
-                    prompt_choice=prompt_choice,
-                    unlock_prompt=(
-                        QCoreApplication.tr("Device stayed locked"),
-                        QCoreApplication.tr(
-                            "The device has not been unlocked long enough to "
-                            "push your photos and videos back after the "
-                            "reboot.\n\n"
-                            "Unlock it, enter your passcode, and keep it "
-                            "connected via USB, then choose:\n\n"
-                            "  \u2022 Resume \u2014 keep waiting for the device "
-                            "to be unlocked and push your photos.\n"
-                            "  \u2022 Abort \u2014 stop now. Your photos are "
-                            "still safe in the backup cache on this computer, "
-                            "but they will not be on the device yet.")
-                    ))
-                if pushed.get("failed"):
-                    raise NuggetException(
-                        f"AFC media restore failed for {len(pushed['failed'])} "
-                        f"file(s) (e.g. {pushed['failed'][:3]}) — the photos on "
-                        f"the device are incomplete")
-                log_info(f"Phase 5: Media restored over AFC "
-                         f"({pushed.get('files', 0)} pushed, "
-                         f"{pushed.get('skipped', 0)} already on the device)")
+                await _push_afc_media(lc, media_dir, progress_callback,
+                                      prompt_choice, stage_callback)
                 mark_phase("5 media push")
 
             if skip_setup:

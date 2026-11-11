@@ -241,13 +241,17 @@ def _restart_app():
 
 
 def _show_crash_dialog(summary: str, traceback_text: str, exc_type=None, exc_value=None):
-    """Hand a crash to the GUI presenter, or print it when there is none."""
+    """Hand a crash to the GUI presenter, or print it when there is none.
+
+    Returns True only when the user asked to restart the app (the GUI
+    presenter's CrashDialog reports the choice; None/False elsewhere).
+    """
     info = _classify(exc_type, exc_value) if exc_type is not None else None
     if _presenter is None:
         # No user interface yet — fall back to printing so nothing is lost.
         print(f"CRASH: {summary}\n{traceback_text}", file=sys.stderr)
-        return
-    _presenter(summary, traceback_text, info)
+        return False
+    return _presenter(summary, traceback_text, info) is True
 
 
 def _on_main_thread() -> bool:
@@ -273,13 +277,18 @@ def _handle_crash(exc_type, exc_value, exc_tb):
         _show_crash_dialog(summary, tb, exc_type, exc_value)
         return
     try:
-        _show_crash_dialog(summary, tb, exc_type, exc_value)
+        wants_restart = _show_crash_dialog(summary, tb, exc_type, exc_value)
     except Exception:
-        # Never let the crash handler itself crash the app.
+        # Never let the crash handler itself crash the app. Do NOT restart:
+        # a crash before the window exists would loop dialog -> execv forever.
+        # Returning lets the interpreter exit normally; the user relaunches.
         print(f"CRASH: {summary}\n{tb}", file=sys.stderr)
-        _restart_app()
         return
-    _restart_app()
+    if wants_restart:
+        _restart_app()
+    # Anything else: the dialog is dismissed and the uncaught exception lets
+    # the process exit normally (excepthook) or the event loop keeps running
+    # (notify-guard path) — a startup crash can no longer loop forever.
 
 
 def _excepthook(exc_type, exc_value, exc_tb):

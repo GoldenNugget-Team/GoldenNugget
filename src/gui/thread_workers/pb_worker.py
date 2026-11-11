@@ -29,21 +29,24 @@ class PBDBThread(QThread):
         self.backup_function(self.update_label, self.update_progress)
 
     def run(self):
-        try:
-            self.do_work()
-        except Exception as e:
-            import logging
-            logging.getLogger("GoldenNugget.pb").error(
-                "PosterBoard backup failed: %s\n%s", e, traceback.format_exc())
-            self.infoLbl.emit("Backup Failed!")
-            self.alert.emit(ApplyAlertMessage(
-                f"Backup failed: {e}",
-                title="Error",
-                icon=QMessageBox.Critical,
-                detailed_txt=traceback.format_exc(),
-                exc_type=type(e),
-                exc_value=e,
-            ))
+        # Same guard as ApplyThread/PBRebuildThread: cyclic GC must never free
+        # Qt wrappers while a device operation runs (SIGSEGV class).
+        with worker_gc_guard():
+            try:
+                self.do_work()
+            except Exception as e:
+                import logging
+                logging.getLogger("GoldenNugget.pb").error(
+                    "PosterBoard backup failed: %s\n%s", e, traceback.format_exc())
+                self.infoLbl.emit("Backup Failed!")
+                self.alert.emit(ApplyAlertMessage(
+                    f"Backup failed: {e}",
+                    title="Error",
+                    icon=QMessageBox.Critical,
+                    detailed_txt=traceback.format_exc(),
+                    exc_type=type(e),
+                    exc_value=e,
+                ))
 
 
 class PBRebuildThread(QThread):

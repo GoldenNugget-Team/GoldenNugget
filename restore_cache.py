@@ -71,6 +71,7 @@ from src.restore.protective import (  # noqa: E402
     log_error,
     log_info,
     make_protective_working_copy,
+    mark_restore_ok,
     protective_persistent_base,
     verify_backup_payloads,
 )
@@ -269,6 +270,7 @@ async def _restore_with_wait(lc, backup_root: str, udid: str, backup_password: s
                 progress_callback=progress_callback,
                 backup_password=backup_password,
                 skip_apps=True)
+            mark_restore_ok(udid)
             return
         except PasswordRequiredError:
             remaining = int(deadline - time.monotonic())

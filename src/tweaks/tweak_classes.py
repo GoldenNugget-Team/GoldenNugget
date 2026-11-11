@@ -1,3 +1,4 @@
+import plistlib
 from typing import Any, Callable, Optional
 
 from .basic_plist_locations import FileLocation
@@ -59,7 +60,9 @@ class NullifyFileTweak(Tweak):
 
     def apply_tweak(self, other_tweaks: dict):
         if self.enabled:
-            other_tweaks[self.file_location] = b""
+            # A zero-byte plist crashes its owner at boot (AGENTS.md) — write a
+            # valid empty plist so the device falls back to defaults.
+            other_tweaks[self.file_location] = plistlib.dumps({})
     
 
 class BasicPlistTweak(Tweak):

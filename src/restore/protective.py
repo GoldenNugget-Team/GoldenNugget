@@ -1065,15 +1065,50 @@ def find_latest_protective_backup(udid: str) -> Optional[str]:
     return str(runs[0] / "device_backup") if runs else None
 
 
+RESTORE_OK_MARKER = ".restore_completed"
+
+
+def mark_restore_ok(udid: str) -> None:
+    """Record that a protective restore COMPLETED for ``udid``.
+
+    ``prune_protective_backups`` uses this marker to refuse deleting a run
+    whose restore never finished: after a failed apply the device is wiped and
+    that run may be the only surviving copy of the user's photos.
+    """
+    try:
+        base = protective_persistent_base() / (udid or "unknown")
+        base.mkdir(parents=True, exist_ok=True)
+        (base / RESTORE_OK_MARKER).write_text(str(time.time()))
+    except OSError as exc:
+        log_warn(f"Could not record the restore-completion marker: {exc}")
+
+
+def _last_restore_ok(udid: str) -> float:
+    try:
+        return float((protective_persistent_base() / (udid or "unknown")
+                      / RESTORE_OK_MARKER).read_text())
+    except (OSError, ValueError):
+        return 0.0
+
+
 def prune_protective_backups(udid: str, keep: int = PROTECTIVE_KEEP_RUNS) -> int:
     """Drop older live backups for ``udid``, keeping the newest ``keep``.
 
-    Deletes every older run outright; the newest ``keep`` runs are left
-    untouched. Returns the number of run directories removed.
+    Deletes every older run outright — EXCEPT runs whose restore never
+    completed (no ``mark_restore_ok`` newer than the run). Returns the number
+    of run directories removed.
     """
     runs = list_protective_backups(udid)
+    ok_ts = _last_restore_ok(udid)
     removed = 0
     for old in runs[keep:]:
+        if old.stat().st_mtime > ok_ts:
+            # The restore that consumed this run never finished (the apply
+            # died after the wipe) — this may be the only surviving copy of
+            # the user's data. Keep it until a restore completes.
+            log_warn(f"Keeping unconsumed protective backup (its restore "
+                     f"never completed): {old}")
+            continue
         shutil.rmtree(old, ignore_errors=True)
         if not old.exists():
             removed += 1
@@ -1353,10 +1388,14 @@ def extract_posterboard_db(backup_root: str, udid: str, dest_path: str) -> Optio
         work_main = work_dir / "posterboard.sqlite3"
         shutil.copyfile(main_payload, work_main)
         shutil.copyfile(wal_payload, str(work_main) + "-wal")
-        dest.unlink(missing_ok=True)
+        # Consolidate into a scratch file first: the existing dest (possibly a
+        # good copy from a previous pull) is only replaced once the new merge
+        # actually validates — never destroyed before its replacement exists.
+        merged_path = dest.parent / (dest.name + ".merged")
+        merged_path.unlink(missing_ok=True)
         try:
             src = sqlite3.connect(str(work_main))
-            merged = sqlite3.connect(str(dest))
+            merged = sqlite3.connect(str(merged_path))
             try:
                 src.backup(merged)  # snapshot of main + wal in one atomic file
                 merged.execute("PRAGMA journal_mode=DELETE")
@@ -1366,10 +1405,18 @@ def extract_posterboard_db(backup_root: str, udid: str, dest_path: str) -> Optio
                 merged.close()
         except Exception:
             log_warn("WAL consolidation failed — falling back to the plain database file")
-        if not _validate_sqlite_db(dest):
+        if _validate_sqlite_db(merged_path):
+            os.replace(merged_path, dest)
+        elif _validate_sqlite_db(dest):
+            # The merge failed but the store already holds a good copy from a
+            # previous pull — keep it rather than overwrite it with the plain
+            # main file, which lost everything that lived in the -wal.
+            log_warn("Consolidated PosterBoard DB failed validation — "
+                     "keeping the previous extracted database")
+        else:
             log_warn("Consolidated PosterBoard DB failed validation — "
                      "falling back to the plain database file")
-            dest.unlink(missing_ok=True)
+            merged_path.unlink(missing_ok=True)
             shutil.copyfile(main_payload, dest)
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)

@@ -192,7 +192,7 @@ class CrashDialog(QDialog):
 _live_dialogs: list = []
 
 
-def _exec_dialog_on_gui_thread(dialog: CrashDialog) -> None:
+def _exec_dialog_on_gui_thread(dialog: CrashDialog) -> "int | None":
     """``exec()`` a crash dialog and destroy its C++ object on the GUI thread.
 
     Every button in :class:`CrashDialog` is connected to a lambda/bound method
@@ -210,8 +210,9 @@ def _exec_dialog_on_gui_thread(dialog: CrashDialog) -> None:
     wrapper is already invalidated.
     """
     _live_dialogs.append(dialog)
+    result = None
     try:
-        dialog.exec()
+        result = dialog.exec()
     finally:
         try:
             dialog.deleteLater()
@@ -220,6 +221,7 @@ def _exec_dialog_on_gui_thread(dialog: CrashDialog) -> None:
                 _live_dialogs.remove(dialog)
             except ValueError:
                 pass
+    return result
 
 
 def _on_gui_thread() -> bool:
@@ -285,28 +287,33 @@ def _build_and_exec_crash_dialog(summary: str, traceback_text: str,
 
 def show_error_dialog(summary: str, traceback_text: str, info: Optional[dict] = None,
                       backup_path: Optional[str] = None,
-                      on_restore: Optional[Callable[[], None]] = None):
+                      on_restore: Optional[Callable[[], None]] = None) -> bool:
     """Show the crash/error dialog on the main thread, if a QApplication exists.
 
     Also used for apply/reset failures so they get parsed and reported exactly
     like uncaught exceptions.
 
+    Returns True only when the user asked to restart the app (the dialog's
+    "Restart App" / restore buttons); every other dismissal answers False, so
+    the caller can exit instead of force-relaunching.
+
     Callers off the GUI thread never build a widget here: on macOS instantiating
     ``NSWindow`` off the main thread aborts the whole process
     (``NSInternalInconsistencyException``), so the request is posted to the
-    GUI thread as a ``_CrashEvent`` instead.
+    GUI thread as a ``_CrashEvent`` instead (the answer is then unknown —
+    treated as False).
     """
     app = QApplication.instance()
     if app is None:
         print(f"ERROR: {summary}\n{traceback_text}", file=sys.stderr)
-        return
+        return False
     if not _on_gui_thread():
         _queue_crash_dialog_on_gui_thread(app, summary, traceback_text, info,
                                           backup_path, on_restore)
-        return
+        return False
     dialog = CrashDialog(summary=summary, traceback_text=traceback_text,
                          info=info, backup_path=backup_path, on_restore=on_restore)
-    _exec_dialog_on_gui_thread(dialog)
+    return _exec_dialog_on_gui_thread(dialog) == dialog.Accepted
 
 
 def report_error(summary: str, traceback_text: str, info: Optional[dict] = None,
@@ -316,9 +323,11 @@ def report_error(summary: str, traceback_text: str, info: Optional[dict] = None,
 
     Matches the core presenter signature; the extra ``backup_path`` /
     ``on_restore`` arguments are only supplied by explicit callers.
+
+    Returns True only when the user asked to restart (see show_error_dialog).
     """
-    show_error_dialog(summary, traceback_text, info,
-                      backup_path=backup_path, on_restore=on_restore)
+    return show_error_dialog(summary, traceback_text, info,
+                             backup_path=backup_path, on_restore=on_restore)
 
 
 class CrashHandlerApp(QApplication):

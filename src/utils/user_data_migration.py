@@ -231,6 +231,14 @@ def run_migration(plan: MigrationPlan, on_progress=None,
             result.cancelled = True
             break
         try:
+            # The plan was computed when the dialog opened; if the destination
+            # appeared meanwhile (second instance, a worker), shutil.move would
+            # nest the folder INSIDE it — re-check and skip instead.
+            if move.destination.exists() or move.destination.is_symlink():
+                logger.warning("Destination appeared after planning — skipping %s",
+                               move.source)
+                result.skipped.append((move.source, "already exists in the new folder"))
+                continue
             move.destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(str(move.source), str(move.destination))
         except OSError as exc:

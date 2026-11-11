@@ -10,6 +10,7 @@ fetches are skipped and no rules are applied.
 """
 
 import json
+import logging
 import os
 import ssl
 import time
@@ -140,12 +141,16 @@ class HotLoad:
                 return False
             parsed["_fetched_at"] = int(time.time())
             path = _rules_path()
-            with open(path, "w", encoding="utf-8") as f:
+            # Write-then-rename: a crash mid-write must never leave a
+            # truncated rules file (that silently disarms ALL safety rules).
+            with open(str(path) + ".part", "w", encoding="utf-8") as f:
                 json.dump(parsed, f, ensure_ascii=False, indent=2)
+            os.replace(str(path) + ".part", path)
             self._rules = parsed
             return True
         except Exception as e:
-            print(f"[HotLoad] update failed: {e}")
+            logging.getLogger("GoldenNugget.hotload").warning(
+                "HotLoad rules update failed: %s", e)
             return False
 
     # --- matching --------------------------------------------------------
