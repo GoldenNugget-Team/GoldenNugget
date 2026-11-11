@@ -852,9 +852,6 @@ class IOSHomePage(QWidget):
                     status_text = QCoreApplication.translate(
                         "QCoreApplication", "Not Supported.")
                     color = c.error
-                elif self.window.device_manager.get_current_device_partially_supported():
-                    status_text = QCoreApplication.translate("Nugget", "Partially Supported")
-                    color = c.warning
                 else:
                     status_text = QCoreApplication.translate("QCoreApplication", "Supported!")
                     color = c.success

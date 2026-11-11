@@ -430,7 +430,7 @@ class DeviceManager:
         return is_supported_by_fork(device.version) if device != None else False
 
     def get_current_device_partially_supported(self) -> bool:
-        """iOS 27 devices use the experimental three-phase protective restore."""
+        """iOS 27 devices use the three-phase protective restore."""
         device = self.data_singleton.current_device
         if device == None:
             return False
