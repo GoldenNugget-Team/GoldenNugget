@@ -186,16 +186,13 @@ from src.utils.log_util import log_debug, log_error, log_info, log_warn
 # --- DeviceLink protocol constants (from pymobiledevice3.services.device_link) ---
 # Backup metadata files that must always be preserved (never filtered out)
 from .backup_store import (
-    _BACKUP_METADATA_FILES,
     WORKING_COPY_PREFIX,
     _copy_backup_tree,
     _payload_inventory,
     _remove_orphan_payloads,
     _retire_backup_tree,
     discard_protective_working_copy,
-    make_cache_snapshot,
     make_protective_working_copy,
-    regenerate_cache_from_snapshot,
 )
 from .device_link_adapter import recv_timeout_secs
 
@@ -1116,31 +1113,6 @@ def prune_protective_backups(udid: str, keep: int = PROTECTIVE_KEEP_RUNS) -> int
     return removed
 
 
-def _copy_backup_tree(src_root: Path, dst_root: Path) -> None:  # noqa: F811 (local impl shadows the legacy re-export)
-    """Faithfully copy one backup device dir into ``dst_root``.
-
-    Metadata (incl. sqlite sidecars) is real-copied — pruning rewrites
-    Manifest.db, and a hardlink would corrupt the cache master through the
-    shared inode/-wal. Everything else is hardlinked (near-instant, size-free),
-    with a copy fallback for cross-device destinations.
-    """
-    dst_root.mkdir(parents=True, exist_ok=True)
-    always_copy = set(_BACKUP_METADATA_FILES) | {"Manifest.db-wal", "Manifest.db-shm"}
-    for dirpath, _dirnames, filenames in os.walk(src_root):
-        rel = Path(dirpath).relative_to(src_root)
-        (dst_root / rel).mkdir(parents=True, exist_ok=True)
-        for name in filenames:
-            src_file = Path(dirpath) / name
-            dst_file = dst_root / rel / name
-            if name in always_copy:
-                shutil.copy2(src_file, dst_file)
-            else:
-                try:
-                    os.link(src_file, dst_file)
-                except OSError:
-                    shutil.copy2(src_file, dst_file)
-
-
 def make_restore_view(master_root: str, udid: str, view_root: str) -> str:
     """Build a disposable restore *view* of the cache master.
 
@@ -1186,47 +1158,6 @@ def discard_restore_view(view_root: str, udid: str) -> None:
     if not view_root:
         return
     shutil.rmtree(Path(view_root) / udid, ignore_errors=True)
-
-
-def make_protective_working_copy(backup_root: str, udid: str) -> str:  # noqa: F811 (local impl shadows the legacy re-export)
-    """Build a throwaway hardlink copy of a protective backup for prune + injection.
-
-    Hardlinks keep it near-instant and size-free; pruning unlinks orphans
-    without touching the source's own files (the cache master stays intact).
-
-    The copy is disposable, so it uses ``WORKING_COPY_PREFIX`` — the periodic
-    sweep in restore.py cleans up leftovers from crashed runs under that
-    prefix only.
-    """
-    working_root = Path(tempfile.mkdtemp(prefix=WORKING_COPY_PREFIX)) / "device_backup"
-    src_root = Path(backup_root) / udid
-    if not src_root.is_dir():
-        # Tolerate a root pointing directly at the device directory.
-        if (Path(backup_root) / "Manifest.db").is_file():
-            src_root = Path(backup_root)
-        else:
-            raise NuggetException("Protective backup is missing its payload.")
-
-    _copy_backup_tree(src_root, working_root / udid)
-    return str(working_root)
-
-
-def make_cache_snapshot(backup_root: str, udid: str, inject_files: list = None) -> str:  # noqa: F811 (local impl shadows the legacy re-export)
-    """Deprecated: the cache master is no longer modified in place.
-
-    Applies now build a disposable restore *view* of the master
-    (``make_restore_view``) instead of pruning and injecting the master
-    itself and then rebuilding it from a snapshot. The master therefore
-    stays pristine and there is nothing to snapshot or regenerate.
-    """
-    raise NotImplementedError(
-        "the cache master is immutable — use make_restore_view() instead")
-
-
-def regenerate_cache_from_snapshot(snapshot_dir: str, backup_root: str, udid: str) -> str:  # noqa: F811 (local impl shadows the legacy re-export)
-    """Deprecated: the cache master is never modified, so nothing regenerates it."""
-    raise NotImplementedError(
-        "the cache master is immutable — it needs no regeneration")
 
 
 def verify_backup_payloads(backup_dir: "str | Path", udid: str,
@@ -1477,11 +1408,12 @@ def clean_backup_for_restore(backup_dir: "str | Path", udid: str,
         if (Path(backup_dir) / "Manifest.db").exists():
             device_dir = Path(backup_dir)
         else:
-            return PruneResult()
+            raise NuggetException(
+                f"Backup device directory is missing for {udid}: {device_dir}")
 
     manifest_db = device_dir / "Manifest.db"
     if not manifest_db.exists():
-        return PruneResult()
+        raise NuggetException(f"Backup is missing its Manifest.db: {manifest_db}")
 
     include_keychain = include_keychain or _is_encrypted_backup(device_dir)
     if _is_encrypted_backup(device_dir):

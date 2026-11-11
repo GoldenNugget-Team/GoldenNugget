@@ -83,7 +83,7 @@ def run(args) -> int:
         result = dict(dry_run=True, sections=[page.name for page in pages],
                       note='Reset writes stock defaults. Device support and live state have not been checked.')
         set_result(result)
-        print(result)
+        print(result.get('note', result))
         return 0
     device = ensure_device(dm, settings, args.udid)
     print("Device:", describe_device(device))

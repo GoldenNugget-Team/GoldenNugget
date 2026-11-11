@@ -83,11 +83,26 @@ class StatusBarTweak(Tweak):
     def _get_int(self, field: str) -> int:
         return getattr(self._overrides().values, field)
 
+    @staticmethod
+    def _bytes_fit(text: str, max_bytes: int) -> bytes:
+        """UTF-8-encode *text* truncated to *max_bytes* on a whole character.
+
+        The override struct fields are fixed byte arrays; slicing the str by
+        characters can still encode past the field size (CJK ~3 bytes/char)
+        and cffi then raises from inside the setter.
+        """
+        encoded = text.encode("utf-8")
+        if len(encoded) <= max_bytes:
+            return encoded
+        return encoded[:max_bytes].decode("utf-8", errors="ignore").encode("utf-8")
+
     def _set_flag(self, flag: str, field: str = None, value=None, max_len: int = None) -> None:
         overrides = self._overrides()
         setattr(overrides, flag, 1)
         if field is not None:
-            data = value[:max_len] if max_len is not None else value
+            data = value
+            if max_len is not None:
+                data = self._bytes_fit(value, max_len) if isinstance(value, str) else value[:max_len]
             setattr(overrides.values, field, data.encode() if isinstance(data, str) else data)
         self._apply_changes(overrides)
 
@@ -114,7 +129,7 @@ class StatusBarTweak(Tweak):
         return self._get_str("serviceString")
     def set_carrier_override(self, text: str) -> None:
         overrides = self._overrides()
-        truncated = text[:100].encode()
+        truncated = self._bytes_fit(text, 100)
         overrides.values.serviceString = truncated
         overrides.values.serviceCrossfadeString = truncated
         self._set_flag("overrideServiceString")
@@ -185,7 +200,7 @@ class StatusBarTweak(Tweak):
         return self._get_str("secondaryServiceString")
     def set_secondary_carrier_override(self, text: str) -> None:
         overrides = self._overrides()
-        truncated = text[:100].encode()
+        truncated = self._bytes_fit(text, 100)
         overrides.values.secondaryServiceString = truncated
         overrides.values.secondaryServiceCrossfadeString = truncated
         self._set_flag("overrideSecondaryServiceString")
@@ -261,8 +276,8 @@ class StatusBarTweak(Tweak):
     def set_crumb(self, text: str) -> None:
         overrides = self._overrides()
         overrides.overrideBreadcrumb = 1
-        new_crumb = text[:254] + " ▶" if text != "" else ""
-        overrides.values.breadcrumbTitle = new_crumb.encode()
+        new_crumb = self._bytes_fit(text + " ▶", 256) if text != "" else ""
+        overrides.values.breadcrumbTitle = new_crumb.encode() if isinstance(new_crumb, str) else new_crumb
         self._apply_changes(overrides)
     def unset_crumb(self) -> None:
         overrides = self._overrides()

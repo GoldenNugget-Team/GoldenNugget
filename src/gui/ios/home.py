@@ -284,11 +284,6 @@ class IOSHomePage(QWidget):
         self._title.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
         title_layout.addWidget(self._title)
 
-        self.subtitle = QLabel(QCoreApplication.translate("Nugget", "No device connected"), self)
-        self.subtitle.setStyleSheet(t("home_subtitle"))
-        self.subtitle.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
-        self.subtitle.setTextFormat(Qt.PlainText)
-        title_layout.addWidget(self.subtitle)
         self._update_available = None
         self.update_notice = QWidget(branding)
         notice_row = QHBoxLayout(self.update_notice)
@@ -627,7 +622,6 @@ class IOSHomePage(QWidget):
         if self._logo.pixmap() is None or self._logo.pixmap().isNull():
             _restyle(self._logo, f"background-color: {c.bg_secondary}; border-radius: 14px;")
         _restyle(self._title, t("home_title"))
-        _restyle(self.subtitle, t("home_subtitle"))
         self.community_links._retheme()
         self._style_control_tabs()
         self._style_device_combo()
@@ -932,17 +926,11 @@ class IOSHomePage(QWidget):
             ver = self.window.device_manager.get_current_device_version()
             build = self.window.device_manager.get_current_device_build()
             if ver:
-                text = QCoreApplication.translate("Nugget", "{0} {1}").format(device_os_name(self.window.device_manager.get_current_device_model()), ver)
-                self.subtitle.setText(text)
-                software_text = text
+                software_text = QCoreApplication.translate("Nugget", "{0} {1}").format(device_os_name(self.window.device_manager.get_current_device_model()), ver)
                 if build:
                     software_text += "  ·  " + QCoreApplication.translate("Nugget", "Build {0}").format(build)
-            else:
-                self.subtitle.setText(QCoreApplication.translate("Nugget", "No device connected"))
         except AttributeError:
-            self.subtitle.setText(QCoreApplication.translate("Nugget", "No device connected"))
-        self.subtitle.clear()
-        self.subtitle.hide()
+            pass
         self.device_name.setVisible(connected)
         self.device_name.setText(manager.get_current_device_name() if connected else "")
         self.device_software.setText(software_text if connected else "")

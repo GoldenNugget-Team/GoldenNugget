@@ -776,6 +776,7 @@ async def restore_media_via_afc(lockdown_client, media_root: str,
         for rel, size in pending:
             src = str(await _disk_io(_local_media_path, root, rel))
             remote = f"/{rel}"
+            n = 0
             try:
                 afc = await _wait_for_media_directory(
                     checkpoint, posixpath.dirname(remote), made_dirs, _log, prompt_choice)

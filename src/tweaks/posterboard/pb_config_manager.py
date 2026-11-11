@@ -21,6 +21,7 @@ from .db_validate import (
     POSTERBOARD_TABLES,  # noqa: F401  (re-exported for tools/tests)
     is_encrypted_database,
     list_tables,
+    missing_write_tables,
     posterboard_db_is_snapshot_ok,
     snapshot_problem,
 )
@@ -238,10 +239,17 @@ class PBConfigManager:
         if self.database is None:
             raise NuggetException("PosterBoard database file not selected!")
 
-        # Validate the database before use
-        if not _validate_posterboard_db(self.database):
+        # Validate the database before use. strict=False + an explicit check of
+        # the three tables written below: the fetch path already accepts
+        # db5-ish schemas without sqlite_sequence, and demanding the strict set
+        # here rejected those devices forever with an advice ("fetch a fresh
+        # database") that cannot help.
+        problem = (snapshot_problem(self.database, strict=False)
+                   or missing_write_tables(self.database))
+        if problem:
             raise NuggetException(
-                "The PosterBoard database is corrupted or invalid. "
+                "The PosterBoard database is corrupted or invalid "
+                f"({problem}). "
                 "This can happen if the backup was interrupted or the database was modified externally. "
                 "Please fetch a fresh database from your device and try again."
             )
@@ -250,10 +258,14 @@ class PBConfigManager:
         self.staged_database = str(self._workspace() / f'STAGED-{DB_FILE_NAME}')
         shutil.copyfile(self.database, self.staged_database)
 
-        # Validate the staged copy
-        if not _validate_posterboard_db(self.staged_database):
+        # Validate the staged copy (same non-strict bar as the source above —
+        # the copy only has to match what this code writes)
+        staged_problem = (snapshot_problem(self.staged_database, strict=False)
+                          or missing_write_tables(self.staged_database))
+        if staged_problem:
             raise NuggetException(
-                "Failed to create a valid copy of the PosterBoard database for staging. "
+                "Failed to create a valid copy of the PosterBoard database for staging "
+                f"({staged_problem}). "
                 "The source database may be corrupted. Please fetch a fresh database and try again."
             )
 

@@ -1,5 +1,4 @@
 """Local protective-backup generations and payload inventory (no device sessions)."""
-import json
 import os
 import shutil
 import tempfile
@@ -8,7 +7,7 @@ from threading import Lock
 
 from src.exceptions.nugget_exception import NuggetException
 from src.utils.filecopy import clone_or_copy
-from src.utils.log_util import log_info, log_warn
+from src.utils.log_util import log_warn
 
 WORKING_COPY_PREFIX = "nugget_working_"
 _BACKUP_METADATA_FILES = frozenset({
@@ -69,39 +68,6 @@ def make_protective_working_copy(backup_root: str, udid: str) -> str:
     return str(working_root)
 
 
-def make_cache_snapshot(backup_root: str, udid: str, inject_files: list = None) -> str:
-    """Record the pristine state of a cache master before an apply modifies it.
-
-    The cache master is both the Phase 3 restore source AND the next apply's
-    incremental-refresh store. So before pruning + tweak-injection touch the
-    master in place, this snapshots it under ``<base>/snapshot/<udid>`` (the
-    same hardlink-copy semantics as ``make_protective_working_copy``, but in
-    the persistent store next to the master — never the temp dir, since the
-    snapshot is the pristine full-manifest record that must survive a crash
-    between Phase 2's wipe and Phase 3's restore).
-
-    The files the upcoming injection will change are recorded as
-    ``inject_plan.json`` beside the snapshot for diagnostics. Returns the
-    snapshot base dir (``<base>/snapshot``).
-    """
-    snap_base = Path(backup_root).parent / "snapshot"
-    # Drop a stale snapshot left by a crashed run before recording a new one.
-    shutil.rmtree(snap_base, ignore_errors=True)
-    src_root = Path(backup_root) / udid
-    if not src_root.is_dir():
-        # Tolerate a root pointing directly at the device directory.
-        if (Path(backup_root) / "Manifest.db").is_file():
-            src_root = Path(backup_root)
-        else:
-            raise NuggetException("Cache master is missing its payload.")
-
-    _copy_backup_tree(src_root, snap_base / udid)
-    plan = [{"domain": f.domain, "path": f.restore_path.lstrip("/")}
-            for f in (inject_files or [])]
-    (snap_base / "inject_plan.json").write_text(json.dumps(plan, indent=2), encoding="utf-8")
-    return str(snap_base)
-
-
 def _retire_backup_tree(directory):
     global _retirement_pool
     from concurrent.futures.thread import ThreadPoolExecutor
@@ -126,53 +92,6 @@ def discard_protective_working_copy(working_root):
     _retire_backup_tree(root.parent)
 
 
-def regenerate_cache_from_snapshot(snapshot_dir: str, backup_root: str, udid: str) -> str:
-    """Regenerate the cache master from the snapshot taken before the apply.
-
-    The master (pruned + tweak-injected in place for this apply) is replaced by
-    the pristine snapshot via generation renames on the same filesystem.
-    The retired generation is unlinked in a background cleanup worker. A missing
-    master after an interrupted rename is recovered from the snapshot too.
-    The snapshot's recorded inject plan is then removed. Returns the regenerated master
-    root (``backup_root``).
-    """
-    snap_root = Path(snapshot_dir) / udid
-    if not snap_root.is_dir():
-        # Tolerate a snapshot dir pointing directly at the device directory.
-        if (Path(snapshot_dir) / "Manifest.db").is_file():
-            snap_root = Path(snapshot_dir)
-        else:
-            log_warn("Cache snapshot missing — cannot regenerate")
-            return backup_root
-    master_dev = Path(backup_root) / udid
-    if not master_dev.is_dir():
-        if (Path(backup_root) / "Manifest.db").is_file():
-            master_dev = Path(backup_root)
-    import uuid
-    master_dev.parent.mkdir(parents=True, exist_ok=True)
-    retired = None
-    if master_dev.exists():
-        retired = master_dev.with_name(f".retired-{master_dev.name}-{uuid.uuid4().hex}")
-        master_dev.rename(retired)
-    try:
-        # Both generations live on the cache volume. Never delete the old
-        # master until the pristine generation has successfully taken its place.
-        snap_root.rename(master_dev)
-    except BaseException:
-        if retired is not None:
-            retired.rename(master_dev)
-        raise
-    shutil.rmtree(Path(snapshot_dir), ignore_errors=True)
-    if retired is not None:
-        _retire_backup_tree(retired)
-    # Reclaim only our own abandoned generations after a previous crash.
-    for leftover in master_dev.parent.glob(f".retired-{master_dev.name}-*"):
-        if leftover != retired and leftover.is_dir() and not leftover.is_symlink():
-            _retire_backup_tree(leftover)
-    log_info(f"Cache master regenerated from snapshot: {master_dev}")
-    return str(backup_root)
-
-
 def _payload_inventory(device_dir):
     files, directories, counts, regular_ids = [], [], {}, set()
     pending = [device_dir]
@@ -188,8 +107,11 @@ def _payload_inventory(device_dir):
                 elif entry.name not in _BACKUP_METADATA_FILES:
                     payload = Path(entry.path)
                     files.append(payload)
+                    # accept both the standard <aa>/<fileID> layout and the
+                    # flat <fileID> layout inject.py tolerates, so a legacy
+                    # backup is not misreported as missing payloads
                     if (entry.is_file(follow_symlinks=False)
-                            and directory == device_dir / entry.name[:2]):
+                            and directory in (device_dir / entry.name[:2], device_dir)):
                         regular_ids.add(entry.name)
         counts[directory] = count
     return files, directories, counts, regular_ids

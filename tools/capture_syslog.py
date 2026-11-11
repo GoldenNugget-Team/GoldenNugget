@@ -5,8 +5,9 @@ Usage: python3 tools/capture_syslog.py out.log
 
 import asyncio
 import sys
+from pathlib import Path
 
-sys.path.insert(0, "/home/awesomenull/projects/GoldenNugget")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from pymobiledevice3.lockdown import create_using_usbmux
 from pymobiledevice3.services.syslog import SyslogService

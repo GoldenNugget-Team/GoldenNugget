@@ -13,6 +13,7 @@ temp dir): it is the sole copy of user data between Phase 2 (device wipe)
 and Phase 3 (restore), so it must survive reboots and crashes.
 """
 
+import asyncio
 import json
 import logging
 import os
@@ -24,8 +25,10 @@ from typing import Optional
 
 from pymobiledevice3.lockdown import LockdownClient
 
+from src.exceptions.nugget_exception import NuggetException
 from src.restore.inject import _is_encrypted_backup, _validate_sqlite_db
 from src.restore.storage import cache_base as _cache_base
+from src.utils.file_lock import FileLock
 
 _logger = logging.getLogger("GoldenNugget.cache")
 
@@ -190,7 +193,10 @@ class ProtectiveBackupCache:
             self.master_root = base / "master"
             self.device_dir = master
             self.info_path = info_path
-            self.media_dir = base / "media" / self.udid
+            # The media store is the only copy of the photos between the wipe
+            # and Phase 3 — it NEVER lives under the legacy temp base, even
+            # when the master itself was found there.
+            self.media_dir = self._persist_base / "media" / self.udid
             self.view_root = base / "view"
             created = int(info.get("created_ts", now))
             # A cache written before the media store got its own clock has no
@@ -252,6 +258,31 @@ class ProtectiveBackupCache:
         persistent per-device media store (``media_dir``), pulled as a diff
         (only new/changed objects) — the cache photo store.
         """
+        from src.restore.protective import perform_protective_backup
+
+        # Two processes refreshing one master (app + restore_cache.py, or two
+        # app instances) interleave mobilebackup2 uploads into a torn
+        # manifest/payload mix. Serialize the refresh itself; a second caller
+        # that cannot get the lock fails loudly instead of corrupting.
+        lock = FileLock(str(self.base / f".refresh-{self.udid}.lock"))
+        if not await asyncio.to_thread(lock.tryLock, 10_000):
+            raise NuggetException(
+                "Another GoldenNugget process is refreshing the backup cache "
+                "for this device. Wait for it to finish, then try again.")
+        try:
+            return await self._refresh_locked(
+                lockdown_client, progress_callback,
+                include_photos=include_photos, include_posterboard=include_posterboard,
+                include_keychain=include_keychain,
+                include_afc_media=include_afc_media)
+        finally:
+            lock.unlock()
+
+    async def _refresh_locked(self, lockdown_client: LockdownClient, progress_callback=None,
+                              include_photos: bool = True, include_posterboard: bool = False,
+                              include_keychain: bool = False,
+                              include_afc_media: bool = False) -> str:
+        """Refresh body, runs under the per-device refresh lock."""
         from src.restore.protective import perform_protective_backup
 
         valid = self.has_valid_master()

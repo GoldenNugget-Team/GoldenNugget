@@ -183,6 +183,10 @@ class TemplateFile(TendieFile):
         zip_output = os.path.join(output_dir, str(uuid.uuid4()))
         os.makedirs(zip_output)
         with zipfile.ZipFile(self.path, 'r') as zip_ref:
+            # Templates skip tendie-style import checks; verify here instead so
+            # a swap between open and extract cannot inject ../ members.
+            from src.controllers.archive_safety import checked_members
+            checked_members(zip_ref)
             zip_ref.extractall(zip_output)
 
         # apply the options

@@ -7,32 +7,9 @@ from typing import Callable, Optional
 from src.utils.i18n import QT_TRANSLATE_NOOP, QCoreApplication
 
 from .basic_plist_locations import FileLocation
-from .registry import Kind, Section, TweakSpec
+from .registry import Kind, Section, TweakSpec, _t
 from .tweak_classes import HandoffPreferenceTweak
 from .tweak_names import TweakID
-
-
-def _t(
-    id_: TweakID,
-    section: Section,
-    title: str,
-    location: FileLocation,
-    key: str,
-    description: str = "",
-    **kwargs,
-) -> TweakSpec:
-    # QT_TRANSLATE_NOOP marks the title for pyside6-lupdate; the actual
-    # translation happens at render time (translators are not installed yet
-    # when this module is imported).
-    return TweakSpec(
-        id=id_,
-        section=section,
-        title=QT_TRANSLATE_NOOP("Nugget", title),
-        description=QT_TRANSLATE_NOOP("Nugget", description) if description else None,
-        location=location,
-        key=key,
-        **kwargs,
-    )
 
 
 def _experimental_domain_boolean(location, key, on_value=True, off_value=False):

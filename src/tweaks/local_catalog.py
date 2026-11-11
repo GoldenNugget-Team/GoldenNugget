@@ -1,37 +1,8 @@
 """Additional opt-in plist controls extending the canonical tweak registry."""
 
-from typing import Optional
-
-from src.utils.i18n import QT_TRANSLATE_NOOP
-
 from .basic_plist_locations import FileLocation
-from .registry import Kind, Section, TweakSpec
+from .registry import Kind, Section, TweakSpec, _t
 from .tweak_names import TweakID
-
-
-def _t(
-    id_: TweakID,
-    section: Section,
-    title: str,
-    location: Optional[FileLocation],
-    key: str,
-    description: str = "",
-    **kwargs,
-) -> TweakSpec:
-    # QT_TRANSLATE_NOOP marks the title for pyside6-lupdate; the actual
-    # translation happens at render time (translators are not installed yet
-    # when this module is imported).
-    return TweakSpec(
-        id=id_,
-        section=section,
-        title=QT_TRANSLATE_NOOP("Nugget", title),
-        description=QT_TRANSLATE_NOOP("Nugget", description) if description else None,
-        location=location,
-        key=key,
-        **kwargs,
-    )
-
-
 
 
 def _experimental_domain_boolean(location, key, on_value=True, off_value=False):
@@ -103,37 +74,26 @@ def _mail_search_task_date():
     return MailSearchTaskBaseDate()
 
 
-def _research_swiftui_global_default(member, key, title, description):
-    from .tweak_classes import TriStateBooleanPlistTweak
+_UNVERIFIED_GLOBAL_WARNING = (
+    "This reader uses standardUserDefaults. The global defaults domain is a "
+    "fallback behind each app's own settings, so app-specific values can override "
+    "this request. GoldenNugget stages the key in .GlobalPreferences.plist through "
+    "restore; device acceptance and behavior are unverified. No battery, memory, "
+    "or performance benefit is established. The value may alter app behavior. "
+    "Not Used omits a future write but does not remove a prior override."
+)
 
-    warning = (
-        "This reader uses standardUserDefaults. The global defaults domain is a "
-        "fallback behind each app’s own settings, so app-specific values can override "
-        "this request. GoldenNugget stages the key in .GlobalPreferences.plist through "
-        "restore; device acceptance and behavior are unverified. No battery, memory, "
-        "or performance benefit is established. The value may alter app behavior. "
-        "Not Used omits a future write but does not remove a prior override."
-    )
-    return _t(
-        member,
-        Section.INTERNAL,
-        title,
-        FileLocation.globalPreferencesHomeDomain,
-        key,
-        value=None,
-        min_version="27.2",
-        experimental=True,
-        description=description,
-        warning=warning,
-        factory=lambda: TriStateBooleanPlistTweak(
-            FileLocation.globalPreferencesHomeDomain, key
-        ),
-    )
+
+def _research_swiftui_global_default(member, key, title, description):
+    return _research_swiftui_unverified_global_default(
+        member, key, title, description, _UNVERIFIED_GLOBAL_WARNING)
 
 
 def _research_swiftui_unverified_global_default(
     member, key, title, description, warning
 ):
+    # Same spec as _research_swiftui_global_default, but the caller supplies
+    # the warning text (an unverified reader claim instead of the fixed one).
     from .tweak_classes import TriStateBooleanPlistTweak
 
     return _t(

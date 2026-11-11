@@ -188,8 +188,6 @@ def stage_files(
         languages = [detected]
         if detected != "other":
             languages.append("other")
-        if detected not in languages:
-            languages.append(detected)
 
     files: list[tuple[str, bytes]] = []
     for digit in DIGITS:

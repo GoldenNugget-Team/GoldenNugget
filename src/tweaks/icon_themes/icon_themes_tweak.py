@@ -23,6 +23,7 @@ from src.utils.file_to_restore import FileToRestore
 from src.utils.i18n import QCoreApplication
 from src.utils.paths import app_data_dir
 
+from ..preference_validation import valid_bundle_identifier
 from ..tweak_classes import Tweak
 from .icon_theme import IconTheme
 
@@ -172,6 +173,8 @@ class IconThemesTweak(Tweak):
         tmp = tempfile.mkdtemp(prefix="icontheme_pack_")
         try:
             with zipfile.ZipFile(archive_path) as zf:
+                from src.controllers.archive_safety import checked_members
+                checked_members(zf)
                 zf.extractall(tmp)
             folder = self.resolve_icon_folder(tmp, theme_name)
             return self.import_pack(folder)
@@ -242,6 +245,11 @@ class IconThemesTweak(Tweak):
         update_label(QCoreApplication.tr("Generating icon themes..."))
         skipped = []
         for theme in self.themes:
+            # bundle_id comes from imported preset JSON and lands verbatim in a
+            # restore path — reject anything that could escape the WebClips dir
+            if not valid_bundle_identifier(theme.bundle_id):
+                skipped.append(theme.bundle_id)
+                continue
             display_name = self.sanitize_display_name(theme.display_name)
             folder = f"Library/WebClips/Cowabunga_{theme.bundle_id},{display_name}.webclip"
 

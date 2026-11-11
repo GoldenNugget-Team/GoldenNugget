@@ -384,6 +384,48 @@ def test_push_diff():
 
 
 # =============================================================================
+def test_push_warn_mode():
+    print("\nrestore_media_via_afc(on_error='warn'): a failing push must not crash the loop")
+    src = store("warnpush")
+    write_file(os.path.join(src, "DCIM", "FIRST.JPG"), b"f" * 100)
+    write_file(os.path.join(src, "DCIM", "SECOND.JPG"), b"s" * 100)
+    _write_media_state(src, files=2, bytes_=200, skipped=0)
+
+    class FirstFileFailsAfc(FakeAfc):
+        """Every push attempt for the FIRST file raises (device error)."""
+        async def fopen(self, path, mode="r"):
+            if path.endswith("FIRST.JPG"):
+                raise RuntimeError("afc push failed")
+            return await super().fopen(path, mode)
+
+    # The warn path used to hit an UnboundLocalError on the first failed file
+    # (n was consumed before assignment) and died instead of warning and
+    # continuing; a later failure also double-counted the previous file's
+    # bytes into the progress tally.
+    fake = FirstFileFailsAfc()
+    tally = use_afc(fake, lambda: asyncio.run(
+        afc_media.restore_media_via_afc(None, src, on_error="warn")))
+    check("warn mode completes the whole push loop", tally is not None, tally)
+    check("the surviving file still reached the device",
+          fake.written.get("/DCIM/SECOND.JPG") == b"s" * 100)
+    check("the failed file is reported", tally.get("failed") == ["DCIM/FIRST.JPG"],
+          tally.get("failed"))
+    check("the tally counts the delivered file",
+          tally.get("files") == 2 and tally.get("bytes") == 100, tally)
+
+    # on_error="raise" (the default every production caller uses) must still
+    # stop at the first failure.
+    def go():
+        try:
+            use_afc(FirstFileFailsAfc(), lambda: asyncio.run(
+                afc_media.restore_media_via_afc(None, src)))
+            return "no error"
+        except NuggetException as e:
+            return "afc push failed" in str(e)
+    check("raise mode stops at the first failed file", go())
+
+
+# =============================================================================
 def test_pre_apply_gate():
     print("\nDeviceManager._require_media_copy: refuse before the wipe")
     good = store("gate_good")
@@ -652,6 +694,7 @@ def main():
     test_pull()
     test_pull_one()
     test_push()
+    test_push_warn_mode()
     test_push_diff()
     test_pre_apply_gate()
     test_restore_call_sites()

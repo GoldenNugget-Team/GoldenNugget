@@ -672,14 +672,17 @@ class MobileHelperDialog(QDialog):
             self._eng_proc.kill()
 
     def _on_engine_finished(self, code: int, _status=None):
+        proc, self._eng_proc = self._eng_proc, None
         # pick up any output that arrived between the last readyRead and finish;
-        # a trailing partial line (no newline yet) still gets one last pump
+        # a trailing partial line (no newline yet) still gets one last pump.
+        # _eng_proc is already None here, so a trailing PROMPT line cannot open
+        # a modal and write an answer into a process that has exited.
         self._eng_buf += "\n"
         self._pump_engine()
-        proc, self._eng_proc = self._eng_proc, None
         mode, self._eng_mode = self._eng_mode, None
         out = self._eng_out
         self._eng_password = None
+        self._apple_password = None  # drop the Apple-ID password once the run is over
         if proc is not None:
             proc.deleteLater()
         if self._pending_ipa_path is not None:

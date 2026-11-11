@@ -22,7 +22,7 @@ See the [installation guide](https://github.com/GoldenNugget-Team/GoldenNugget/w
 
 ## Running from source
 Requirements
-Python 3.10+
+Python 3.15
 QT 6.9.6+
 Rust (Mobile companion)
 
@@ -55,7 +55,7 @@ to open the interface with mock devices and no iPhone connected.
 | Windows | Apple Devices or iTunes | Install one before connecting an iPhone. |
 | Linux | `usbmuxd` and `libimobiledevice` | Both are required for USB access. |
 | Linux (release) | glibc 2.34+ (x86_64) | The frozen build runs where PySide6 itself runs. Debian 12, Ubuntu 22.04, RHEL 9, Mint 21+. Source runs on any Python 3.15 distro. |
-| Python | 3.10+ | Use the pinned packages in `requirements.txt`. |
+| Python | 3.15 | Use the pinned packages in `requirements.txt`. |
 
 ## Discord server
 Need support? Join our [Discord Server][server].
@@ -239,7 +239,7 @@ Want to see your name here? Open a [Pull Request](https://github.com/GoldenNugge
   - [PySide6][PySide6Doc] (PySide6-Essentials on non-Linux, selected automatically)
   - [ffmpeg-python](https://pypi.org/project/ffmpeg-python/) (video wallpapers)
   - [opencv-python](https://pypi.org/project/opencv-python/) (video wallpapers)
-  - Python 3.10 or newer
+  - Python 3.15 or newer
 </details>
 
 > All pinned deps are in `requirements.txt` (incl. PyInstaller for building).

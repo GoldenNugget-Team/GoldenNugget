@@ -772,24 +772,21 @@ async def _restore_ios27(back: backup.Backup, reboot: bool,
 
         # Clean up stale working copies from crashed runs (>1h old).
         #
-        # ONLY working copies — those are rebuilt from the backup on every run.
-        # Live protective backups live outside the temp dir under their own
-        # tree (see protective_persistent_base); after Phase 2 has wiped the
-        # device they are the sole copy of the user's data, so sweeping them
-        # here would turn a recoverable failure into permanent loss. The
-        # prefix is the guard, and the check below makes it fail safe.
+        # ONLY directories matching WORKING_COPY_PREFIX are candidates - live
+        # protective backups and masters never carry that prefix, so a wrong
+        # delete of the sole copy of the user's data is impossible. The age
+        # check keeps this fail safe on top.
         import glob as _glob
 
         from .protective import protective_persistent_base
         _persistent_base = str(protective_persistent_base())
-        for stale in sorted(_glob.glob(os.path.join(
-                tempfile.gettempdir(), WORKING_COPY_PREFIX + "*"))):
+        for stale in sorted(
+                _glob.glob(os.path.join(tempfile.gettempdir(), WORKING_COPY_PREFIX + "*"))
+                # Working copies are built beside their source (same volume as
+                # the master), so crashed recovery runs can also leave them here.
+                + _glob.glob(os.path.join(_persistent_base, "master", WORKING_COPY_PREFIX + "*"))):
             try:
                 if stale == protective_dir:
-                    continue
-                if os.path.abspath(stale).startswith(_persistent_base):
-                    log_error(f"Refusing to sweep {stale}: inside the persistent "
-                              f"protective backup store")
                     continue
                 age_h = (time.time() - os.path.getctime(stale)) / 3600
                 if age_h > 1:
@@ -822,9 +819,14 @@ async def _restore_ios27(back: backup.Backup, reboot: bool,
             # after-success prune in device_manager._live_backup).
             prune_protective_backups(udid)
         backup_complete = not skip_protective_backup
+        # skip_protective_backup is always False here in practice (restore_files
+        # routes it to the raw-sparse branch first) — keep the counters defined
+        # so the log line below cannot hit an unbound name anyway.
+        removed_rows = removed_files = 0
+        max_inode_hint = None
 
         if backup_complete:
-            removed_rows, removed_files = await asyncio.to_thread(
+            prune = await asyncio.to_thread(
                 clean_backup_for_restore, backup_root, udid,
                 include_keychain=include_keychain,
                 manifest_password=manifest_password,
@@ -836,8 +838,13 @@ async def _restore_ios27(back: backup.Backup, reboot: bool,
                 # unverified the media rows stay in the manifest, so the restore
                 # fails loudly on a missing payload instead of silently losing
                 # the library's files.
-                exclude_afc_media_trees=media_store_verified(media_dir)
+                exclude_afc_media_trees=media_store_verified(media_dir),
+                # also scan the surviving blobs for the max inode, so the
+                # injection below does not have to decode every blob again
+                collect_inode=True,
             )
+            removed_rows, removed_files = prune
+            max_inode_hint = prune.max_inode
         log_info(f"Phase 1: Pruned backup: -{removed_rows} manifest rows, -{removed_files} payload files "
                  f"({time.monotonic() - started:.1f}s into the run)")
         mark_phase("1 prune + prepare")
@@ -869,7 +876,7 @@ async def _restore_ios27(back: backup.Backup, reboot: bool,
             if batch:
                 injected, unchanged, failed = await asyncio.to_thread(
                     inject_files_into_backup, backup_root, udid, batch,
-                    manifest_password)
+                    manifest_password, max_inode_hint=max_inode_hint)
                 log_info(f"Tweak files delivered via protective restore: "
                          f"{injected} ok, {unchanged} unchanged, {failed} failed")
                 if failed:

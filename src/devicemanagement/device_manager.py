@@ -1394,9 +1394,9 @@ Returns (PreparedBackup, posterboard_db_ok). When the PosterBoard
                                  files_to_restore=files_to_restore, owner=501, group=501)
 
     ## RESETTING TWEAKS
-    def reset_tweaks(self, reset_pages: list[Page], settings: Settings, update_label=lambda x: None, show_alert=lambda x: None, prompt_choice=None):
-        return asyncio.run(self._reset_tweaks(reset_pages, settings, update_label, show_alert, prompt_choice))
-    async def _reset_tweaks(self, reset_pages: list[Page], settings: Settings, update_label=lambda x: None, show_alert=lambda x: None, prompt_choice=None):
+    def reset_tweaks(self, reset_pages: list[Page], settings: Settings, update_label=lambda x: None, show_alert=lambda x: None, prompt_choice=None, prompt_password=None):
+        return asyncio.run(self._reset_tweaks(reset_pages, settings, update_label, show_alert, prompt_choice, prompt_password))
+    async def _reset_tweaks(self, reset_pages: list[Page], settings: Settings, update_label=lambda x: None, show_alert=lambda x: None, prompt_choice=None, prompt_password=None):
         final_alert = None
         files_to_restore = []
         try:
@@ -1490,11 +1490,36 @@ Returns (PreparedBackup, posterboard_db_ok). When the PosterBoard
             await self.add_skip_setup(files_to_restore, uses_domains)
 
             prepared_root = None
+            backup_password = ""
             if reset_plan:
                 prepared_root, _ = await self._prepare_protective_backup(update_label)
+                # Phase 0 ran (and may be encrypted). Phase 3 must restore with
+                # the same password or the protective restore fails after the
+                # reset — mirror _apply_changes' encryption handling.
+                known = getattr(self, "_known_backup_encryption", None)
+                if known is None:
+                    async with lockdown_session(self.get_current_device_udid()) as check_ld:
+                        async with Mobilebackup2Service(check_ld) as mb:
+                            known = await mb.get_will_encrypt()
+                if known:
+                    backup_password = self._get_backup_password()
+                    if not backup_password:
+                        if prompt_password is None:
+                            raise NuggetException(QCoreApplication.tr(
+                                "Backup password is required for reset on an encrypted-backup device. "
+                                "Provide the password or disable encryption in iTunes/Finder."))
+                        backup_password = prompt_password(
+                            QCoreApplication.tr("Backup Encryption Password"),
+                            QCoreApplication.tr("Enter your iTunes/Finder backup password (required for encrypted reset):"))
+                        if not backup_password:
+                            raise NuggetException(QCoreApplication.tr(
+                                "Backup password is required for reset on an encrypted-backup device. "
+                                "Provide the password or disable encryption in iTunes/Finder."))
 
             # restore to the device
             final_alert = await self.start_restore(files_to_restore, update_label,
+                                                   backup_password=backup_password,
+                                                   include_keychain=bool(backup_password),
                                                    prepared_backup_root=prepared_root,
                                                    prompt_choice=prompt_choice)
             # Invalidate selection history after the supported targeted reset.

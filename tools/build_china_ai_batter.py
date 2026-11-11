@@ -102,7 +102,7 @@ import os
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BUILDER = "/Users/jason/GoldenNugget-TemplateBuilder"
+BUILDER = os.environ.get("GOLDENNUGGET_TEMPLATEBUILDER", os.path.join(REPO, "..", "GoldenNugget-TemplateBuilder"))
 OUT_DIR = os.path.join(REPO, "community-batters")
 
 sys.path.insert(0, REPO)

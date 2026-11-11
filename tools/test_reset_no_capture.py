@@ -69,6 +69,10 @@ class FakeDeviceManager:
         return "OK"
 
     async def _prepare_protective_backup(self, update_label):
+        # The real Phase 0 establishes the encryption state on the manager
+        # (see _build_protective_backup); the fallback lockdown check below
+        # must never run when it did.
+        self._known_backup_encryption = False
         return "verified-test-backup", False
 
     def _record_label(self, text):

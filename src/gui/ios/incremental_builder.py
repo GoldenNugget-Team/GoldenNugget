@@ -4,9 +4,10 @@ from PySide6.QtCore import QObject, QTimer
 
 
 class IncrementalBuilder(QObject):
-    def __init__(self, parent):
+    def __init__(self, parent, on_error=None):
         super().__init__(parent)
         self._steps = None
+        self._on_error = on_error
         self._timer = QTimer(self)
         self._timer.setSingleShot(True)
         self._timer.timeout.connect(self._advance)
@@ -22,6 +23,11 @@ class IncrementalBuilder(QObject):
             self._steps.close()
             self._steps = None
 
+    def _on_step_error(self):
+        self.cancel()
+        if self._on_error is not None:
+            self._on_error()
+
     def finish(self):
         self._timer.stop()
         try:
@@ -30,7 +36,7 @@ class IncrementalBuilder(QObject):
         except StopIteration:
             self._steps = None
         except Exception:
-            self.cancel()
+            self._on_step_error()
             raise
 
     def _advance(self):
@@ -41,7 +47,7 @@ class IncrementalBuilder(QObject):
         except StopIteration:
             self._steps = None
         except Exception:
-            self.cancel()
+            self._on_step_error()
             raise
         if self._steps is not None:
             self._timer.start(1)

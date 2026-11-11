@@ -214,12 +214,18 @@ class IOSSectionContent(QWidget):
             bar = parent.verticalScrollBar()
             self._rebuild_scroll_position = (bar, bar.value())
         if not hasattr(self, "_builder"):
-            self._builder = IncrementalBuilder(self)
+            self._builder = IncrementalBuilder(self, on_error=self._build_failed)
         device = self.window.device_manager.data_singleton.current_device
         self._device_signature = tuple(getattr(device, key, None)
                                        for key in ("udid", "model", "version", "build"))
         self._building = True
         self._builder.start(self._build_rows())
+
+    def _build_failed(self):
+        # A render step raised mid-build: leave the page usable for search
+        # instead of staying stuck in "building" forever.
+        self._building = False
+        self._loading_label.hide()
 
     def _build_rows(self):
         """(Re)build the section controls for the currently selected device.

@@ -163,6 +163,21 @@ def posterboard_db_is_snapshot_ok(db_path, strict: bool = True) -> bool:
     return snapshot_problem(db_path, strict=strict) is None
 
 
+def missing_write_tables(db_path) -> Optional[str]:
+    """Name the tables the config manager writes that the file lacks, else None.
+
+    ``update_sqlite`` only writes poster/posterAttributes/posterRoleMembership —
+    never ``sqlite_sequence``, which the strict snapshot check also demands. A
+    db5-ish schema without it is perfectly usable here, and demanding the full
+    strict set in the apply path created an advice loop ("fetch a fresh
+    database") for devices whose fetch path accepts the same file.
+    """
+    tables = {t.lower() for t in list_tables(db_path)}
+    missing = [t for t in ("poster", "posterAttributes", "posterRoleMembership")
+               if t not in tables]
+    return ", ".join(missing) if missing else None
+
+
 def require_usable_snapshot(db_path, strict: bool = True) -> None:
     """Raise :class:`IncompletePosterBoardSnapshot` unless the file is usable."""
     problem = snapshot_problem(db_path, strict=strict)

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtCore import QCoreApplication
+from shiboken6 import isValid as _shiboken_is_valid
 
 from awesomeui.controls import IOSSectionHeader
 from src.controllers.video_handler import set_ignore_frame_limit
@@ -283,6 +284,11 @@ class DeviceBarMixin(_WindowBase):
 
         def _show():
             self._mobile_promo_shown = True
+            # singleShot belongs to the app, not this window: closing the app
+            # within the 800 ms window would build a QMessageBox on a deleted
+            # C++ object and crash through the handler.
+            if not _shiboken_is_valid(self):
+                return
             dialog = QtWidgets.QMessageBox(self)
             dialog.setWindowTitle(QCoreApplication.translate("Nugget", "GoldenNugget Mobile"))
             dialog.setIcon(QtWidgets.QMessageBox.Information)

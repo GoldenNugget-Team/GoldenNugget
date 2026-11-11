@@ -297,8 +297,15 @@ class IOSDaemonsContent(QWidget):
         self._category_lines = []
         self._category_groups = []
         self.master_switch.setEnabled(False)
-        self._builder = IncrementalBuilder(self)
+        self._builder = IncrementalBuilder(self, on_error=self._build_failed)
         self._builder.start(self._build_rows(layout, c))
+
+    def _build_failed(self):
+        # A render step raised mid-build: leave the page usable for search
+        # instead of staying stuck in "building" forever.
+        self._building = False
+        self._loading_label.hide()
+        self.master_switch.setEnabled(True)
 
     def _build_rows(self, layout, c):
         for title, daemon in [

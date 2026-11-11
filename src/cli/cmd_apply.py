@@ -67,7 +67,11 @@ def _apply_flag_tweaks(args):
             raise SystemExit(2)
         name, _, value = item.partition("=")
         spec = _resolve_specs([name])[0]
-        tweaks[spec.id].set_value(parse_value(spec, value), toggle_enabled=True)
+        try:
+            tweaks[spec.id].set_value(parse_value(spec, value), toggle_enabled=True)
+        except ValueError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 1
         print(f"[apply] set {spec.id.name} = {value!r}")
 
     if args.daemon_disable or args.daemon_enable:

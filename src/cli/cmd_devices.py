@@ -47,7 +47,7 @@ def run(args) -> int:
                 print(f"hardware:  {getattr(device, 'hardware', '?')}")
                 print(f"cpu:       {getattr(device, 'cpu', '?')}")
                 print(f"locale:    {getattr(device, 'locale', '?')}")
-                print(f"usb:       {getattr(device, 'usb', '?')}")
+                print(f"usb:       {getattr(device, 'connected_via_usb', '?')}")
                 return 0
         print(f"ERROR: device {args.udid} not found.", file=sys.stderr)
         return 1

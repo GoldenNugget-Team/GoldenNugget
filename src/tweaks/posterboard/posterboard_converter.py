@@ -1147,6 +1147,8 @@ def main(argv: "list[str] | None" = None) -> int:
     try:
         if is_zip:
             with zipfile.ZipFile(args.input) as archive:
+                from src.controllers.archive_safety import checked_members
+                checked_members(archive)
                 archive.extractall(work)
         else:
             source_dir = args.input

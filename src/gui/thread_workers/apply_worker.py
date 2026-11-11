@@ -209,7 +209,8 @@ class ApplyThread(QThread):
                 return self.manager.apply_changes(self.update_label, self.alert_window,
                                                   self.prompt_password, self.prompt_user_choice)
             return self.manager.reset_tweaks(self.reset_pages, self.settings, self.update_label,
-                                             self.alert_window, self.prompt_user_choice)
+                                             self.alert_window, self.prompt_user_choice,
+                                             self.prompt_password)
         finally:
             self.manager.operation_stage_callback = None
             self.pause_control.finish()

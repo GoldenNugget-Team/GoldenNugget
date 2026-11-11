@@ -60,6 +60,26 @@ class FileLock:
             return True
         return age > _STALE_SECONDS
 
+    def _reclaimable(self) -> bool:
+        """True when the lock is stale right now.
+
+        ``_stale()`` is checked, then the file's holder is re-read — between
+        the two, another process may have created a fresh lock; deleting that
+        one would leave two holders. Both reads must see the same stale
+        holder before the unlink is allowed.
+        """
+        if not self._stale():
+            return False
+        try:
+            with open(self.path, "r", encoding="utf-8") as stream:
+                raw = stream.read().strip()
+            pid = int(raw.split()[0]) if raw else -1
+        except OSError:
+            return True
+        if pid > 0 and _pid_alive(pid):
+            return False
+        return self._stale()
+
     def tryLock(self, timeout_ms: int = 0) -> bool:  # noqa: N802 - QLockFile API
         deadline = time.monotonic() + max(0, timeout_ms) / 1000.0
         while True:
@@ -67,7 +87,7 @@ class FileLock:
                 descriptor = os.open(
                     self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
             except FileExistsError:
-                if self._stale():
+                if self._reclaimable():
                     try:
                         os.unlink(self.path)
                     except OSError:
