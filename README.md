@@ -214,7 +214,7 @@ If you find this project useful, consider starring the repo.
 
 > [!NOTE]
 > ## Mobilegestalt
-> Don't even ask me for it. It will be NEVER implemented again. 
+> Don't even ask me for it. It will NEVER be implemented again. 
 
 ## Requirements
 <details>
