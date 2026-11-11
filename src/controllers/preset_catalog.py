@@ -27,7 +27,7 @@ import zipfile
 from dataclasses import dataclass, field
 from urllib.parse import quote
 
-from PySide6.QtCore import QStandardPaths, QT_TRANSLATE_NOOP
+from PySide6.QtCore import QT_TRANSLATE_NOOP, QStandardPaths
 
 from src.controllers import share_code
 

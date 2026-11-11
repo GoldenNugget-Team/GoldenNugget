@@ -266,7 +266,7 @@ class ResetRecord(unittest.TestCase):
         clear_record('U')
         self.assertEqual(load_record('U'), {})
 
-    def test_reset_page_appears_and_empties_managed_files(self):
+    def test_reset_without_baseline_preserves_record_and_writes_nothing(self):
         import asyncio
         from src.tweaks.posterboard.community_tweaks import load_record, write_record
         from src.utils.pages import Page, get_resettable_pages
@@ -288,12 +288,13 @@ class ResetRecord(unittest.TestCase):
         dm.start_restore = restore
         from unittest import mock
         with mock.patch('src.restore.lastapply.clear_lastapply'), \
-                mock.patch('src.controllers.apply_preview.clear_preview'):
+                mock.patch('src.controllers.apply_preview.clear_preview'), \
+                mock.patch('src.devicemanagement.device_manager.show_apply_error') as report_error:
             ok = asyncio.run(dm._reset_tweaks([Page.Templates], None, labels.append))
-        self.assertTrue(ok)
-        self.assertIn(('ManagedPreferencesDomain', 'mobile/com.apple.springboard.plist', plistlib.dumps({})), written)
-        self.assertTrue(any('/var/mobile/x.bin' in text for text in labels))
-        self.assertEqual(load_record('U'), {})
+        self.assertFalse(ok)
+        self.assertEqual(written, [])
+        self.assertTrue(load_record('U'))
+        self.assertIn('verified pre-tweak baseline', str(report_error.call_args.args[0]))
 
 
 if __name__ == '__main__':

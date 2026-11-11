@@ -1,6 +1,7 @@
 from bisect import bisect_left, bisect_right
-from PySide6.QtCore import QEvent, QObject, QTimer, QSize, QPoint
-from PySide6.QtWidgets import QScrollArea, QWidget, QApplication, QSizePolicy
+
+from PySide6.QtCore import QEvent, QObject, QPoint, QSize, QTimer
+from PySide6.QtWidgets import QApplication, QScrollArea, QSizePolicy, QWidget
 
 
 class ViewportRows(QObject):

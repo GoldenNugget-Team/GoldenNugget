@@ -1,12 +1,14 @@
+import os
+from shutil import move, rmtree
+from typing import Optional
+
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
+
 from src.controllers.archive_safety import package_path, safe_member
+from src.qt.custom_elements.multicombobox import MultiComboBox
+
 from . import TemplateOption
 
-import os
-from typing import Optional
-from shutil import rmtree, move
-from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout
-
-from src.qt.custom_elements.multicombobox import MultiComboBox
 
 class PickerElement:
     label: str # label to show for the picker
@@ -129,7 +131,7 @@ class PickerOption(TemplateOption):
             sel_options.append(self.options[self.selection])
         # delete the files that are not in use
         for opt in self.options:
-            if not opt in sel_options:
+            if opt not in sel_options:
                 for file in opt.files:
                     # delete files or directories
                     path = package_path(container_path, file)

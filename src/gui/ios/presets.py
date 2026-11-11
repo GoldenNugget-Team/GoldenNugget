@@ -1,21 +1,37 @@
 """Dedicated iOS-style preset manager page."""
 
-from PySide6.QtCore import Qt, QCoreApplication
+from PySide6.QtCore import QCoreApplication, Qt
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QListWidget,
-    QListWidgetItem, QMessageBox, QScrollArea, QPushButton,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
 )
 
 from src.controllers.preset_manager import PresetManager
-from src.gui.widgets import (
-    IOSSectionHeader, IOSCard, IOSSwitch, IOSPrimaryButton,
-)
 from src.gui.ios.preset_menu import (
-    load_preset_flow, save_preset_flow, delete_preset_flow,
-    export_preset_flow, partial_export_preset_flow, import_preset_flow,
-    rollback_preset_flow, preset_subtitle,
+    delete_preset_flow,
+    export_preset_flow,
+    import_preset_flow,
+    load_preset_flow,
+    partial_export_preset_flow,
+    preset_subtitle,
+    rollback_preset_flow,
+    save_preset_flow,
 )
 from src.gui.theme import ColorThemeManager, t
+from src.gui.widgets import (
+    IOSCard,
+    IOSPrimaryButton,
+    IOSSectionHeader,
+    IOSSwitch,
+)
 
 
 class IOSPresetsPage(QWidget):

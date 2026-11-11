@@ -4,6 +4,7 @@ from contextvars import ContextVar
 from threading import Event, Lock
 
 from PySide6.QtCore import QCoreApplication
+
 from src.exceptions.nugget_exception import NuggetException
 
 current_find_my_wait = ContextVar("find_my_wait", default=None)

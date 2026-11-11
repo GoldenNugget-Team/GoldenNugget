@@ -12,15 +12,36 @@ stock apps are stylised tiles.
 from dataclasses import dataclass, field
 from typing import Optional
 
-from PySide6.QtCore import QCoreApplication, QT_TRANSLATE_NOOP, QDate, QLocale, QPointF, QRectF, QSize, Qt, QTime
+from PySide6.QtCore import (
+    QT_TRANSLATE_NOOP,
+    QCoreApplication,
+    QDate,
+    QLocale,
+    QPointF,
+    QRectF,
+    QSize,
+    Qt,
+    QTime,
+)
 from PySide6.QtGui import (
-    QColor, QFont, QFontMetricsF, QImage, QLinearGradient, QPainter, QPainterPath, QPen,
-    QRadialGradient, QTransform,
+    QColor,
+    QFont,
+    QFontMetricsF,
+    QImage,
+    QLinearGradient,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QRadialGradient,
+    QTransform,
 )
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from src.gui.ios.statusbar_preview import (
-    DEVICE_PT_W, StatusBarPreviewState, paint_status_bar, preview_state,
+    DEVICE_PT_W,
+    StatusBarPreviewState,
+    paint_status_bar,
+    preview_state,
 )
 from src.gui.theme import ColorThemeManager
 
@@ -110,8 +131,8 @@ def _effective(name, entry, version, model) -> bool:
 
 
 def _status_state(entry, version) -> StatusBarPreviewState:
-    from src.tweaks.status_bar.status_bar_tweak import StatusBarTweak
     from src.controllers.preset_manager import PresetManager
+    from src.tweaks.status_bar.status_bar_tweak import StatusBarTweak
     tweak = StatusBarTweak()
     if isinstance(entry, dict):
         PresetManager.__new__(PresetManager)._apply_status_bar(tweak, entry)
@@ -167,7 +188,7 @@ def current_wallpaper() -> Optional[str]:
     """Preview image of the first queued PosterBoard wallpaper, if it can be made."""
     try:
         from src.controllers.tendie_preview import extract_tendie_preview
-        from src.tweaks.tweaks import tweaks, TweakID
+        from src.tweaks.tweaks import TweakID, tweaks
         board = tweaks.get(TweakID.PosterBoard)
         for item in getattr(board, "tendies", [])[:1]:
             if getattr(item, "path", None):

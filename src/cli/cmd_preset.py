@@ -114,7 +114,7 @@ def _run_show(args):
 
 
 def _run_save(args):
-    from src.cli.common import load_core_tweaks, autosave_preset, seed_from_autosave
+    from src.cli.common import autosave_preset, load_core_tweaks, seed_from_autosave
     load_core_tweaks()
     seed_from_autosave()
     tags = [t.strip() for t in args.tags.split(",") if t.strip()]
@@ -123,7 +123,7 @@ def _run_save(args):
     ok = pm.save_preset(args.name, args.description, tags=tags,
                         device_model=model, ios_version=version)
     if not ok:
-        print(f"ERROR: nothing to save (no tweaks serialized).", file=sys.stderr)
+        print("ERROR: nothing to save (no tweaks serialized).", file=sys.stderr)
         return 1
     if args.name != "AutoSave":
         autosave_preset()
@@ -133,7 +133,7 @@ def _run_save(args):
 
 
 def _run_load(args):
-    from src.cli.common import bootstrap, load_core_tweaks, autosave_preset
+    from src.cli.common import autosave_preset, bootstrap, load_core_tweaks
     from src.controllers.hotload import HotLoad
     settings = bootstrap()
     load_core_tweaks()

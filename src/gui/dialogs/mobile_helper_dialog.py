@@ -46,13 +46,28 @@ import tempfile
 from pathlib import Path
 
 from PySide6.QtCore import (
-    QCoreApplication, QStandardPaths, Qt, QProcess, QThread, QUrl, Signal,
+    QCoreApplication,
+    QProcess,
+    QStandardPaths,
+    Qt,
+    QThread,
+    QUrl,
+    Signal,
 )
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWidgets import (
-    QDialog, QDialogButtonBox, QVBoxLayout, QLabel, QLineEdit,
-    QPushButton, QFileDialog, QInputDialog, QMessageBox, QProgressDialog,
-    QGridLayout, QWidget,
+    QDialog,
+    QDialogButtonBox,
+    QFileDialog,
+    QGridLayout,
+    QInputDialog,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QProgressDialog,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
 )
 
 from src.devicemanagement import mobile_helper as mh

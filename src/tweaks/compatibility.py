@@ -1,11 +1,17 @@
 """Device eligibility shared by GUI, preview, CLI plans and compilation."""
 import re
+
 from src.devicemanagement.constants import Version
 from src.devicemanagement.device_capabilities import (
-    has_dynamic_island, has_camera_control, has_action_button, has_home_button,
-    has_always_on_display, has_apple_intelligence,
+    has_action_button,
+    has_always_on_display,
+    has_apple_intelligence,
+    has_camera_control,
+    has_dynamic_island,
+    has_home_button,
 )
 from src.tweaks.registry import SPECS_BY_ID
+
 
 def device_family(model: str) -> str | None:
     """Return the normalized family for an Apple hardware identifier."""

@@ -1,5 +1,7 @@
-from .nugget_exception import NuggetException
 from PySide6.QtCore import QCoreApplication
+
+from .nugget_exception import NuggetException
+
 
 class VideoLengthException(NuggetException):
     def __init__(self, frame_limit: int):

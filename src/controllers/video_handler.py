@@ -1,6 +1,6 @@
 import os
-from tempfile import mkdtemp
 from shutil import rmtree
+from tempfile import mkdtemp
 
 # OpenCV (which drags in numpy) and ffmpeg together cost ~160 ms to import and
 # are only needed when a video wallpaper is actually converted. This module is
@@ -28,10 +28,10 @@ def _ensure_video_libs() -> bool:
     return cv2_successful
 
 
-from src.exceptions.posterboard_exceptions import VideoLengthException
-from src.controllers.files_handler import get_bundle_files
-
 from PySide6.QtCore import QCoreApplication
+
+from src.controllers.files_handler import get_bundle_files
+from src.exceptions.posterboard_exceptions import VideoLengthException
 
 ignore_pb_frame_limit = False
 

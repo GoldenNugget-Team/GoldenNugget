@@ -244,7 +244,7 @@ class AfcPerformanceTests(unittest.IsolatedAsyncioTestCase):
         for path, data in files.items():
             self.assertEqual((self.root / path.lstrip('/')).read_bytes(), data)
 
-    async def test_parallel_push_selects_current_set_and_recovery_keeps_history(self):
+    async def test_serial_push_selects_current_set_and_recovery_keeps_history(self):
         entries = {}
         (self.root / "DCIM").mkdir()
         for index in range(12):
@@ -257,7 +257,7 @@ class AfcPerformanceTests(unittest.IsolatedAsyncioTestCase):
         with patch.object(media, "AfcService", return_value=afc):
             result = await media.restore_media_via_afc(self.client, str(self.root), include_historical=False)
         self.assertEqual(result['files'], 12)
-        self.assertTrue(1 < afc.peak <= 4)
+        self.assertEqual(afc.peak, 1, "restore uses one pause/reconnect-safe writer")
         self.assertNotIn('/DCIM/historical.jpg', afc.files)
         rescue = DemuxMemoryAfc()
         with patch.object(media, "AfcService", return_value=rescue):

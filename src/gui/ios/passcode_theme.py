@@ -16,34 +16,49 @@ import os
 import traceback
 from typing import Optional
 
-from PySide6.QtCore import Qt, QCoreApplication, QThread, Signal
+from pymobiledevice3.exceptions import (
+    FatalPairingError,
+    NotPairedError,
+    PairingDialogResponsePendingError,
+    PasswordRequiredError,
+    UserDeniedPairingError,
+)
+from PySide6.QtCore import QCoreApplication, Qt, QThread, Signal
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea,
-    QPushButton, QMessageBox, QFileDialog,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
+
+from src.devicemanagement.passcode_support import (
+    current_passcode_theme_reason,
+    passcode_theme_unavailable_reason,
 )
 from src.gui.liquid.choice_editor import GlassComboBox as QComboBox
+from src.gui.theme import ColorThemeManager
+from src.gui.widgets import (
+    IOSCard,
+    IOSPrimaryButton,
+    IOSSectionHeader,
+)
 
 # NOTE: ``src.airlift`` and ``src.devicemanagement.session`` are imported lazily
 # inside PasscodeThemeWriteThread.run(). Together they pull the whole
 # pymobiledevice3 lockdown stack (plus IPython/questionary) — ~400 ms — and this
 # page module is imported at startup, before any theme is ever written.
 from src.tweaks.passcode_theme import (
-    PASSTHME_TARGETS_ALL,
     KEYPAD_LOCALES_ALL,
+    PASSTHME_TARGETS_ALL,
     PasscodeThemeError,
     parse_passthm,
     stage_files,
     theme_size,
 )
-from pymobiledevice3.exceptions import (
-    NotPairedError, PasswordRequiredError, UserDeniedPairingError,
-    PairingDialogResponsePendingError, FatalPairingError,
-)
-from src.gui.widgets import (
-    IOSSectionHeader, IOSCard, IOSPrimaryButton,
-)
-from src.gui.theme import ColorThemeManager
-from src.devicemanagement.passcode_support import current_passcode_theme_reason, passcode_theme_unavailable_reason
 
 _NUGGET = "Nugget"
 
@@ -92,7 +107,7 @@ class PasscodeThemeWriteThread(QThread):
         # Heavy stack, imported only when a theme is actually written (see the
         # module header). Kept as function-locals so the nested coroutine and
         # the except clauses below see them.
-        from src.airlift import write_files, AirliftError
+        from src.airlift import AirliftError, write_files
         from src.devicemanagement.session import lockdown_session
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)

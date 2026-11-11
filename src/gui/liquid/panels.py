@@ -1,15 +1,26 @@
 import math
-from PySide6.QtCore import Qt, QRectF, QPointF, QTimer, QRect, QSize, QEvent
-from PySide6.QtGui import QColor, QPainter, QPen, QFont, QPixmap, QPainterPath
 from pathlib import Path
-from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QSlider,
-                               QCheckBox, QApplication, QWidget, QScrollArea)
+
+from PySide6.QtCore import QEvent, QPointF, QRect, QRectF, QSize, Qt, QTimer
+from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen, QPixmap
+from PySide6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QHBoxLayout,
+    QLabel,
+    QScrollArea,
+    QSlider,
+    QVBoxLayout,
+    QWidget,
+)
+
 from src.gui.theme import ColorThemeManager
-from .controls import GlassPanel, LiquidButton, GlassCheckBox, LiquidActionButton
-from .motion import animate
-from .appearance import InlinePalette, GlassSlider, GlassChoice
-from .placement import panel_rect
+
+from .appearance import GlassChoice, GlassSlider, InlinePalette
 from .choice_editor import GlassComboBox as QComboBox
+from .controls import GlassCheckBox, GlassPanel, LiquidActionButton, LiquidButton
+from .motion import animate
+from .placement import panel_rect
 
 
 class PhoneRender(GlassPanel):
@@ -391,6 +402,7 @@ class WorkspaceSettings(GlassPanel):
 
     def paintEvent(self,event):
         from PySide6.QtGui import QPainterPath
+
         from .controls import paint_dock_glass
         dock=self.window.bottom_navigation
         rect=QRectF(self.rect()).adjusted(.5,.5,-.5,-.5)
@@ -610,6 +622,7 @@ class RestoreDrawer(GlassPanel):
 
     def selection(self):
         import json
+
         from src.controllers.preset_manager import PresetManager
         return (self.window.device_manager.get_current_device_udid(),
                 json.dumps(PresetManager()._serialize(),sort_keys=True,default=str))
@@ -704,8 +717,8 @@ class RestoreDrawer(GlassPanel):
             and not self._pending_confirm and (self.ack.isHidden() or self.ack.isChecked()))
 
     def open(self):
-        from src.controllers.tweak_conflicts import current_conflicts
         from src.controllers.risk_assessment import RiskLevel
+        from src.controllers.tweak_conflicts import current_conflicts
         window=self.window
         self._progress_mode=False
         self.progress_area.hide()

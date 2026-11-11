@@ -1,11 +1,12 @@
 """Shared local preparation before any normal or manual protective restore."""
-from src.utils.async_disk import disk_call
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
 from src.exceptions.nugget_exception import NuggetException
+from src.utils.async_disk import disk_call
 from src.utils.file_to_restore import _FileMode
+
 from .verification import PruneResult
 
 

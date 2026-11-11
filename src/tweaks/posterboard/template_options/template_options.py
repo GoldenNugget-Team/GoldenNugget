@@ -1,8 +1,11 @@
-from src.controllers.archive_safety import safe_member
-from enum import Enum
 from dataclasses import dataclass
+from enum import Enum
 from typing import Optional
-from PySide6.QtWidgets import QVBoxLayout, QWidget, QLabel
+
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
+
+from src.controllers.archive_safety import safe_member
+
 
 class OptionType(Enum):
     replace = "replace"

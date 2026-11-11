@@ -1,9 +1,11 @@
-from .status_setter import Setter, StatusBarItem
-from .statusbar_archive import ARCHIVE_DOMAIN, ARCHIVE_PATH, build_archive
-from ..tweak_classes import Tweak
+from cffi import FFI
+
 from src.utils.file_to_restore import FileToRestore
 
-from cffi import FFI
+from ..tweak_classes import Tweak
+from .status_setter import Setter, StatusBarItem
+from .statusbar_archive import ARCHIVE_DOMAIN, ARCHIVE_PATH, build_archive
+
 ffi = FFI()
 
 class StatusBarTweak(Tweak):

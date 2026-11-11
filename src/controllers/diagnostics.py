@@ -1,15 +1,15 @@
 """Local, redacted support reports. No uploads or device sessions."""
-from datetime import datetime, timezone
-from importlib import metadata
 import json
 import os
-from pathlib import Path
 import platform
 import re
 import tempfile
 import zipfile
+from datetime import datetime, timezone
+from importlib import metadata
+from pathlib import Path
 
-from src.version import App_Version, App_Build
+from src.version import App_Build, App_Version
 
 LOG_BYTES = 1024 * 1024
 PREFERENCES = ('auto_reboot', 'use_backup_cache', 'use_afc_media',

@@ -5,14 +5,21 @@ The constraints themselves live in the tweak registry
 only evaluates them.
 """
 import re
+
 from PySide6.QtCore import QCoreApplication
 
 from src.devicemanagement.constants import Version
-from src.devicemanagement.device_capabilities import has_dynamic_island, has_camera_control, has_action_button, has_home_button, has_always_on_display, has_apple_intelligence, device_os_text
+from src.devicemanagement.device_capabilities import (
+    device_os_text,
+    has_action_button,
+    has_always_on_display,
+    has_apple_intelligence,
+    has_camera_control,
+    has_dynamic_island,
+    has_home_button,
+)
+from src.tweaks.compatibility import _parse_version, device_family
 from src.tweaks.registry import SPECS_BY_ID
-
-
-from src.tweaks.compatibility import device_family, _parse_version
 
 
 def untested_tweaks_enabled(device_version: str) -> bool:

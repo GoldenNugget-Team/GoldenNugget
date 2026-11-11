@@ -3,17 +3,18 @@ __lazy_modules__ = (
     "sqlite3",
 )
 
-from dataclasses import dataclass
-from datetime import datetime
 import plistlib
-from pathlib import Path
 import sqlite3
 from base64 import b64decode
+from dataclasses import dataclass
+from datetime import datetime
 from hashlib import sha1
-from src.utils.file_to_restore import _FileMode
-from src.restore import mbdb
+from pathlib import Path
 from random import randbytes
 from typing import Optional
+
+from src.restore import mbdb
+from src.utils.file_to_restore import _FileMode
 from src.utils.payload import copy_payload
 
 # Default nugget file right

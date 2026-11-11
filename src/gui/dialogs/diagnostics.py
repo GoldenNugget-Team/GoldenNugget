@@ -2,7 +2,16 @@
 import json
 
 from PySide6.QtCore import QCoreApplication, Qt
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPlainTextEdit, QPushButton, QFileDialog, QMessageBox
+from PySide6.QtWidgets import (
+    QDialog,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QPlainTextEdit,
+    QPushButton,
+    QVBoxLayout,
+)
 
 from src.controllers.diagnostics import collect_diagnostics, write_diagnostics
 from src.gui.theme import ColorThemeManager, t

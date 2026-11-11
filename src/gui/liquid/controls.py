@@ -1,9 +1,43 @@
 import math
-from PySide6.QtCore import Qt, QRectF, QPointF, QSize, QMimeData, Signal, QVariantAnimation, QEasingCurve, QTimer
-from PySide6.QtGui import QColor, QCursor, QPainter, QPainterPath, QPen, QLinearGradient, QRadialGradient, QDrag, QPixmap
-from PySide6.QtWidgets import QAbstractScrollArea, QFrame, QPushButton, QWidget, QApplication, QStyleOptionButton, QStyle, QSlider, QCheckBox, QLabel
+
+from PySide6.QtCore import (
+    QEasingCurve,
+    QMimeData,
+    QPointF,
+    QRectF,
+    QSize,
+    Qt,
+    QTimer,
+    QVariantAnimation,
+    Signal,
+)
+from PySide6.QtGui import (
+    QColor,
+    QCursor,
+    QDrag,
+    QLinearGradient,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QPixmap,
+    QRadialGradient,
+)
+from PySide6.QtWidgets import (
+    QAbstractScrollArea,
+    QApplication,
+    QCheckBox,
+    QFrame,
+    QLabel,
+    QPushButton,
+    QSlider,
+    QStyle,
+    QStyleOptionButton,
+    QWidget,
+)
+
 from awesomeui.controls import IOSSwitch as BaseSwitch
 from src.gui.theme import ColorThemeManager
+
 from .motion import animate
 
 
@@ -676,6 +710,7 @@ class LiquidActionButton(LiquidButton):
         p.setPen(QColor(c.text_primary))
         p.setFont(QFont('Inter Variable',12,QFont.DemiBold))
         from PySide6.QtGui import QFontMetricsF
+
         from src.gui.theme import theme_pixmap
         title_rect=QRectF(rect)
         if self._action_footer:

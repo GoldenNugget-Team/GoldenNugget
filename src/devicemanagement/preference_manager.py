@@ -1,11 +1,13 @@
-from PySide6.QtCore import QSettings, QStandardPaths
-from os import path, makedirs
+from os import makedirs, path
 from os import remove as rmfile
 from shutil import copyfile
 from typing import Optional
 
-from src.tweaks.posterboard.pb_config_item import PBConfigItem
+from PySide6.QtCore import QSettings, QStandardPaths
+
 from src.controllers.settings import Settings
+from src.tweaks.posterboard.pb_config_item import PBConfigItem
+
 
 class PreferenceManager:
     def __init__(self, settings: QSettings):

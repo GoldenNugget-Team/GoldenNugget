@@ -1,7 +1,7 @@
 from math import sin
 
-from PySide6.QtCore import QRectF, QPointF, QTimer
-from PySide6.QtGui import QColor, QPainter, QPixmap, QPen
+from PySide6.QtCore import QPointF, QRectF, QTimer
+from PySide6.QtGui import QColor, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QLabel
 
 

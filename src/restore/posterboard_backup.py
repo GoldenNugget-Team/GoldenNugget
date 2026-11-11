@@ -16,17 +16,23 @@ import sqlite3
 import tempfile
 from contextlib import contextmanager
 
-from PySide6.QtCore import QCoreApplication
 from pymobiledevice3.exceptions import NotEnoughDiskSpaceError
+from PySide6.QtCore import QCoreApplication
 
+from src.devicemanagement.constants import is_supported_by_fork
 from src.devicemanagement.session import lockdown_session
+from src.exceptions.nugget_exception import (
+    BackupDiskSpaceError,
+    NuggetException,
+    PosterBoardBackupEncryptionError,
+)
+from src.gui.logger import get_logger
 from src.restore.protective import (
-    ProtectiveBackupService, backup_disk_space_message, check_disk_space,
+    ProtectiveBackupService,
+    backup_disk_space_message,
+    check_disk_space,
 )
 from src.restore.storage import posterboard_dir as _posterboard_dir
-from src.exceptions.nugget_exception import BackupDiskSpaceError, NuggetException, PosterBoardBackupEncryptionError
-from src.gui.logger import get_logger
-from src.devicemanagement.constants import is_supported_by_fork
 from src.utils.async_retry import async_retry
 
 _log = get_logger('posterboard_backup')
@@ -80,10 +86,15 @@ async def targeted_posterboard_database_backup(udid: str, update_label=lambda x:
     connection instead of failing the wizard on the first try.
     """
     from src.exceptions.device_errors import is_connection_error as _is_connection_error
-    from src.exceptions.device_errors import is_device_locked_error as _is_device_locked_error
+    from src.exceptions.device_errors import (
+        is_device_locked_error as _is_device_locked_error,
+    )
     from src.restore.protective import (
-        POSTERBOARD_DB_DOMAIN, _domain_match,
-        _posterboard_db_match, extract_posterboard_db)
+        POSTERBOARD_DB_DOMAIN,
+        _domain_match,
+        _posterboard_db_match,
+        extract_posterboard_db,
+    )
     from src.tweaks.posterboard.db_validate import IncompletePosterBoardSnapshot
 
     pb_dir = str(_posterboard_dir())
@@ -192,10 +203,15 @@ async def pull_posterboard_container(udid: str, out_dir: str,
     be repacked and pushed back. Returns ``(out_dir, structure_version)``.
     """
     from src.exceptions.device_errors import is_connection_error as _is_connection_error
-    from src.exceptions.device_errors import is_device_locked_error as _is_device_locked_error
+    from src.exceptions.device_errors import (
+        is_device_locked_error as _is_device_locked_error,
+    )
     from src.restore.protective import (
-        POSTERBOARD_DB_DOMAIN, _domain_match, _posterboard_db_match,
-        extract_posterboard_db)
+        POSTERBOARD_DB_DOMAIN,
+        _domain_match,
+        _posterboard_db_match,
+        extract_posterboard_db,
+    )
     from src.tweaks.posterboard.db_validate import IncompletePosterBoardSnapshot
 
     if not os.path.exists(out_dir):

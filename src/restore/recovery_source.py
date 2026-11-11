@@ -1,10 +1,12 @@
 """Read-only recovery lookup across the original and Liquid UI data stores."""
-from pathlib import Path
 import tempfile
+from pathlib import Path
+
 from PySide6.QtCore import QStandardPaths
-from .storage import cache_base, protective_base
-from .protective import _validate_sqlite_db
+
 from .inject import _is_encrypted_backup
+from .protective import _validate_sqlite_db
+from .storage import cache_base, protective_base
 
 
 def locate_restore_source(udid):

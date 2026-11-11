@@ -1,10 +1,17 @@
-from PySide6.QtCore import Qt, QCoreApplication, QRect
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QScrollArea, QHBoxLayout
+from PySide6.QtCore import QCoreApplication, QRect, Qt
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
 
+from src.gui.theme import ColorThemeManager, t, theme_pixmap
 from src.gui.widgets import (
     IOSPrimaryButton,
 )
-from src.gui.theme import t, theme_pixmap, ColorThemeManager
 
 
 class ConnectDevicePlaceholder(QWidget):

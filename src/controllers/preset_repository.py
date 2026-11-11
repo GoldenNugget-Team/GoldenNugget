@@ -1,12 +1,12 @@
 """Atomic local preset repository with bounded metadata reads; no tweak state or Qt."""
 import copy
-import logging
-from threading import RLock
 import json
+import logging
 import os
 import re
 import tempfile
 import time
+from threading import RLock
 
 PRESET_VERSION = 2
 

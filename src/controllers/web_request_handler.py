@@ -1,4 +1,5 @@
 from json import JSONDecodeError
+
 from src.devicemanagement.constants import Version
 
 # ``requests`` (and its urllib3/certifi tree) costs ~100 ms to import and is
@@ -27,7 +28,7 @@ def get_latest_version() -> str:
     if last_fetched_version != None:
         return last_fetched_version
     # Lazy import: see the module header.
-    from requests import get, RequestException, HTTPError
+    from requests import HTTPError, RequestException, get
     # fetch with web requests
     try:
         response = get(f"https://api.github.com/repos/{Nugget_Repo}", timeout=5)
@@ -54,8 +55,8 @@ def get_latest_version() -> str:
         print(f"Error parsing JSON: {e}")
     return None
 def update_download_url():
-    import sys
     import platform
+    import sys
     from urllib.parse import quote, urlparse
     suffixes = ('.dmg', '.zip') if sys.platform == 'darwin' else ('.exe', '.msi', '.zip') if sys.platform == 'win32' else ('.appimage', '.tar.gz')
     assets = last_fetched_release.get('assets', [])

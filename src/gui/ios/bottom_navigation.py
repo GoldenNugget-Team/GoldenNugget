@@ -1,12 +1,42 @@
 """Shared bottom navigation with scroll-direction reveal."""
 
-from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, QPoint, QPointF, QSizeF, QEvent, QRect, QRectF, QVariantAnimation
-from PySide6.QtWidgets import QWidget, QFrame, QHBoxLayout, QPushButton, QAbstractScrollArea, QLayout, QGraphicsOpacityEffect
-from PySide6.QtCore import QSize
-from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QRegion, QLinearGradient, QFont, QPixmap
+from PySide6.QtCore import (
+    QEasingCurve,
+    QEvent,
+    QPoint,
+    QPointF,
+    QPropertyAnimation,
+    QRect,
+    QRectF,
+    QSize,
+    QSizeF,
+    Qt,
+    QTimer,
+    QVariantAnimation,
+)
+from PySide6.QtGui import (
+    QColor,
+    QFont,
+    QLinearGradient,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QPixmap,
+    QRegion,
+)
+from PySide6.QtWidgets import (
+    QAbstractScrollArea,
+    QFrame,
+    QGraphicsOpacityEffect,
+    QHBoxLayout,
+    QLayout,
+    QPushButton,
+    QWidget,
+)
 from shiboken6 import isValid
-from src.gui.theme import ColorThemeManager, theme_icon
+
 from src.gui.slogans import launch_slogan
+from src.gui.theme import ColorThemeManager, theme_icon
 
 # The launch's slogan, shared with the liquid dock's brand (src/gui/slogans).
 _LAUNCH_SLOGAN = launch_slogan()

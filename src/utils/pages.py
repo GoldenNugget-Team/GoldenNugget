@@ -7,6 +7,7 @@ backend (``device_manager`` reset pass) no longer imports the GUI package.
 
 from enum import Enum
 
+
 class Page(Enum):
     Home = 0
     Gestalt = 1

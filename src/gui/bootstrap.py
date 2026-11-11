@@ -1,7 +1,7 @@
 """Ordered GUI bootstrap steps; backend preloading never constructs Qt widgets."""
-from dataclasses import dataclass
 import os
 import sys
+from dataclasses import dataclass
 
 
 @dataclass
@@ -34,14 +34,16 @@ def preload_backend():
             # entries that Qt complains about at exit. The main-thread import
             # later still has to load that Qt surface, but the pmd3 services
             # (the single most expensive part) are already in sys.modules.
-            from pymobiledevice3 import usbmux, ca  # noqa: F401
-            from pymobiledevice3.lockdown import create_using_usbmux  # noqa: F401
-            from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service  # noqa: F401
-            from pymobiledevice3.services.mobile_config import MobileConfigService  # noqa: F401
-            from pymobiledevice3.services.diagnostics import DiagnosticsService  # noqa: F401
-            from pymobiledevice3.services.installation_proxy import InstallationProxyService  # noqa: F401
-            import pymobiledevice3.service_connection  # noqa: F401
             import pymobiledevice3.exceptions  # noqa: F401
+            import pymobiledevice3.service_connection  # noqa: F401
+            from pymobiledevice3 import ca, usbmux  # noqa: F401
+            from pymobiledevice3.lockdown import create_using_usbmux  # noqa: F401
+            from pymobiledevice3.services.diagnostics import DiagnosticsService  # noqa: F401
+            from pymobiledevice3.services.installation_proxy import (
+                InstallationProxyService,  # noqa: F401
+            )
+            from pymobiledevice3.services.mobile_config import MobileConfigService  # noqa: F401
+            from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service  # noqa: F401
         except BaseException as e:  # surfaced on the main thread below
             _dm_preload_error.append(e)
         finally:
@@ -58,7 +60,7 @@ def configure_appearance(app, bundle_root):
     # managed by ColorThemeManager so it can switch between dark/light.
     app.setStyle("Fusion")
 
-    from src.gui.theme import ColorThemeManager, FONT_FAMILY
+    from src.gui.theme import FONT_FAMILY, ColorThemeManager
     _color_theme = ColorThemeManager.instance()
     # Pins the colour scheme too, so the OS light/dark setting never leaks in.
     _color_theme.apply_to_app(app)

@@ -64,5 +64,9 @@ class TendieFile:
         zip_output = os.path.join(output_dir, str(uuid.uuid4()))
         os.makedirs(zip_output)
         with zipfile.ZipFile(self.path, 'r') as zip_ref:
+            # Re-check at extract time: the archive could have been swapped on
+            # disk between the import check and this call.
+            from src.controllers.archive_safety import checked_members
+            checked_members(zip_ref)
             zip_ref.extractall(zip_output)
         return zip_output

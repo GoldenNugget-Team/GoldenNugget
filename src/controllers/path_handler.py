@@ -1,5 +1,6 @@
 import os
 
+
 def fix_windows_path(dos_path: str, encoding=None):
     if os.name == 'nt':
         if (not isinstance(dos_path, str) and encoding is not None): 

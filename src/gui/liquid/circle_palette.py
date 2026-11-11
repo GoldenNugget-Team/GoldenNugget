@@ -1,9 +1,18 @@
 import math
 
-from PySide6.QtCore import Qt, QPointF, QRectF, Signal
-from PySide6.QtWidgets import QWidget,QVBoxLayout,QHBoxLayout,QLineEdit,QLabel
-from PySide6.QtGui import QColor,QPainter,QConicalGradient,QRadialGradient,QPen,QPixmap
+from PySide6.QtCore import QPointF, QRectF, Qt, Signal
+from PySide6.QtGui import (
+    QColor,
+    QConicalGradient,
+    QPainter,
+    QPen,
+    QPixmap,
+    QRadialGradient,
+)
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QWidget
+
 from src.gui.theme import ColorThemeManager
+
 from .appearance import GlassSlider
 
 

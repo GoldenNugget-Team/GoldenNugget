@@ -1,6 +1,3 @@
-from PySide6.QtCore import QCoreApplication, Signal, QThread, QSettings
-from PySide6.QtWidgets import QMessageBox
-from typing import Optional
 # Module-level on purpose: the async workers below (``RestoreCacheThread.
 # _restore``, ``ResetPairingThread``) awaited/used ``asyncio`` while only
 # importing it inside another method's scope, which is a NameError.
@@ -8,15 +5,24 @@ import asyncio
 import os
 import queue
 import re
-import traceback
 import threading
+import traceback
+from typing import Optional
+
+from PySide6.QtCore import QCoreApplication, QSettings, QThread, Signal
+from PySide6.QtWidgets import QMessageBox
+
+from src.exceptions.nugget_exception import NuggetException
+from src.gui.thread_workers.gc_guard import worker_gc_guard
+from src.restore.find_my_wait import (
+    ApplyCancelledError,
+    FindMyWaitControl,
+    current_find_my_wait,
+)
 
 # Qt-free shared type (kept here for backwards-compatible import paths forwards
 # to the same class the backend uses).
 from src.utils.alerts import ApplyAlertMessage
-from src.exceptions.nugget_exception import NuggetException
-from src.restore.find_my_wait import FindMyWaitControl, ApplyCancelledError, current_find_my_wait
-from src.gui.thread_workers.gc_guard import worker_gc_guard
 
 
 class _SudoState:
@@ -108,6 +114,7 @@ class ApplyThread(QThread):
 
     def _run_apply(self):
         import logging
+
         from src.controllers.nugget_logger import log_context
         self._log = logging.getLogger("GoldenNugget.apply")
         mode = "reset" if self.reset_pages is not None else "apply"
@@ -261,6 +268,7 @@ class RestoreCacheThread(QThread):
 
     def _run_restore(self):
         import logging
+
         from src.controllers.nugget_logger import log_context
         from src.devicemanagement.eta import ProgressEta
         self._eta = ProgressEta()
@@ -297,17 +305,21 @@ class RestoreCacheThread(QThread):
 
     async def _restore(self):
         from pathlib import Path
+
+        from src.devicemanagement.session import lockdown_session
+        from src.restore.afc_media import (
+            describe_media_store,
+            media_store_verified,
+            recovery_media_dir,
+            restore_media_via_afc,
+        )
         from src.restore.protective import (
-            make_protective_working_copy, discard_protective_working_copy,
             clean_backup_for_restore,
+            discard_protective_working_copy,
+            make_protective_working_copy,
             verify_backup_payloads,
         )
         from src.restore.restore import _restore_protective_backup
-        from src.restore.afc_media import (
-            recovery_media_dir, describe_media_store, media_store_verified,
-            restore_media_via_afc,
-        )
-        from src.devicemanagement.session import lockdown_session
 
         udid = self.manager.get_current_device_udid()
         if not udid:
@@ -358,7 +370,11 @@ class RestoreCacheThread(QThread):
         # in it" is not enough, because a partial pull would then let the prune
         # below delete the backup's own copy of the photos.
         media_dir = recovery_media_dir(source_root, udid, cache_base=base)
-        from src.restore.recovery import RecoverySource, RecoveryBackend, prepare_recovery
+        from src.restore.recovery import (
+            RecoveryBackend,
+            RecoverySource,
+            prepare_recovery,
+        )
         prepared = await prepare_recovery(
             RecoverySource(working_root, udid, self._backup_password(),
                            bool(self._backup_password()), media_dir),
@@ -465,8 +481,9 @@ class CacheUpdateThread(QThread):
             self._run_cache_update()
 
     def _run_cache_update(self):
-        import logging
         import asyncio
+        import logging
+
         from src.controllers.nugget_logger import log_context
         log = logging.getLogger("GoldenNugget.cache_update")
         try:
@@ -560,6 +577,7 @@ class DeviceMonitorThread(QThread):
 
     async def _watch(self):
         import logging
+
         from pymobiledevice3 import usbmux
 
         log = logging.getLogger("GoldenNugget.device_monitor")
@@ -620,8 +638,8 @@ class ResetPairingThread(QThread):
             self._run_pairing()
 
     def _run_pairing(self):
-        import logging
         import asyncio
+        import logging
         log = logging.getLogger("GoldenNugget.pairing")
         try:
             asyncio.run(self.manager._reset_device_pairing())

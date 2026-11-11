@@ -9,14 +9,15 @@ by the PosterBoard cards, or fetched in the background) is shown instead.
 
 import os
 
-from PySide6.QtCore import Qt, QUrl, QCoreApplication, QTimer
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import QCoreApplication, Qt, QTimer, QUrl
+from PySide6.QtGui import QGuiApplication, QPixmap
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
-from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QDialog, QLabel, QPushButton, QVBoxLayout
 
 from src.gui.ios.phone_frame import (
-    DEVICE_PT_H, DEVICE_PT_W, PhoneFrame,
+    DEVICE_PT_H,
+    DEVICE_PT_W,
+    PhoneFrame,
 )
 from src.gui.theme import ColorThemeManager, t
 
@@ -130,8 +131,11 @@ class TendiePreviewDialog(QDialog):
         Light/Dark appearance. Returns True when a scene rendered."""
         try:
             from src.controllers.ca import (
-                appearance_variant_state, document_loop_duration, home_state,
-                preview_renderer, state_transition_spec,
+                appearance_variant_state,
+                document_loop_duration,
+                home_state,
+                preview_renderer,
+                state_transition_spec,
             )
             from src.controllers.ca.tendie import preferred_scene
             bundle = self._tendie_bundle
@@ -209,8 +213,8 @@ class TendiePreviewDialog(QDialog):
         if self._setup_ca():
             return
         if self._tendie_bundle is not None and path is None:
-            from src.gui.dialogs.file_task import start_file_task
             from src.controllers.tendie_preview import extract_tendie_preview
+            from src.gui.dialogs.file_task import start_file_task
             tendie_path = self._tendie.path
             self._load_task = start_file_task(self, lambda: extract_tendie_preview(tendie_path),
                             lambda fallback: self._loaded((None, fallback)),
@@ -222,7 +226,8 @@ class TendiePreviewDialog(QDialog):
 
         try:
             from src.controllers.wallpaper_api import (
-                find_wallpaper_by_name, cached_preview_path,
+                cached_preview_path,
+                find_wallpaper_by_name,
             )
             wallpaper = find_wallpaper_by_name(self._tendie.name)
         except Exception:

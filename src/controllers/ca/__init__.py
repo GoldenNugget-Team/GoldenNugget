@@ -11,9 +11,17 @@ timeline. The heavy lifting lives in:
 * :mod:`.render`    -- QPainter scene renderer (port of the TSX renderers)
 """
 
+from .caml import (  # noqa: F401
+    parse_ca_document,
+    parse_caml,
+    parse_state_overrides,
+    parse_state_transitions,
+    parse_states,
+    parse_wallpaper_parallax_groups,
+)
 from .models import (
-    CADocument,
     Animation,
+    CADocument,
     EmitterCell,
     Filter,
     GradientColor,
@@ -25,15 +33,6 @@ from .models import (
     Vec2,
     Vec3,
 )
-from .caml import (  # noqa: F401
-    parse_ca_document,
-    parse_caml,
-    parse_state_overrides,
-    parse_state_transitions,
-    parse_states,
-    parse_wallpaper_parallax_groups,
-)
-from .tendie import load_tendie, preferred_scene  # noqa: F401
 from .render import (  # noqa: F401
     CAMLRenderer,
     SceneCompositeRenderer,
@@ -44,6 +43,7 @@ from .render import (  # noqa: F401
     preview_renderer,
     state_transition_spec,
 )
+from .tendie import load_tendie, preferred_scene  # noqa: F401
 
 __all__ = [
     "CADocument",

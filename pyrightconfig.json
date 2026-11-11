@@ -1,0 +1,40 @@
+// Pyright runs both standalone and inside editors (Zed). Without an explicit
+// venv it fails to resolve PySide6/pymobiledevice3 and drowns the workspace in
+// false "reportMissingImports" errors.
+{
+  "include": ["src", "awesomeui"],
+  "exclude": [".venv", "**/__pycache__",
+    // awesomeui/liquid/navigation.py imports src.gui.window_chrome, which only
+    // exists on 10.0; the guarded import already falls back at runtime.
+    "awesomeui/liquid/navigation.py"],
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.15",
+  "typeCheckingMode": "basic",
+
+  // ---- Legacy-noise exemptions (see AGENTS.md before re-enabling) ----
+  // PySide6 "forgiving enums" (`QMessageBox.Critical` instead of
+  // `QMessageBox.Icon.Critical`) are used throughout; pyright cannot know
+  // they resolve at runtime.
+  "reportAttributeAccessIssue": false,
+  // The codebase predates typing entirely: untyped boundaries, Optional
+  // looseness and dict/list plumbing flag ~1000 sites. Fix progressively in
+  // touched files, do NOT mass-annotate.
+  "reportArgumentType": false,
+  "reportOptionalMemberAccess": false,
+  "reportOptionalSubscript": false,
+  "reportOptionalIterable": false,
+  "reportOptionalOperand": false,
+  "reportCallIssue": false,
+  "reportOperatorIssue": false,
+  "reportReturnType": false,
+  "reportGeneralTypeIssues": false,
+  "reportAssignmentType": false,
+  "reportIndexIssue": false,
+  "reportInvalidTypeArguments": false,
+  "reportSelfClsParameterName": false,
+  "reportMissingModuleSource": false
+
+  // Deliberately left ON (true bugs): reportMissingImports,
+  // reportUndefinedVariable, reportRedeclaration, reportUnusedExpression.
+}

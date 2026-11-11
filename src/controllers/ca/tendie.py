@@ -19,6 +19,7 @@ from threading import RLock
 from typing import Dict, List, Optional, Tuple
 
 from src.utils.cancellation import check_cancelled
+
 from .caml import parse_ca_document
 from .models import CADocument, TendieBundle
 

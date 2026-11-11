@@ -1,7 +1,9 @@
 import math
-from PySide6.QtCore import Qt, QPoint, QRectF
+
+from PySide6.QtCore import QPoint, QRectF, Qt
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QWidget
+
 from .motion import animate
 
 

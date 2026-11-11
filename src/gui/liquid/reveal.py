@@ -1,7 +1,9 @@
 import math
-from PySide6.QtCore import Qt, QRectF, QObject, QTimer, QEasingCurve, QVariantAnimation
-from PySide6.QtGui import QPainter, QPainterPath, QColor, QLinearGradient, QRegion
-from PySide6.QtWidgets import QWidget, QApplication, QGraphicsEffect
+
+from PySide6.QtCore import QEasingCurve, QObject, QRectF, Qt, QTimer, QVariantAnimation
+from PySide6.QtGui import QColor, QLinearGradient, QPainter, QPainterPath, QRegion
+from PySide6.QtWidgets import QApplication, QGraphicsEffect, QWidget
+
 from .motion import animate
 
 

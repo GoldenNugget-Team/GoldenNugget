@@ -3,7 +3,8 @@
 Keep application settings and theme ownership here; implementations live in awesomeui.
 """
 from PySide6.QtCore import QTimer
-from awesomeui import configure_theme, Sidebar, SidebarTheme
+
+from awesomeui import Sidebar, SidebarTheme, configure_theme
 from src.gui.theme import ColorThemeManager, t, theme_pixmap
 from src.gui.theme.theme_manager import connect_visible_theme
 
@@ -11,20 +12,26 @@ configure_theme(manager=ColorThemeManager.instance, stylesheet=t,
                 pixmap=theme_pixmap, connect=connect_visible_theme)
 
 from awesomeui.controls import (
-    IOSSearchField as _SearchField,
-    IOSSegmentedFilter,
+    IOSCard,
+    IOSDangerButton,
+    IOSPrimaryButton,
     IOSSearchEmpty,
     IOSSectionHeader,
-    IOSCard,
-    IOSCollapsibleSection as _CollapsibleSection,
-    IOSNavBar as _NavBar,
-    IOSValueRow,
-    IOSSettingsRow,
+    IOSSegmentedFilter,
     IOSSettingsAction,
-    IOSPrimaryButton,
-    IOSDangerButton,
+    IOSSettingsRow,
     IOSSwitch,
+    IOSValueRow,
     _auto_retheme,
+)
+from awesomeui.controls import (
+    IOSCollapsibleSection as _CollapsibleSection,
+)
+from awesomeui.controls import (
+    IOSNavBar as _NavBar,
+)
+from awesomeui.controls import (
+    IOSSearchField as _SearchField,
 )
 
 
@@ -111,9 +118,8 @@ class NavigationSidebar(Sidebar):
         ))
 
 
-from src.gui.liquid.controls import LiquidSwitch as IOSSwitch
 from src.gui.liquid.controls import LiquidActionButton as IOSPrimaryButton
-from src.gui.liquid.controls import LiquidDangerButton as IOSDangerButton
-from src.gui.liquid.navigation import LiquidNavBar as IOSNavBar
-
 from src.gui.liquid.controls import LiquidCard as IOSCard
+from src.gui.liquid.controls import LiquidDangerButton as IOSDangerButton
+from src.gui.liquid.controls import LiquidSwitch as IOSSwitch
+from src.gui.liquid.navigation import LiquidNavBar as IOSNavBar

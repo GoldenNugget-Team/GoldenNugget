@@ -15,7 +15,7 @@ wrong, and an unlisted tweak is "low" only in the sense that nothing is known.
 from dataclasses import dataclass, field
 from enum import IntEnum
 
-from PySide6.QtCore import QCoreApplication, QT_TRANSLATE_NOOP
+from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication
 
 from src.tweaks.registry import SPECS_BY_ID, Section
 from src.tweaks.tweak_names import TweakID
@@ -216,7 +216,11 @@ def community_factors(active):
     """Factors for community tweaks from .batter templates.
 
     ``active`` is community_tweaks.active(): (template name, tweak, writes)."""
-    from src.tweaks.posterboard.community_tweaks import RISK_HIGH, RISK_MEDIUM, write_risk
+    from src.tweaks.posterboard.community_tweaks import (
+        RISK_HIGH,
+        RISK_MEDIUM,
+        write_risk,
+    )
     factors, low = [], 0
     for name, tweak, writes in active:
         label = f"{name} — {tweak.label}"

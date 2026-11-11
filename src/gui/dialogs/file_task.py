@@ -3,12 +3,12 @@ import weakref
 from concurrent.futures import CancelledError
 from concurrent.futures.thread import ThreadPoolExecutor
 from threading import BoundedSemaphore, Event
-from src.utils.cancellation import CancellationToken, run_cancellable, JobCancelled
-from PySide6.QtCore import QObject, Signal, Slot, QCoreApplication, QTimer
+
+from PySide6.QtCore import QCoreApplication, QObject, QTimer, Signal, Slot
 from PySide6.QtWidgets import QDialog, QLabel, QProgressBar, QVBoxLayout
 
 from src.gui.theme import ColorThemeManager, t
-
+from src.utils.cancellation import CancellationToken, JobCancelled, run_cancellable
 
 _job_pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="local-files")
 _job_slots = BoundedSemaphore(64)

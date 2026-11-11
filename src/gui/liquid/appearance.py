@@ -1,6 +1,16 @@
-from PySide6.QtCore import Qt, QRectF, QPointF, Signal
-from PySide6.QtGui import QColor, QPainter, QLinearGradient, QPen, QPainterPath
-from PySide6.QtWidgets import QWidget, QSlider, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit, QApplication, QButtonGroup
+from PySide6.QtCore import QPointF, QRectF, Qt, Signal
+from PySide6.QtGui import QColor, QLinearGradient, QPainter, QPainterPath, QPen
+from PySide6.QtWidgets import (
+    QApplication,
+    QButtonGroup,
+    QHBoxLayout,
+    QLineEdit,
+    QPushButton,
+    QSlider,
+    QVBoxLayout,
+    QWidget,
+)
+
 from src.gui.theme import ColorThemeManager
 
 

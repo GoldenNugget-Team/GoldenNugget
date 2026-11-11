@@ -1,1 +1,1 @@
-from src.version import App_Version, App_Build
+from src.version import App_Build, App_Version

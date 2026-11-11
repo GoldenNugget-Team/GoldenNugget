@@ -19,10 +19,9 @@ import logging
 import os
 import sys
 from datetime import datetime
+from logging.handlers import RotatingFileHandler
 
 from PySide6.QtCore import QStandardPaths
-
-from logging.handlers import RotatingFileHandler
 
 _active_log_path: str | None = None
 _file_handler: logging.Handler | None = None

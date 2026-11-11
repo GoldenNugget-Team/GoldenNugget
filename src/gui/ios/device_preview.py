@@ -3,11 +3,11 @@ import asyncio
 import logging
 import time
 
-from PySide6.QtCore import Qt, QRectF, QThread, Signal, QSize, QTimer
+from PySide6.QtCore import QRectF, QSize, Qt, QThread, QTimer, Signal
 from PySide6.QtGui import QColor, QFont, QIcon, QPainter, QPainterPath, QPixmap
 from PySide6.QtWidgets import QLabel
 
-from src.devicemanagement.device_capabilities import has_dynamic_island, device_kind
+from src.devicemanagement.device_capabilities import device_kind, has_dynamic_island
 
 
 def _items(value):
@@ -58,8 +58,9 @@ class PreviewWorker(QThread):
             self._task = None
 
     async def _fetch(self):
-        from src.devicemanagement.session import lockdown_session
         from pymobiledevice3.services.springboard import SpringBoardServicesService
+
+        from src.devicemanagement.session import lockdown_session
         async with lockdown_session(self.udid, autopair=False, connection_type="USB") as lockdown:
             async with SpringBoardServicesService(lockdown) as service:
                 try:
@@ -71,8 +72,9 @@ class PreviewWorker(QThread):
         return await self._fetch_legacy()
 
     async def _fetch_legacy(self):
-        from src.devicemanagement.session import lockdown_session
         from pymobiledevice3.services.springboard import SpringBoardServicesService
+
+        from src.devicemanagement.session import lockdown_session
         async with lockdown_session(self.udid, autopair=False, connection_type="USB") as lockdown:
             async with SpringBoardServicesService(lockdown) as service:
                 state = await service.get_icon_state()

@@ -17,9 +17,9 @@ Fidelity notes (deliberate, matching the user's request not to over-engineer):
 
 from __future__ import annotations
 
+import copy as _copy
 import math
 from collections import OrderedDict
-import copy as _copy
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from urllib.parse import unquote
 
@@ -37,6 +37,7 @@ from PySide6.QtGui import (
 )
 
 from src.controllers.tendie_preview import decode_image_bytes
+
 from .animate import layer_animation_overrides, scene_loop_duration
 from .models import CADocument, GradientColor, Layer, Vec2
 

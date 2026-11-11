@@ -15,7 +15,13 @@ from typing import Optional
 
 from PySide6.QtCore import QCoreApplication, QDate, QLocale, QRectF, QSize, Qt, QTime
 from PySide6.QtGui import (
-    QColor, QFont, QFontMetricsF, QLinearGradient, QPainter, QPainterPath, QPen,
+    QColor,
+    QFont,
+    QFontMetricsF,
+    QLinearGradient,
+    QPainter,
+    QPainterPath,
+    QPen,
 )
 from PySide6.QtWidgets import QSizePolicy, QWidget
 

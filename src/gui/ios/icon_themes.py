@@ -1,22 +1,31 @@
 import os
 
-from PySide6.QtCore import Qt, QCoreApplication, QSize
+from PySide6.QtCore import QCoreApplication, QSize, Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea,
-    QPushButton, QToolButton, QFileDialog, QDialog, QDialogButtonBox,
-    QLineEdit, QMessageBox,
+    QDialog,
+    QDialogButtonBox,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
 )
 
+from src.gui.dialogs.app_list_dialog import AppListExportDialog
+from src.gui.dialogs.confirmation import ask_confirmation
+from src.gui.dialogs.icon_pack_downloader import IconPackDownloaderDialog
+from src.gui.theme import ColorThemeManager, t, theme_icon
 from src.gui.widgets import (
     IOSCard,
 )
-from src.gui.dialogs.confirmation import ask_confirmation
-from src.gui.theme import ColorThemeManager, theme_icon, t
-from src.gui.dialogs.icon_pack_downloader import IconPackDownloaderDialog
-from src.gui.dialogs.app_list_dialog import AppListExportDialog
-from src.tweaks.tweaks import tweaks, TweakID
 from src.tweaks.icon_themes.icon_theme import IconTheme
+from src.tweaks.tweaks import TweakID, tweaks
 
 
 class IOSIconThemesPage(QWidget):

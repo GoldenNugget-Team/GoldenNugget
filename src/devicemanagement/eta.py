@@ -8,8 +8,8 @@ to :meth:`update` and it returns the formatted remaining time (or ``""`` until
 a stable rate is known).
 """
 
-import time
 import math
+import time
 
 from PySide6.QtCore import QCoreApplication
 

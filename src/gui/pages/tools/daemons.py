@@ -1,7 +1,8 @@
-from ..page import Page
-from src.qt.mainwindow_ui import Ui_Nugget
 from src.gui.ios.daemons import IOSDaemonsContent
 from src.gui.theme import ColorThemeManager
+from src.qt.mainwindow_ui import Ui_Nugget
+
+from ..page import Page
 
 
 class DaemonsPage(Page):

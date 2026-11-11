@@ -1,10 +1,14 @@
-from src.devicemanagement.device_capabilities import device_os_name
-from PySide6.QtCore import QCoreApplication
 from webbrowser import open_new_tab
-from ..page import Page
-from src.qt.mainwindow_ui import Ui_Nugget
+
+from PySide6.QtCore import QCoreApplication
+
+from src.devicemanagement.device_capabilities import device_os_name
 from src.gui.preset_widget import PresetWidget
 from src.gui.theme import ColorThemeManager
+from src.qt.mainwindow_ui import Ui_Nugget
+
+from ..page import Page
+
 
 class HomePage(Page):
     def __init__(self, window, ui: Ui_Nugget):

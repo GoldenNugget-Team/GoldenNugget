@@ -1,21 +1,48 @@
-from PySide6.QtCore import QCoreApplication, Qt, QSize, QTimer
+from PySide6.QtCore import QCoreApplication, QSize, Qt, QTimer
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QScrollArea, QDialog, QLabel, QHBoxLayout, QBoxLayout, QPushButton, QFrame
+    QBoxLayout,
+    QDialog,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
 )
 
-from src.gui.ios.components import (
-    IOSCollapsibleSection, IOSSectionHeader, IOSCard, IOSValueRow,
-    IOSSwitch, TextInputDialog, NumberInputDialog, decimals_for_step,
-    IOSSearchField, IOSSearchEmpty, IOSSegmentedFilter,
-)
-from src.gui.ios.tweak_categories import SPRINGBOARD_GROUPS, BOTTOM_TWEAK_CATEGORIES, TWEAK_CATEGORY_ORDER, tweak_category
 from src.gui.ios.compat import device_family, is_tweak_compatible
+from src.gui.ios.components import (
+    IOSCard,
+    IOSCollapsibleSection,
+    IOSSearchEmpty,
+    IOSSearchField,
+    IOSSectionHeader,
+    IOSSegmentedFilter,
+    IOSSwitch,
+    IOSValueRow,
+    NumberInputDialog,
+    TextInputDialog,
+    decimals_for_step,
+)
+from src.gui.ios.tweak_categories import (
+    BOTTOM_TWEAK_CATEGORIES,
+    SPRINGBOARD_GROUPS,
+    TWEAK_CATEGORY_ORDER,
+    tweak_category,
+)
 from src.gui.theme import ColorThemeManager, t, theme_icon, theme_pixmap
-from src.tweaks.tweaks import tweaks, TweakID
-from src.tweaks.registry import SPECS_BY_ID, SPECS_BY_SECTION, SECTION_FEATURES, Kind, Section
-from src.tweaks.tweak_loader import load_plist_tweaks
 from src.tweaks.hidden import current_hidden_feature_names
+from src.tweaks.registry import (
+    SECTION_FEATURES,
+    SPECS_BY_ID,
+    SPECS_BY_SECTION,
+    Kind,
+    Section,
+)
+from src.tweaks.tweak_loader import load_plist_tweaks
+from src.tweaks.tweaks import TweakID, tweaks
 
 # Feature (page) name -> registry Section it maps to in the iOS tweaks UI.
 # A HotLoad-hidden feature loses its whole section here (and the Sidebar/Home
@@ -146,9 +173,9 @@ class IOSSectionContent(QWidget):
             self.filter_control, Qt.AlignLeading if stacked else Qt.Alignment())
 
     def _offer_untested_tweaks(self):
-        from src.gui.ios.compat import _parse_version
         from src.devicemanagement.constants import Version
         from src.gui.dialogs.confirmation import ConfirmationDialog
+        from src.gui.ios.compat import _parse_version
         if not self.isVisible():
             return
         version = self.window.device_manager.get_current_device_version()
@@ -435,7 +462,10 @@ class IOSSectionContent(QWidget):
             make_switch(spec.id,tr_title(spec)+' - Apply',tr_description(spec),target)
             if spec.id not in self._tweak_switches:
                 return
-            from src.gui.liquid.poster_preferences import render_poster_preferences,render_poster_flag
+            from src.gui.liquid.poster_preferences import (
+                render_poster_flag,
+                render_poster_preferences,
+            )
             renderer=render_poster_flag if spec.kind==Kind.POSTER_FLAG else render_poster_preferences
             renderer(self,spec,target)
 
@@ -692,8 +722,8 @@ class IOSSectionContent(QWidget):
         return button
 
     def _show_tweak_info(self, tweak_id):
-        from src.tweaks.registry import SPECS_BY_ID
         from src.gui.dialogs.tweak_info import TweakInfoDialog
+        from src.tweaks.registry import SPECS_BY_ID
         previous = getattr(self, '_tweak_info_dialog', None)
         if previous is not None:
             previous.close()

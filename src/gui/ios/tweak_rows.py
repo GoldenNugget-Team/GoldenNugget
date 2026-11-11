@@ -1,11 +1,13 @@
 """Factories for registry-backed tweak rows, separate from page rebuild/search."""
-from PySide6.QtCore import QCoreApplication, Qt, QSize
+from PySide6.QtCore import QCoreApplication, QSize, Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QLabel, QVBoxLayout, QHBoxLayout, QPushButton
-from src.gui.ios.components import IOSCard, IOSValueRow, IOSSwitch, decimals_for_step
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout
+
+from src.gui.ios.components import IOSCard, IOSSwitch, IOSValueRow, decimals_for_step
 from src.gui.theme import ColorThemeManager, t, theme_icon, theme_pixmap
-from src.tweaks.tweaks import tweaks, TweakID
 from src.tweaks.registry import SPECS_BY_ID, Kind
+from src.tweaks.tweaks import TweakID, tweaks
+
 
 def _fmt_number(value) -> str:
     """Render a numeric tweak value compactly (5, 0.5, 1)."""

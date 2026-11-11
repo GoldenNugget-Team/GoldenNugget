@@ -75,10 +75,17 @@ class SiriAITests(unittest.TestCase):
                     files = []
                     tweak.apply_tweak(files, version, model)
                     self.assertEqual(len(files), 1)
-        for version, model in (('26.9', 'iPhone16,1'), ('28.0', 'iPhone19,7'),
+        for version, model in (('26.9', 'iPhone16,1'),
                                ('27.1', 'iPhone15,4'), ('27.1', 'iPhone15,5'),
                                ('27.1', 'iPad16,1'), ('27.1', '')):
             self.assertTrue(compatibility_reasons(TweakID.SiriAI, version, model))
+        # Enable metadata has no upper version gate, but delivery rejects iOS 28.
+        for version, model in (('28.0', 'iPhone19,7'),):
+            self.assertEqual(compatibility_reasons(TweakID.SiriAI, version, model), [])
+            operation = SiriAITweak()
+            operation.set_enabled(True)
+            with self.assertRaises(NuggetException):
+                operation.apply_tweak([], version, model)
         # Keep reset available for recovery even on hardware that cannot enable AI.
         reset = SiriAITweak('reset')
         reset.set_enabled(True)
@@ -119,7 +126,7 @@ class SiriAITests(unittest.TestCase):
         load_plist_tweaks()
         for tid in (TweakID.SiriAI, TweakID.ResetSiriAIOverrides):
             self.assertIsInstance(tweaks[tid], SiriAITweak)
-            self.assertTrue(SPECS_BY_ID[tid].experimental)
+            self.assertEqual(SPECS_BY_ID[tid].experimental, tid == TweakID.ResetSiriAIOverrides)
             self.assertIsNotNone(SPECS_BY_ID[tid].exclusive_with)
             self.assertEqual(compatibility_reasons(tid, '27.0', 'iPhone17,1'), [])
             self.assertEqual(compatibility_reasons(tid, '27.0', 'iPhone18,1'), [])
@@ -176,6 +183,7 @@ class SiriAITests(unittest.TestCase):
         manager = SimpleNamespace(
             get_current_device_version=lambda: '27.0',
             get_current_device_model=lambda: 'iPhone17,1',
+            get_current_device_udid=lambda: 'TEST',
             _disable_unavailable_controls=lambda _: set(),
             pref_manager=SimpleNamespace(settings=None, supervised=False, organization_name=''),
             add_skip_setup=AsyncMock(), concat_file=Mock(), _add_community_files=Mock(),

@@ -1,5 +1,5 @@
 """Dialog around DeviceTwinView: the two screens plus what they do and do not show."""
-from PySide6.QtCore import QCoreApplication, QThread, Qt, Signal
+from PySide6.QtCore import QCoreApplication, Qt, QThread, Signal
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
 from src.gui.ios.device_twin import DeviceTwinView
@@ -68,6 +68,7 @@ class _IconFetchThread(QThread):
     def run(self):
         import asyncio
         import logging
+
         from src.controllers.device_icons import fetch_icons
         try:
             icons = asyncio.run(fetch_icons(self.udid, self.version))

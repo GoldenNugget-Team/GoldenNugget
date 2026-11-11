@@ -1,11 +1,11 @@
 """Batch ordered XML/plist edits without rereading the same document."""
-from contextlib import contextmanager
-from contextvars import ContextVar
-from pathlib import Path
 import os
 import plistlib
 import tempfile
 import xml.etree.ElementTree as ET
+from contextlib import contextmanager
+from contextvars import ContextVar
+from pathlib import Path
 
 _current = ContextVar("template_patch_session", default=None)
 

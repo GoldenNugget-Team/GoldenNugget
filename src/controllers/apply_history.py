@@ -1,10 +1,10 @@
 """Small local history of apply/reset operations."""
-from datetime import datetime
 import json
 import os
 import tempfile
+from datetime import datetime
 
-from PySide6.QtCore import QStandardPaths, QCoreApplication
+from PySide6.QtCore import QCoreApplication, QStandardPaths
 
 MAX_ENTRIES = 30
 

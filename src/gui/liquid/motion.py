@@ -1,4 +1,4 @@
-from PySide6.QtCore import QVariantAnimation, QEasingCurve
+from PySide6.QtCore import QEasingCurve, QVariantAnimation
 from PySide6.QtWidgets import QApplication
 
 

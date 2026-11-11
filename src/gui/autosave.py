@@ -1,6 +1,8 @@
 """Qt autosave scheduling kept separate from window navigation and settings."""
 import logging
+
 from PySide6 import QtCore
+
 from src.controllers.autosave_state import AutosaveState
 from src.tweaks.tweak_classes import subscribe_tweak_changes
 

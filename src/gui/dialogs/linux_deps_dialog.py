@@ -9,8 +9,16 @@ import logging
 
 from PySide6.QtCore import QCoreApplication, Qt, QThread, Signal
 from PySide6.QtWidgets import (
-    QCheckBox, QDialog, QDialogButtonBox, QInputDialog, QLabel, QLineEdit,
-    QMessageBox, QPlainTextEdit, QProgressBar, QVBoxLayout,
+    QCheckBox,
+    QDialog,
+    QDialogButtonBox,
+    QInputDialog,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPlainTextEdit,
+    QProgressBar,
+    QVBoxLayout,
 )
 
 from src.devicemanagement import linux_deps

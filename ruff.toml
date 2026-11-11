@@ -1,0 +1,29 @@
+# Curated lint set (see AGENTS.md history): ruff's 2026 defaults enable broad
+# style rule families that flag most of this legacy PySide6 codebase (blind
+# excepts, dict() calls, typing modernization, security model aimed at web
+# services). Selecting explicitly keeps the cheap true-bug rules on.
+target-version = "py315"
+# Git submodules are foreign codebases with their own conventions.
+extend-exclude = ["awesomeui", "i18n"]
+
+[lint]
+select = ["E4", "E7", "E9", "F", "I"]
+# House style exemptions (legacy patterns, deliberately kept):
+# E402 — late imports after sys.path setup are how the CLI bundles load;
+# E711/E731/E701/E702/E741 — cosmetic one-liners/None-comparisons everywhere;
+# F401/F811 — the codebase is full of re-export hubs and monkeypatch import
+# surfaces (see AGENTS.md); auto-trimming them historically broke 33 suites.
+ignore = ["E402", "E711", "E731", "E701", "E702", "E741", "F401", "F811"]
+
+[lint.per-file-ignores]
+# Package `__init__`s are re-export surfaces by design.
+"**/__init__.py" = ["F401"]
+# Hand-written re-export hubs: imported solely for their names elsewhere.
+"src/controllers/settings.py" = ["F401"]
+"src/restore/afc_media.py" = ["F401"]
+"src/gui/pages/pages_list.py" = ["F401"]
+"src/gui/widgets.py" = ["F401", "F811"]
+# Generated Qt resource module (pyside6-rcc output).
+"src/qt/resources_rc.py" = ["ALL"]
+# Deliberate order: base option class must import before the subclasses.
+"src/tweaks/posterboard/template_options/__init__.py" = ["I001"]

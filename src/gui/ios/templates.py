@@ -1,11 +1,11 @@
 """Standalone page for imported .batter tweak templates."""
-from PySide6.QtCore import Qt, QCoreApplication, QUrl
+from PySide6.QtCore import QCoreApplication, Qt, QUrl
 from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
 
-from src.gui.widgets import IOSCard, IOSPrimaryButton
 from src.gui.theme import ColorThemeManager, t
-from src.tweaks.tweaks import tweaks, TweakID
+from src.gui.widgets import IOSCard, IOSPrimaryButton
+from src.tweaks.tweaks import TweakID, tweaks
 
 BATTER_BUILDER_URL = "https://github.com/GoldenNugget-Team/GoldenNugget-TemplateBuilder/releases/latest"
 

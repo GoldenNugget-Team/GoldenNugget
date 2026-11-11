@@ -1,6 +1,7 @@
-from PySide6.QtCore import Qt, QPoint, QRectF, QVariantAnimation, QEasingCurve, QTimer
-from PySide6.QtGui import QPainter, QColor, QPainterPath, QLinearGradient, QPen, QFont
-from PySide6.QtWidgets import QWidget, QApplication
+from PySide6.QtCore import QEasingCurve, QPoint, QRectF, Qt, QTimer, QVariantAnimation
+from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPainterPath, QPen
+from PySide6.QtWidgets import QApplication, QWidget
+
 from src.gui.theme import ColorThemeManager
 
 

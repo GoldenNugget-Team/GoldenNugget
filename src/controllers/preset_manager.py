@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+
 # PEP 810: defer operation-only dependencies on Python 3.15+; eager on older Python.
 __lazy_modules__ = (
     "src.tweaks.status_bar.status_bar_c.status_setter",
@@ -14,21 +15,23 @@ import tempfile
 import time
 from typing import Optional
 
-from PySide6.QtCore import QStandardPaths, QCoreApplication, QT_TRANSLATE_NOOP
+from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication, QStandardPaths
 
-from src.tweaks.tweak_names import TweakID
-from src.tweaks import tweak_loader
-from src.tweaks.tweaks import tweaks
-from src.tweaks.tweak_classes import (
-    BasicPlistTweak, AdvancedPlistTweak,
-)
-from src.tweaks.posterboard.template_options.templates_tweak import TemplatesTweak
-from src.tweaks.status_bar.status_bar_tweak import StatusBarTweak
-from src.tweaks.status_bar.status_bar_c.status_setter import ffi as status_ffi
-from src.tweaks.icon_themes.icon_themes_tweak import IconThemesTweak
-from src.tweaks.icon_themes.icon_theme import IconTheme
-from src.tweaks.posterboard.device_overrides import PosterKitOverrides
 from src.controllers.hotload import HotLoad
+from src.tweaks import tweak_loader
+from src.tweaks.icon_themes.icon_theme import IconTheme
+from src.tweaks.icon_themes.icon_themes_tweak import IconThemesTweak
+from src.tweaks.posterboard.device_overrides import PosterKitOverrides
+from src.tweaks.posterboard.template_options.templates_tweak import TemplatesTweak
+from src.tweaks.status_bar.status_bar_c.status_setter import ffi as status_ffi
+from src.tweaks.status_bar.status_bar_tweak import StatusBarTweak
+from src.tweaks.tweak_classes import (
+    AdvancedPlistTweak,
+    BasicPlistTweak,
+)
+from src.tweaks.tweak_names import TweakID
+from src.tweaks.tweaks import tweaks
+
 from .retired_feature_flags import is_retired_feature_flag
 
 PRESETS_DIR_NAME = "Presets"
@@ -444,7 +447,10 @@ class PresetManager:
     ## DESERIALIZATION
     def _apply(self, data: dict, preview_only: bool = False) -> bool:
         tweaks = _selection_store(self)
-        from src.controllers.preset_apply import apply_preset_transaction, PresetApplyResult
+        from src.controllers.preset_apply import (
+            PresetApplyResult,
+            apply_preset_transaction,
+        )
         from src.tweaks.hidden import current_hidden_tweak_names
         try:
             self._load_all_tweaks()

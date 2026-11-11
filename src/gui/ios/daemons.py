@@ -1,19 +1,41 @@
 from PySide6.QtCore import (
-    Qt, QSize, QTimer, QCoreApplication, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup,
+    QCoreApplication,
+    QEasingCurve,
+    QParallelAnimationGroup,
+    QPropertyAnimation,
+    QSize,
+    Qt,
+    QTimer,
 )
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, QLabel, QMessageBox,
-    QGraphicsOpacityEffect, QSizePolicy, QFrame, QPushButton,
+    QFrame,
+    QGraphicsOpacityEffect,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
 )
 
-from src.gui.ios.components import IOSCard, IOSSectionHeader, IOSSwitch, IOSSearchField, IOSSearchEmpty, IOSSegmentedFilter, IOSSettingsAction
-from PySide6.QtGui import QIcon
 from src.controllers.favorites import TweakFavorites
-from src.gui.theme import ColorThemeManager, theme_pixmap, theme_icon, t
-from src.tweaks.tweaks import tweaks, TweakID
-from src.tweaks.tweak_loader import load_daemons
+from src.gui.ios.components import (
+    IOSCard,
+    IOSSearchEmpty,
+    IOSSearchField,
+    IOSSectionHeader,
+    IOSSegmentedFilter,
+    IOSSettingsAction,
+    IOSSwitch,
+)
+from src.gui.theme import ColorThemeManager, t, theme_icon, theme_pixmap
 from src.tweaks.daemon_descriptions import DAEMON_DESCRIPTIONS
-from src.tweaks.daemons_tweak import Daemon, NOTIFICATION_RECOVERY_DAEMONS
+from src.tweaks.daemons_tweak import NOTIFICATION_RECOVERY_DAEMONS, Daemon
+from src.tweaks.tweak_loader import load_daemons
+from src.tweaks.tweaks import TweakID, tweaks
 
 ANALYTICS_DAEMONS = (Daemon.AnalyticsHelper, Daemon.WifiAnalytics, Daemon.UsageTrackingAgent,
                      Daemon.AppleAds, Daemon.SettingsStats, Daemon.AudioAnalytics,
@@ -411,7 +433,12 @@ class IOSDaemonsContent(QWidget):
             page._applied_theme_revision = ColorThemeManager.instance().revision
 
     def _organize_rows(self):
-        from src.gui.ios.daemon_categories import CATEGORY_ORDER, DAEMON_CATEGORIES, REPORTS_CATEGORY, ACCOUNTS_CATEGORY
+        from src.gui.ios.daemon_categories import (
+            ACCOUNTS_CATEGORY,
+            CATEGORY_ORDER,
+            DAEMON_CATEGORIES,
+            REPORTS_CATEGORY,
+        )
         grouped = {title: [] for title in CATEGORY_ORDER}
         for card, (daemon, switch) in zip(self.daemon_cards, self.daemon_switches):
             if any(key in self.daemons_tweak.never_enable for key in daemon.value):

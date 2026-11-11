@@ -64,6 +64,7 @@ async def fetch_icons(udid: str, version: str) -> dict:
     pairing prompt. Apps that are not installed are skipped.
     """
     from pymobiledevice3.services.springboard import SpringBoardServicesService
+
     from src.devicemanagement.session import lockdown_session
 
     folder = cache_dir(udid, version)

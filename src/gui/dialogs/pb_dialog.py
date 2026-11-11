@@ -1,12 +1,21 @@
 import asyncio
 
-from PySide6.QtWidgets import QWizard, QWizardPage, QLabel, QVBoxLayout, QProgressBar, QSizePolicy, QMessageBox
 from PySide6.QtCore import QCoreApplication, QSize, Qt
+from PySide6.QtWidgets import (
+    QLabel,
+    QMessageBox,
+    QProgressBar,
+    QSizePolicy,
+    QVBoxLayout,
+    QWizard,
+    QWizardPage,
+)
 
 from src.exceptions.nugget_exception import NuggetException
 from src.gui.thread_workers.apply_worker import ApplyAlertMessage
 from src.gui.thread_workers.pb_worker import PBDBThread
-from src.tweaks.tweaks import tweaks, TweakID
+from src.tweaks.tweaks import TweakID, tweaks
+
 
 class PosterBoardDBWizard(QWizard):
     def __init__(self, udid: str, pbDBLbl: QLabel, update_savedIds_list=lambda x: None):
@@ -111,7 +120,9 @@ class PosterBoardDBWizard(QWizard):
         try:
             # Local import: the restore chain pulls in pymobiledevice3, which
             # must not be loaded while the GUI is still starting up.
-            from src.restore.posterboard_backup import targeted_posterboard_database_backup
+            from src.restore.posterboard_backup import (
+                targeted_posterboard_database_backup,
+            )
             db_result = await targeted_posterboard_database_backup(self.udid, update_label, update_progress)
             if not tweaks[TweakID.PosterBoard].config_manager.update_database_file(
                     db_result[0], self.udid, structure_version=db_result[1]):

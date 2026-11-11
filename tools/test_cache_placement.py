@@ -1,10 +1,20 @@
-import faulthandler, os, sys, json, time, shutil, sqlite3, tempfile
+import faulthandler
+import json
+import os
+import shutil
+import sqlite3
+import sys
+import tempfile
+import time
+
 faulthandler.dump_traceback_later(15, exit=True)
 sys.path.insert(0, os.path.join(os.getcwd(), 'src', 'qt'))
 sys.path.insert(0, os.getcwd())
 os.environ["GOLDENNUGGET_CACHE_PERSIST_MIN_GB"] = "0"  # keep CACHE_PERSIST_MIN_GB importable
 from pathlib import Path
-from src.restore.protective import ProtectiveBackupCache, CACHE_PERSIST_MIN_GB
+
+from src.restore.protective import CACHE_PERSIST_MIN_GB, ProtectiveBackupCache
+from src.restore.protective_cache import CACHE_FILTER_REVISION
 
 UDID = "UDIDPLC"; tmp = Path(tempfile.mkdtemp(prefix="gn_cache_placement_"))
 cache = ProtectiveBackupCache(UDID, "27.0")
@@ -32,6 +42,7 @@ for n in ("Manifest.plist", "Status.plist"): (master / n).write_bytes(b"x" * 300
 open(master / "big_payload.bin", "wb").write(b"\0" * (2 * 1024 * 1024))  # 2 MB payload
 (cache._temp_base / f"{UDID}.json").write_text(json.dumps({
     "udid": UDID, "product_version": "27.0", "encrypted": False,
+    "filter_revision": CACHE_FILTER_REVISION,
     "created_ts": int(time.time())}))
 
 res = cache.locate()
@@ -57,6 +68,7 @@ conn.commit(); conn.close()
 for n in ("Manifest.plist", "Status.plist"): (dev / n).write_bytes(b"x" * 300)
 (cache._persist_base / f"{UDID}.json").write_text(json.dumps({
     "udid": UDID, "product_version": "27.0", "encrypted": False,
+    "filter_revision": CACHE_FILTER_REVISION,
     "created_ts": int(time.time())}))
 cache.relocate_by_size()
 assert cache.base == cache._persist_base, "small master left persistent store"

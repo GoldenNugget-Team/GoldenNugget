@@ -1,11 +1,29 @@
-from PySide6.QtCore import Qt, QSize, QPoint, QCoreApplication, QRectF, QVariantAnimation, QEasingCurve
-from PySide6.QtGui import QPainter, QPainterPath, QColor, QPen, QLinearGradient
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QScrollArea, QPushButton, QApplication
+from PySide6.QtCore import (
+    QCoreApplication,
+    QEasingCurve,
+    QPoint,
+    QRectF,
+    QSize,
+    Qt,
+    QVariantAnimation,
+)
+from PySide6.QtGui import QColor, QLinearGradient, QPainter, QPainterPath, QPen
+from PySide6.QtWidgets import (
+    QApplication,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
 
-from src.gui.theme import ColorThemeManager, theme_pixmap, theme_icon
-from src.utils.pages import Page, get_resettable_pages
 from src.gui.ios.feature_icons import FEATURE_ICONS
-from .controls import GlassPanel, LiquidButton, GlassCheckBox
+from src.gui.theme import ColorThemeManager, theme_icon, theme_pixmap
+from src.utils.pages import Page, get_resettable_pages
+
+from .controls import GlassCheckBox, GlassPanel, LiquidButton
 from .placement import reveal_sheet, sheet_rect
 
 

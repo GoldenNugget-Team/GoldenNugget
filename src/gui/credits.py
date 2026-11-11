@@ -1,5 +1,6 @@
 """Shared project credits for the About dialog and idle support panel."""
 from pathlib import Path
+
 from PySide6.QtCore import QT_TRANSLATE_NOOP
 
 CREDITS = [

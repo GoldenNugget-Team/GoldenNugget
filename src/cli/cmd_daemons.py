@@ -7,9 +7,9 @@ only interface-visible keys ever reach the disabled-daemons plist.
 import argparse
 import sys
 
-from src.tweaks.daemons_tweak import Daemon, RECOMMENDED_ANALYTICS
 from src.tweaks import tweak_loader
-from src.tweaks.tweaks import tweaks, TweakID
+from src.tweaks.daemons_tweak import RECOMMENDED_ANALYTICS, Daemon
+from src.tweaks.tweaks import TweakID, tweaks
 
 
 def _daemons():

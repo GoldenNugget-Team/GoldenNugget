@@ -5,6 +5,7 @@ from io import BytesIO
 # stays the single definition site; anything here is already heavy anyway)
 from src.utils.file_to_restore import _FileMode
 
+
 def _write_string(d: BytesIO, value: str) -> None:
     # the length prefix counts encoded bytes, not characters
     data = value.encode("utf-8")

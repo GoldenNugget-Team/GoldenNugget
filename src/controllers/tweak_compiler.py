@@ -1,9 +1,9 @@
 """Compile tweak selections into owned restore artifacts before device restore."""
+import inspect
+import logging
+import plistlib
 from dataclasses import dataclass, field
 from functools import singledispatch
-import logging
-import inspect
-import plistlib
 from tempfile import TemporaryDirectory
 from typing import Callable, Mapping
 
@@ -11,23 +11,26 @@ from packaging.version import Version
 from PySide6.QtCore import QCoreApplication
 
 from src.controllers.path_handler import fix_windows_path
+from src.devicemanagement.device_capabilities import has_dynamic_island
 from src.exceptions.nugget_exception import NuggetException
-from src.tweaks.tweak_classes import (
-    BasicPlistTweak, AdvancedPlistTweak, NullifyFileTweak, ReversibleBooleanPlistTweak,
-)
+from src.tweaks.basic_plist_locations import FileLocation
+from src.tweaks.candidate_preferences import InstalledAppSuggestionsBlacklist
+from src.tweaks.compatibility import hardware_reasons
+from src.tweaks.icon_themes.icon_themes_tweak import IconThemesTweak
+from src.tweaks.posterboard.device_overrides import PosterKitOverrides
 from src.tweaks.posterboard.posterboard_tweak import PosterboardTweak
 from src.tweaks.posterboard.template_options.templates_tweak import TemplatesTweak
-from src.tweaks.icon_themes.icon_themes_tweak import IconThemesTweak
-from src.tweaks.status_bar.status_bar_tweak import StatusBarTweak
+from src.tweaks.registry import HOME_PREFIX, SPECS_BY_ID, managed_pref_target
 from src.tweaks.siri_ai import SiriAITweak
+from src.tweaks.status_bar.status_bar_tweak import StatusBarTweak
+from src.tweaks.tweak_classes import (
+    AdvancedPlistTweak,
+    BasicPlistTweak,
+    NullifyFileTweak,
+    ResearchOnlyTweak,
+    ReversibleBooleanPlistTweak,
+)
 from src.tweaks.tweak_names import TweakID
-from src.tweaks.basic_plist_locations import FileLocation
-from src.tweaks.compatibility import hardware_reasons
-from src.devicemanagement.device_capabilities import has_dynamic_island
-from src.tweaks.registry import SPECS_BY_ID, HOME_PREFIX, managed_pref_target
-from src.tweaks.posterboard.device_overrides import PosterKitOverrides
-from src.tweaks.candidate_preferences import InstalledAppSuggestionsBlacklist
-from src.tweaks.tweak_classes import ResearchOnlyTweak
 
 log = logging.getLogger("GoldenNugget.compiler")
 

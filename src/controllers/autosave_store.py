@@ -5,6 +5,7 @@ from copy import deepcopy
 from pathlib import Path
 
 from PySide6.QtCore import QLockFile
+
 from .retired_feature_flags import is_retired_feature_flag
 
 

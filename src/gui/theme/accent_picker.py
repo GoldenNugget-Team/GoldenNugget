@@ -1,9 +1,8 @@
-from PySide6.QtCore import Qt, Signal, QCoreApplication, QT_TRANSLATE_NOOP
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton
+from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication, Qt, Signal
+from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
 
 from src.gui.theme.colors import ACCENT_PRESETS
 from src.gui.theme.theme_manager import ColorThemeManager
-
 
 # Tooltip names, declared for lupdate; translated where the tooltip is set.
 _ACCENT_NAMES = {

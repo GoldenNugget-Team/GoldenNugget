@@ -1,5 +1,6 @@
 """Load a device's saved wallpaper configuration without blocking the GUI."""
 import logging
+
 from PySide6.QtCore import QThread, Signal
 
 

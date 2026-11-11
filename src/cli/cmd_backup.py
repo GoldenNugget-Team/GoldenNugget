@@ -35,9 +35,13 @@ def add_parser(subp):
 
 async def _create(udid, include_photos, include_posterboard) -> dict:
     from pymobiledevice3.lockdown import create_using_usbmux
+
     from src.restore.protective import (
-        perform_protective_backup, new_protective_backup_dir,
-        prune_protective_backups, list_protective_backups)
+        list_protective_backups,
+        new_protective_backup_dir,
+        perform_protective_backup,
+        prune_protective_backups,
+    )
 
     backup_root = new_protective_backup_dir(udid)
     print(f"Backup dir: {backup_root}")
@@ -81,7 +85,7 @@ async def _create(udid, include_photos, include_posterboard) -> dict:
 
 
 def _run_create(args) -> int:
-    from src.cli.common import bootstrap, make_device_manager, ensure_device
+    from src.cli.common import bootstrap, ensure_device, make_device_manager
     settings = bootstrap()
     dm = make_device_manager(settings)
     device = ensure_device(dm, settings, args.udid)
@@ -102,7 +106,7 @@ def _run_create(args) -> int:
 
 
 def _run_list(args) -> int:
-    from src.cli.common import bootstrap, make_device_manager, ensure_device
+    from src.cli.common import bootstrap, ensure_device, make_device_manager
     settings = bootstrap()
     dm = make_device_manager(settings)
 
@@ -116,7 +120,10 @@ def _run_list(args) -> int:
         else:
             raise e
 
-    from src.restore.protective import list_protective_backups, find_latest_protective_backup
+    from src.restore.protective import (
+        find_latest_protective_backup,
+        list_protective_backups,
+    )
     runs = list_protective_backups(udid)
     from src.cli.output import set_result
     set_result(dict(udid=udid, backups=[dict(path=str(run), modified_at=run.stat().st_mtime) for run in runs]))

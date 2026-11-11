@@ -1,12 +1,14 @@
-from src.controllers.archive_safety import package_matches
-from . import TemplateOption
-
 import os
 from shutil import rmtree
 from typing import Optional
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QCheckBox
 
+from PySide6.QtWidgets import QCheckBox, QVBoxLayout, QWidget
+
+from src.controllers.archive_safety import package_matches
 from src.controllers.xml_handler import delete_xml_value
+
+from . import TemplateOption
+
 
 class RemoveOption(TemplateOption):
     inverted: bool = False # if set to true, the files will only be deleted if the checkbox is unchecked

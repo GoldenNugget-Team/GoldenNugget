@@ -1,11 +1,46 @@
 import json
 from pathlib import Path
-from PySide6.QtCore import Qt, QPoint, QRect, QRectF, QTimer, QEvent, QSize, QUrl, QVariantAnimation, QEasingCurve
-from PySide6.QtGui import QDesktopServices, QIcon, QPainter, QColor, QRadialGradient, QPainterPath, QPen, QBitmap, QPixmap, QRegion
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QScrollArea, QMenu, QHBoxLayout, QProgressBar, QSizePolicy, QApplication
-from src.gui.theme import theme_icon, theme_pixmap, ColorThemeManager
+
+from PySide6.QtCore import (
+    QEasingCurve,
+    QEvent,
+    QPoint,
+    QRect,
+    QRectF,
+    QSize,
+    Qt,
+    QTimer,
+    QUrl,
+    QVariantAnimation,
+)
+from PySide6.QtGui import (
+    QBitmap,
+    QColor,
+    QDesktopServices,
+    QIcon,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QPixmap,
+    QRadialGradient,
+    QRegion,
+)
+from PySide6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QMenu,
+    QProgressBar,
+    QScrollArea,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
+
 from src.gui.ios.feature_icons import FEATURE_ICONS
-from .controls import GlassPanel, LiquidButton, LiquidBrand, paint_dock_glass
+from src.gui.theme import ColorThemeManager, theme_icon, theme_pixmap
+
+from .controls import GlassPanel, LiquidBrand, LiquidButton, paint_dock_glass
 from .placement import panel_rect, reveal_panel
 
 ENTRIES = {

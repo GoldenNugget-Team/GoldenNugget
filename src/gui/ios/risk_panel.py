@@ -1,6 +1,6 @@
 """Card that shows a RiskReport: the verdict and its most serious reasons."""
 from PySide6.QtCore import QCoreApplication, Qt
-from PySide6.QtWidgets import QFrame, QLabel, QVBoxLayout, QHBoxLayout
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout
 
 from src.controllers.risk_assessment import RiskLevel
 from src.gui.theme import ColorThemeManager

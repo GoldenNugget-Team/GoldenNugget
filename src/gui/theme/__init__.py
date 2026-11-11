@@ -1,12 +1,13 @@
 from functools import lru_cache
 from pathlib import Path
-from PySide6.QtCore import Qt, QSize, QRect, QRectF
-from PySide6.QtGui import QColor, QIcon, QImage, QPainter, QPixmap, QBitmap, QRegion
 
-from src.gui.theme.theme_manager import ColorThemeManager
-from src.gui.theme.colors import DARK, ACCENT_PRESETS
-from src.gui.theme.styles import STYLES, FONT_FAMILY
+from PySide6.QtCore import QRect, QRectF, QSize, Qt
+from PySide6.QtGui import QBitmap, QColor, QIcon, QImage, QPainter, QPixmap, QRegion
+
 from src.gui.theme.accent_picker import AccentPicker
+from src.gui.theme.colors import ACCENT_PRESETS, DARK
+from src.gui.theme.styles import FONT_FAMILY, STYLES
+from src.gui.theme.theme_manager import ColorThemeManager
 
 
 def t(style_key: str) -> str:

@@ -1,12 +1,17 @@
+import xml.etree.ElementTree as ET
 from functools import lru_cache
 from pathlib import Path
-import xml.etree.ElementTree as ET
 
 from PySide6.QtCore import QCoreApplication, QSignalBlocker
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
-    QAbstractButton, QAbstractScrollArea, QComboBox, QLabel, QLineEdit,
-    QTabWidget, QWidget,
+    QAbstractButton,
+    QAbstractScrollArea,
+    QComboBox,
+    QLabel,
+    QLineEdit,
+    QTabWidget,
+    QWidget,
 )
 from shiboken6 import isValid
 

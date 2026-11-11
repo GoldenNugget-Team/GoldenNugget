@@ -8,6 +8,7 @@ from pathlib import Path
 from src.controllers.files_handler import get_bundle_files
 from src.exceptions.nugget_exception import NuggetException
 from src.utils.file_to_restore import FileToRestore
+
 from .tweak_classes import Tweak
 
 DOMAIN = "SysContainerDomain-com.apple.eligibilityd"

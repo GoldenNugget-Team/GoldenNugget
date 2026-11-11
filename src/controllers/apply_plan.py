@@ -3,13 +3,17 @@ import os
 
 
 def build_apply_plan(manager):
-    from src.controllers.apply_preview import capture_preview, load_preview, preview_rows
+    from src.controllers.apply_preview import (
+        capture_preview,
+        load_preview,
+        preview_rows,
+    )
     from src.controllers.hotload import HotLoad
     from src.controllers.tweak_conflicts import current_conflicts
     from src.tweaks.compatibility import compatibility_reasons, version_override_allowed
     from src.tweaks.registry import SPECS_BY_ID
-    from src.tweaks.tweaks import tweaks, TweakID
     from src.tweaks.store import selection_store
+    from src.tweaks.tweaks import TweakID, tweaks
     tweaks = selection_store(manager, tweaks)
     preview = capture_preview(manager)
     version, model = manager.get_current_device_version(), manager.get_current_device_model()

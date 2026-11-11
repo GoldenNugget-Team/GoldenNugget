@@ -1,9 +1,9 @@
 """Indexed archive resources with bounded extraction and validated destinations."""
-from bisect import bisect_left
 import fnmatch
 import os
-from pathlib import Path
 import re
+from bisect import bisect_left
+from pathlib import Path
 from shutil import copyfileobj
 
 from src.controllers.archive_safety import package_path

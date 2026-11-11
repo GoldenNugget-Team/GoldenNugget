@@ -11,27 +11,41 @@ no background ``QThread`` lifetime issues.
 """
 
 import hashlib
-from src.gui.liquid.choice_editor import GlassComboBox as QComboBox
 import os
 import time
 import uuid
 
-from PySide6.QtCore import Qt, QCoreApplication, QTimer, QUrl, QStandardPaths, QByteArray, QSize
-from PySide6.QtGui import QPixmap, QMovie
-from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
+from PySide6.QtCore import (
+    QByteArray,
+    QCoreApplication,
+    QSize,
+    QStandardPaths,
+    Qt,
+    QTimer,
+    QUrl,
+)
+from PySide6.QtGui import QMovie, QPixmap
+from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
+from PySide6.QtWidgets import (
+    QDialog,
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
+
+from src.gui.liquid.choice_editor import GlassComboBox as QComboBox
+from src.gui.theme import ColorThemeManager
 from src.gui.widgets import (
     IOSSearchField,
 )
-
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel,
-    QScrollArea, QGridLayout, QPushButton, QWidget, QMessageBox,
-    QProgressBar, QFrame,
-)
-
-from src.tweaks.tweaks import tweaks, TweakID
-from src.gui.theme import ColorThemeManager
-
+from src.tweaks.tweaks import TweakID, tweaks
 
 CARD_W = 150
 CARD_H = 300
@@ -287,7 +301,8 @@ class WallpaperDownloaderDialog(QDialog):
         self._nam = QNetworkAccessManager(self)
 
         from src.controllers.wallpaper_api import (
-            CowabungaSource, CaPlaygroundSource,
+            CaPlaygroundSource,
+            CowabungaSource,
         )
         self._sources = {
             "cowabunga": CowabungaSource(),

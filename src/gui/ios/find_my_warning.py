@@ -1,10 +1,10 @@
 """Inline, cancellable Find My wait for the active restore worker."""
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtWidgets import QLabel, QPushButton, QHBoxLayout, QVBoxLayout
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
 from src.devicemanagement.device_capabilities import device_text
+from src.gui.theme import ColorThemeManager, t, theme_pixmap
 from src.gui.widgets import IOSCard
-from src.gui.theme import ColorThemeManager, theme_pixmap, t
 
 
 class FindMyWarningCard(IOSCard):

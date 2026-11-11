@@ -16,23 +16,31 @@ while the lockdown service is queried.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
-import hashlib
 import time
 from pathlib import Path
 
-from PySide6.QtCore import QCoreApplication, QThread, Signal, QSize, QStandardPaths
+from PySide6.QtCore import QCoreApplication, QSize, QStandardPaths, QThread, Signal
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QListWidget,
-    QListWidgetItem, QPushButton, QFileDialog, QMessageBox,
+    QDialog,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
 )
 
-from src.gui.theme import ColorThemeManager, theme_icon, t
+from src.gui.theme import ColorThemeManager, t, theme_icon
 from src.gui.widgets import (
     IOSSearchField,
 )
+
 
 class FetchAppsThread(QThread):
     """Pull the installed-app list from the device on a background thread."""
@@ -61,8 +69,9 @@ class FetchAppsThread(QThread):
                 pass
 
     async def _fetch(self) -> list[dict]:
-        from src.devicemanagement.session import lockdown_session
         from pymobiledevice3.services.installation_proxy import InstallationProxyService
+
+        from src.devicemanagement.session import lockdown_session
         async with lockdown_session(self.udid) as lockdown:
             async with InstallationProxyService(lockdown=lockdown) as ip:
                 raw = await ip.get_apps(application_type="Any", calculate_sizes=False)
@@ -82,8 +91,10 @@ class FetchAppsThread(QThread):
 
     async def _fetch_icons(self, apps):
         from contextlib import AsyncExitStack
-        from src.devicemanagement.session import lockdown_session
+
         from pymobiledevice3.services.springboard import SpringBoardServicesService
+
+        from src.devicemanagement.session import lockdown_session
         base = QStandardPaths.writableLocation(QStandardPaths.CacheLocation)
         cache = Path(base) / "AppIcons" / hashlib.sha256(self.udid.encode()).hexdigest()
         try:

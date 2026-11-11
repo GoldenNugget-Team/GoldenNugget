@@ -5,7 +5,7 @@ import logging
 import os
 import tempfile
 
-from PySide6.QtCore import QCoreApplication, QT_TRANSLATE_NOOP
+from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication
 
 from src.restore.lastapply import lastapply_path
 
@@ -78,15 +78,25 @@ def write_preview(udid, version, preview):
 def capture_preview(manager):
     """Copy pending selections without generating files or contacting a device."""
     from packaging.version import Version
+
     from src.controllers.hotload import HotLoad
+    from src.devicemanagement.device_capabilities import (
+        has_action_button,
+        has_always_on_display,
+        has_camera_control,
+        has_dynamic_island,
+        has_home_button,
+    )
     from src.devicemanagement.device_manager import MAX_TENDIES_PER_RESTORE
     from src.tweaks.registry import SPECS_BY_ID
-    from src.tweaks.tweak_loader import load_plist_tweaks, load_daemons
-    from src.tweaks.tweak_classes import AdvancedPlistTweak, ExperimentalBooleanPlistTweak
-    from src.devicemanagement.device_capabilities import has_camera_control, has_dynamic_island, has_action_button, has_home_button, has_always_on_display
+    from src.tweaks.store import selection_store
+    from src.tweaks.tweak_classes import (
+        AdvancedPlistTweak,
+        ExperimentalBooleanPlistTweak,
+    )
+    from src.tweaks.tweak_loader import load_daemons, load_plist_tweaks
     from src.tweaks.tweak_names import TweakID
     from src.tweaks.tweaks import tweaks
-    from src.tweaks.store import selection_store
     tweaks = selection_store(manager, tweaks)
 
     load_plist_tweaks()

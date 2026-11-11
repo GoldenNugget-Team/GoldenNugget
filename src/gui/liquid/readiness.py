@@ -1,6 +1,6 @@
 import asyncio
-from PySide6.QtCore import QThread, Signal
 
+from PySide6.QtCore import QThread, Signal
 
 _running_checks=set()
 
@@ -39,8 +39,12 @@ class DeviceReadiness(QThread):
             return 'ready','Device connected. Keep it unlocked when you confirm.'
 
     def run(self):
-        from src.exceptions.device_errors import is_device_lock_required_error,is_device_locked_error
         from pymobiledevice3.exceptions import NotPairedError
+
+        from src.exceptions.device_errors import (
+            is_device_lock_required_error,
+            is_device_locked_error,
+        )
         try:
             state,message=asyncio.run(asyncio.wait_for(self.probe(),5))
         except asyncio.CancelledError:

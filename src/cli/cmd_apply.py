@@ -89,8 +89,16 @@ def _apply_flag_tweaks(args):
 
 def run(args) -> int:
     from src.cli.common import (
-        bootstrap, make_device_manager, load_prefs, ensure_device, print_status,
-        print_alert, describe_device, load_core_tweaks, load_default_preset)
+        bootstrap,
+        describe_device,
+        ensure_device,
+        load_core_tweaks,
+        load_default_preset,
+        load_prefs,
+        make_device_manager,
+        print_alert,
+        print_status,
+    )
 
     settings = bootstrap()
     dm = make_device_manager(settings)
@@ -111,6 +119,7 @@ def run(args) -> int:
         return 2
     if dry_run and getattr(args, 'ios_version', None):
         from packaging.version import Version
+
         from src.devicemanagement.constants import Device
         version = str(Version(args.ios_version))
         device = Device(args.udid or '', False, 'Offline target', version, '', args.model or '', '', '', '')
@@ -125,8 +134,8 @@ def run(args) -> int:
     _apply_flag_tweaks(args)
 
     if dry_run:
-        from src.controllers.apply_plan import build_apply_plan, plan_text
         from src.cli.output import set_result
+        from src.controllers.apply_plan import build_apply_plan, plan_text
         plan = build_apply_plan(dm)
         set_result(plan)
         print(plan_text(plan))

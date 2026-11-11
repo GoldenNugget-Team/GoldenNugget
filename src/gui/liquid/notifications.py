@@ -1,11 +1,22 @@
 import math
 from pathlib import Path
-from PySide6.QtGui import QIcon,QPainter
-from PySide6.QtCore import QObject, Qt, QEvent, QSize, QRectF, QVariantAnimation, QEasingCurve
-from PySide6.QtWidgets import QApplication, QVBoxLayout, QLabel, QScrollArea, QWidget
+
+from PySide6.QtCore import (
+    QEasingCurve,
+    QEvent,
+    QObject,
+    QRectF,
+    QSize,
+    Qt,
+    QVariantAnimation,
+)
+from PySide6.QtGui import QIcon, QPainter
+from PySide6.QtWidgets import QApplication, QLabel, QScrollArea, QVBoxLayout, QWidget
+
+from src.gui.theme import ColorThemeManager, theme_pixmap
+
 from .controls import GlassPanel, LiquidButton
 from .placement import reveal_panel
-from src.gui.theme import ColorThemeManager, theme_pixmap
 
 
 class BellButton(LiquidButton):

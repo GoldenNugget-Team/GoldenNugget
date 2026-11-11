@@ -1,6 +1,13 @@
 """Read-only help for a registry tweak; opening it never changes selections."""
-from PySide6.QtCore import Qt, QCoreApplication
-from PySide6.QtWidgets import QDialog, QLabel, QPushButton, QVBoxLayout, QScrollArea, QWidget
+from PySide6.QtCore import QCoreApplication, Qt
+from PySide6.QtWidgets import (
+    QDialog,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.gui.theme import ColorThemeManager, t
 from src.tweaks.registry import Kind
@@ -58,12 +65,14 @@ class TweakInfoDialog(QDialog):
         if spec.kind == Kind.NUMBER:
             label(tr("Allowed input: {0} – {1}").format(f"{spec.min_value:g}", f"{spec.max_value:g}"))
         label(tr("How to restore defaults"), "confirmTitle")
-        from src.tweaks.tweaks import tweaks
         from src.tweaks.tweak_classes import (
-            DynamicIslandBorderWriteTest, ExperimentalBooleanPlistTweak,
-            ReversibleBooleanPlistTweak, ResettableNumericPreferenceTweak,
+            DynamicIslandBorderWriteTest,
+            ExperimentalBooleanPlistTweak,
             OptionalBundlePreferenceTweak,
+            ResettableNumericPreferenceTweak,
+            ReversibleBooleanPlistTweak,
         )
+        from src.tweaks.tweaks import tweaks
         tweak = tweaks.get(spec.id)
         if isinstance(tweak, DynamicIslandBorderWriteTest):
             undo = tr("Turn off and apply again to remove the seven test settings. "

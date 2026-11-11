@@ -1,5 +1,6 @@
 from enum import Enum, auto
 
+
 class TweakID(Enum):
     # tweaks page
     PosterBoard = auto()

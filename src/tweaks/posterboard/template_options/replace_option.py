@@ -1,11 +1,13 @@
-from src.controllers.archive_safety import package_matches
-from . import TemplateOption
-
-from src.exceptions.nugget_exception import NuggetException
-
 import os
 from typing import Optional
-from PySide6 import QtWidgets, QtGui, QtCore
+
+from PySide6 import QtCore, QtGui, QtWidgets
+
+from src.controllers.archive_safety import package_matches
+from src.exceptions.nugget_exception import NuggetException
+
+from . import TemplateOption
+
 
 class ReplaceOption(TemplateOption):
     allowed_files: str # Qt format - ex. "Image Files (*.png)"

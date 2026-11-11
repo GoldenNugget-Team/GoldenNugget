@@ -19,11 +19,11 @@ otherwise a short reason, so the caller can re-pull the device AND tell the
 user what was actually wrong.
 """
 
-import sqlite3
 import os
+import sqlite3
 from collections import OrderedDict
-from threading import RLock
 from os import path
+from threading import RLock
 from typing import Optional
 
 from src.exceptions.nugget_exception import NuggetException

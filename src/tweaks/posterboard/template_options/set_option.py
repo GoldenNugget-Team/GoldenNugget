@@ -1,13 +1,15 @@
+from enum import Enum
+from typing import Any, Optional
+
+from PySide6 import QtCore, QtWidgets
+from PySide6.QtGui import QColor
+
 from src.controllers.archive_safety import package_matches
+from src.controllers.plist_handler import write_plist_value
+from src.controllers.xml_handler import set_xml_value, set_xml_values
+
 from . import TemplateOption
 
-from typing import Any, Optional
-from enum import Enum
-from PySide6.QtGui import QColor
-from PySide6 import QtWidgets, QtCore
-
-from src.controllers.xml_handler import set_xml_value, set_xml_values
-from src.controllers.plist_handler import write_plist_value
 
 class SetterType(Enum):
     textbox = "textbox"
@@ -262,7 +264,7 @@ class SetOption(TemplateOption):
         # convert string to either float or int
         if self.value_type == "float":
             return float(value)
-        if isinstance(value, int) or (isinstance(value, str) and value.isdigit() and not '.' in value):
+        if isinstance(value, int) or (isinstance(value, str) and value.isdigit() and '.' not in value):
             return int(value)
         else:
             if self.setter_type == SetterType.slider:

@@ -29,42 +29,38 @@ def _still_running(worker) -> bool:
     except RuntimeError:
         return False
 
-from src.qt.mainwindow_ui import Ui_Nugget
 import src.gui.pages as Pages
-
-from src.controllers.translator import Translator
 from src.controllers.preset_manager import PresetManager
-
+from src.controllers.translator import Translator
 from src.gui.pages.pages_list import Page
+from src.qt.mainwindow_ui import Ui_Nugget
 
 if TYPE_CHECKING:
     from src.devicemanagement.device_manager import DeviceManager
 
-from src.gui.ios.theme_manager import ThemeManager
-from src.gui.ios.home import IOSHomePage
-from src.gui.ios.tweaks import IOSTweaksPage, IOSSectionPage
-from src.gui.ios.posterboard import IOSPosterboardPage
-from src.gui.ios.templates import IOSTemplatesPage
-from src.gui.ios.daemons import IOSDaemonsPage
 from src.gui.ios.apply import IOSApplyPage
-from src.gui.ios.settings import IOSSettingsPage
-from src.gui.ios.presets import IOSPresetsPage
 from src.gui.ios.catalog import IOSCatalogPage
-from src.gui.ios.statusbar import IOSStatusBarPage
+from src.gui.ios.connect_placeholder import ConnectDevicePlaceholder
+from src.gui.ios.daemons import IOSDaemonsPage
+from src.gui.ios.home import IOSHomePage
 from src.gui.ios.icon_themes import IOSIconThemesPage
 from src.gui.ios.passcode_theme import IOSPasscodeThemePage
-from src.gui.ios.connect_placeholder import ConnectDevicePlaceholder
-from src.gui.thread_workers.apply_worker import DeviceMonitorThread
-from src.tweaks.registry import Section
-
-from src.gui.theme import ColorThemeManager, t, theme_icon, themed_stylesheet
-
+from src.gui.ios.posterboard import IOSPosterboardPage
+from src.gui.ios.presets import IOSPresetsPage
+from src.gui.ios.settings import IOSSettingsPage
+from src.gui.ios.statusbar import IOSStatusBarPage
+from src.gui.ios.templates import IOSTemplatesPage
+from src.gui.ios.theme_manager import ThemeManager
+from src.gui.ios.tweaks import IOSSectionPage, IOSTweaksPage
 from src.gui.main_window_mixins import (
     ApplyMixin,
     DeviceBarMixin,
     NavigationMixin,
     SettingsMixin,
 )
+from src.gui.theme import ColorThemeManager, t, theme_icon, themed_stylesheet
+from src.gui.thread_workers.apply_worker import DeviceMonitorThread
+from src.tweaks.registry import Section
 
 # Classic chrome (device bar + sidebar + home toolbar) uses monochrome white
 # bootstrap SVGs; they must be recolored on every theme change.
@@ -390,7 +386,10 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         # Linux: usbmuxd / libimobiledevice are required to see an iPhone.
         # Offer to install them (the system asks for the password).
         if "--test-mode" not in sys.argv:
-            from src.gui.dialogs.linux_deps_dialog import prompt_and_install, should_prompt_on_startup
+            from src.gui.dialogs.linux_deps_dialog import (
+                prompt_and_install,
+                should_prompt_on_startup,
+            )
             if should_prompt_on_startup(self):
                 prompt_and_install(self, from_startup=True)
 

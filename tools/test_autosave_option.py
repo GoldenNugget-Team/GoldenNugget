@@ -152,8 +152,8 @@ def test_startup_load():
     on._load_last_preset()
     check("while on, AutoSave still loads at startup",
           on.preset_manager.loaded == ["AutoSave"], str(on.preset_manager.loaded))
-    check("and is rewritten right away to purge stale entries",
-          on.preset_manager.saved == ["AutoSave"])
+    check("startup preserves the loaded autosave without rewriting it",
+          on.preset_manager.saved == [])
 
     on_fallback = make_window(autosave=True, presets=(), last_loaded_preset="My Setup")
     on_fallback._load_last_preset()

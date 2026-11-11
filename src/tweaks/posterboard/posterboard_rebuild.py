@@ -624,7 +624,10 @@ async def rebuild_posterboard(udid: str, manager,
         prepared_root, _pb_ok = await manager._prepare_protective_backup(
             update_label, needs_posterboard=False, prompt_password=prompt_password)
     except Exception as e:
-        from src.exceptions.nugget_exception import BackupDiskSpaceError, BackupStorageError
+        from src.exceptions.nugget_exception import (
+            BackupDiskSpaceError,
+            BackupStorageError,
+        )
         disk = ("disk space" in str(e).lower()
                 or "NotEnoughDiskSpace" in type(e).__name__
                 or isinstance(e, (BackupDiskSpaceError, BackupStorageError)))

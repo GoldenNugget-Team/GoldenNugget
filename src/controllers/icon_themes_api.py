@@ -9,7 +9,6 @@ and the format can change in one place.
 """
 
 import json
-
 from dataclasses import dataclass
 
 # The explore repo serves raw files per-branch; "main" is always the HEAD,

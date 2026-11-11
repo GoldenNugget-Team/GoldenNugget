@@ -1,6 +1,7 @@
 """Validation of portable preset data without repository or GUI dependencies."""
 import base64
 
+
 def valid_import_structure(data) -> bool:
     """Reject malformed containers before they can enter the preset list.
 

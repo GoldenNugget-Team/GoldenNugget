@@ -1,5 +1,6 @@
 """UI bookmarks, stored independently of tweak selections and presets."""
 from PySide6.QtCore import QObject, Signal
+
 from src.controllers.settings import Settings
 
 

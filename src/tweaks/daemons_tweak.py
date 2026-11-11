@@ -1,6 +1,5 @@
 from enum import Enum
 
-
 # Daemon controls remain user-selectable; keep this empty for compatibility
 # with the shared tweak loader's protected-key interface.
 DANGEROUS_KEYS = frozenset()

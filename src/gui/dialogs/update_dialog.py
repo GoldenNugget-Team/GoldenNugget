@@ -1,6 +1,7 @@
 """Update download dialog opened from the version notice."""
-from PySide6.QtCore import Qt, QUrl, QCoreApplication
+from PySide6.QtCore import QCoreApplication, Qt, QUrl
 from PySide6.QtGui import QDesktopServices
+
 from src.gui.dialogs.confirmation import ConfirmationDialog
 
 
@@ -8,8 +9,11 @@ class UpdateDialog(ConfirmationDialog):
     def __init__(self, parent=None, *, required=False, rule=None):
         self._required = required
         tr = lambda text: QCoreApplication.translate("UpdateDialog", text)
+        from src.controllers.web_request_handler import (
+            last_fetched_version,
+            update_download_url,
+        )
         from src.version import App_Version
-        from src.controllers.web_request_handler import last_fetched_version, update_download_url
         self._download_url = update_download_url()
         message = tr('You have GoldenNugget {0}.').format(App_Version)
         version = (rule or {}).get('version') or last_fetched_version

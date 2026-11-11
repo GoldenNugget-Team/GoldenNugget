@@ -1,7 +1,16 @@
 import time
-from PySide6.QtCore import Qt, QEvent, QSize, QVariantAnimation, QEasingCurve
+
+from PySide6.QtCore import QEasingCurve, QEvent, QSize, Qt, QVariantAnimation
 from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea, QApplication
+from PySide6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
+
 from .controls import GlassPanel, LiquidButton
 
 

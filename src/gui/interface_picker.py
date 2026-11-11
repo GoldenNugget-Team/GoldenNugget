@@ -1,7 +1,21 @@
-from PySide6.QtCore import Qt, QCoreApplication, QSignalBlocker, QT_TRANSLATE_NOOP, QEvent
+from PySide6.QtCore import (
+    QT_TRANSLATE_NOOP,
+    QCoreApplication,
+    QEvent,
+    QSignalBlocker,
+    Qt,
+)
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QPushButton, QButtonGroup, QSizePolicy, QWidget,
+    QButtonGroup,
+    QDialog,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
 )
 
 from src.gui.theme import ColorThemeManager, t
