@@ -16,25 +16,42 @@ import os
 import sys
 import weakref
 from typing import Optional
-from src.devicemanagement.device_capabilities import device_os_name
 
 from PySide6.QtCore import (
-    Qt, QCoreApplication, QObject, QEvent, QPoint, QRect,
-    QPropertyAnimation, QEasingCurve, Signal,
+    QCoreApplication,
+    QEasingCurve,
+    QEvent,
+    QObject,
+    QPoint,
+    QPropertyAnimation,
+    QRect,
+    Qt,
+    Signal,
 )
 from PySide6.QtWidgets import (
-    QApplication, QWidget, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QScrollArea, QGraphicsOpacityEffect, QSizePolicy,
-    QMessageBox, QFileDialog, QDialog,
+    QApplication,
+    QDialog,
+    QFileDialog,
+    QFrame,
+    QGraphicsOpacityEffect,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
 )
 
+from src.controllers.hotload import HotLoad, confirm_flagged
+from src.controllers.preset_manager import PresetManager
+from src.devicemanagement.device_capabilities import device_os_name
 from src.gui.dialogs.confirmation import ask_confirmation
 from src.gui.theme import ColorThemeManager, t
 from src.gui.widgets import (
     _auto_retheme,
 )
-from src.controllers.preset_manager import PresetManager
-from src.controllers.hotload import HotLoad, confirm_flagged
 
 # _ = translate
 _T = QCoreApplication.translate
@@ -49,7 +66,8 @@ SLIDE_PX = 8
 
 def restart_app():
     """Relaunch the app so freshly loaded settings take effect."""
-    os.execl(sys.executable, sys.executable, *sys.argv)
+    from src.utils.restart import restart_app as _restart_app
+    _restart_app()
 
 
 # ---------------------------------------------------------------------------

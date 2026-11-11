@@ -2,17 +2,25 @@
 import ast
 import logging
 import os
-from pathlib import Path
 import sys
 import time
+from pathlib import Path
 
 from PySide6.QtCore import QCoreApplication, QTimer
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget
-
-from src.gui.widgets import (
-    IOSSwitch, _auto_retheme,
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
 )
+
 from src.gui.theme import t
+from src.gui.widgets import (
+    IOSSwitch,
+    _auto_retheme,
+)
 
 
 def _tr(text):
@@ -154,7 +162,8 @@ class DeveloperPanel(QWidget):
             handler.flush()
         arguments = sys.argv[1:] if self._packaged else sys.argv
         try:
-            os.execl(sys.executable, sys.executable, *arguments)
+            from src.utils.restart import restart_app
+            restart_app([sys.executable] + list(arguments))
         except OSError as error:
             if automatic:
                 self.reload_switch.setChecked(False)

@@ -30,24 +30,38 @@ Use :func:`install_crash_handler` once at startup and
 :class:`CrashHandlerApp` instead of a bare ``QApplication``.
 """
 
-import sys
-import traceback
 import logging
 import os
+import sys
 import threading
+import traceback
 from typing import Callable, Optional
 from urllib.parse import quote
 
-from shiboken6 import isValid
-
-from PySide6.QtCore import QCoreApplication, QObject, QEvent, QThread, QUrl, QT_TRANSLATE_NOOP
+from pymobiledevice3.exceptions import NotEnoughDiskSpaceError
+from PySide6.QtCore import (
+    QT_TRANSLATE_NOOP,
+    QCoreApplication,
+    QEvent,
+    QObject,
+    QThread,
+    QUrl,
+)
 from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import QApplication, QDialog, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QPlainTextEdit
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QPlainTextEdit,
+    QPushButton,
+    QVBoxLayout,
+)
+from shiboken6 import isValid
 
 from src.controllers.nugget_logger import get_log_path, get_log_tail
 from src.exceptions.device_errors import is_connection_error, is_device_locked_error
 from src.exceptions.nugget_exception import BackupDiskSpaceError
-from pymobiledevice3.exceptions import NotEnoughDiskSpaceError
 
 logger = logging.getLogger("GoldenNugget.crash")
 
@@ -329,7 +343,7 @@ class CrashDialog(QDialog):
 _live_dialogs: list = []
 
 
-def _exec_dialog_on_gui_thread(dialog: CrashDialog) -> None:
+def _exec_dialog_on_gui_thread(dialog: CrashDialog) -> "int | None":
     """``exec()`` a crash dialog and destroy its C++ object on the GUI thread.
 
     Every button in :class:`CrashDialog` is connected to a lambda/bound method
@@ -347,8 +361,9 @@ def _exec_dialog_on_gui_thread(dialog: CrashDialog) -> None:
     wrapper is already invalidated.
     """
     _live_dialogs.append(dialog)
+    result = None
     try:
-        dialog.exec()
+        result = dialog.exec()
     finally:
         try:
             dialog.deleteLater()
@@ -357,45 +372,66 @@ def _exec_dialog_on_gui_thread(dialog: CrashDialog) -> None:
                 _live_dialogs.remove(dialog)
             except ValueError:
                 pass
+    return result
 
 
 def show_error_dialog(summary: str, traceback_text: str, info: Optional[dict] = None,
                       backup_path: Optional[str] = None,
-                      on_restore: Optional[Callable[[], None]] = None):
+                      on_restore: Optional[Callable[[], None]] = None) -> bool:
     """Show the crash/error dialog on the main thread, if a QApplication exists.
 
     Also used for apply/reset failures so they get parsed and reported exactly
     like uncaught exceptions.
+
+    Returns True only when the user accepted the dialog (the "Restart App" /
+    restore buttons); every other dismissal answers False, so the caller can
+    exit instead of force-relaunching. Off-GUI-thread requests are posted as a
+    ``_CrashEvent`` and the answer is unknown — treated as False.
     """
     app = QApplication.instance()
     if app is None:
         print(f"ERROR: {summary}\n{traceback_text}", file=sys.stderr)
-        return
+        return False
     if not _on_gui_thread():
         _queue_crash_dialog_on_gui_thread(app, summary, traceback_text, info,
                                           backup_path, on_restore)
-        return
+        return False
     dialog = CrashDialog(summary=summary, traceback_text=traceback_text,
                          info=info, backup_path=backup_path, on_restore=on_restore)
-    _exec_dialog_on_gui_thread(dialog)
+    return _exec_dialog_on_gui_thread(dialog) == dialog.Accepted
+
+
+# Core presenter for the crash dialog (src/gui wiring injects it; tests may
+# inject a fake). None → the built-in dialog/print path below.
+_presenter = None
+
+
+def set_presenter(fn) -> None:
+    global _presenter
+    _presenter = fn
 
 
 def _show_crash_dialog(summary: str, traceback_text: str, exc_type=None, exc_value=None):
-    """Show the crash dialog on the main thread, if a QApplication exists."""
-    app = QApplication.instance()
+    """Show the crash dialog on the main thread, if a QApplication exists.
+
+    Returns True only when the user asked to restart (see show_error_dialog).
+    """
     info = _classify(exc_type, exc_value) if exc_type is not None else None
+    if _presenter is not None:
+        return _presenter(summary, traceback_text, info) is True
+    app = QApplication.instance()
     if app is None:
         # No application yet — fall back to printing so nothing is lost.
         print(f"CRASH: {summary}\n{traceback_text}", file=sys.stderr)
-        return
+        return False
     if not _on_gui_thread():
         # A worker thread reported this crash. Building a QWidget here would
         # instantiate NSWindow off the main thread (macOS: instant process
         # abort), so post it to the GUI thread instead and continue this
         # thread — the session must be allowed to keep running.
         _queue_crash_dialog_on_gui_thread(app, summary, traceback_text, info)
-        return
-    _build_and_exec_crash_dialog(summary, traceback_text, info)
+        return False
+    return show_error_dialog(summary, traceback_text, info)
 
 
 def _on_gui_thread() -> bool:
@@ -448,28 +484,12 @@ def _queue_crash_dialog_on_gui_thread(app, summary: str, traceback_text: str,
         pass
 
 
-def _build_and_exec_crash_dialog(summary: str, traceback_text: str,
-                                 info: Optional[dict]) -> None:
-    dialog = CrashDialog(summary=summary, traceback_text=traceback_text, info=info)
-    _exec_dialog_on_gui_thread(dialog)
-
-
 def _restart_app():
     """Relaunch GoldenNugget from the crash handler so the session keeps
     working after an unexpected error. Uses the same args the process was
-    started with; falls back to a plain re-exec if anything fails."""
-    try:
-        if getattr(sys, "frozen", False):
-            # PyInstaller: sys.argv[0] is already the exe path.
-            target = sys.argv if len(sys.argv) > 1 else [sys.executable]
-            os.execv(sys.executable, target)
-        else:
-            os.execv(sys.executable, [sys.executable] + sys.argv)
-    except Exception:
-        try:
-            os.execl(sys.executable, sys.executable, *sys.argv)
-        except Exception:
-            pass
+    started with."""
+    from src.utils.restart import restart_app
+    restart_app()
 
 
 def _handle_crash(exc_type, exc_value, exc_tb):
@@ -487,13 +507,18 @@ def _handle_crash(exc_type, exc_value, exc_tb):
         _show_crash_dialog(summary, tb, exc_type, exc_value)
         return
     try:
-        _show_crash_dialog(summary, tb, exc_type, exc_value)
+        wants_restart = _show_crash_dialog(summary, tb, exc_type, exc_value)
     except Exception:
-        # Never let the crash handler itself crash the app.
+        # Never let the crash handler itself crash the app. Do NOT restart:
+        # a crash before the window exists would loop dialog -> execv forever.
+        # Returning lets the interpreter exit normally; the user relaunches.
         print(f"CRASH: {summary}\n{tb}", file=sys.stderr)
-        _restart_app()
         return
-    _restart_app()
+    if wants_restart:
+        _restart_app()
+    # Anything else: the dialog is dismissed and the uncaught exception lets
+    # the process exit normally (excepthook) or the event loop keeps running
+    # (notify-guard path) — a startup crash can no longer loop forever.
 
 
 def _excepthook(exc_type, exc_value, exc_tb):
@@ -579,7 +604,7 @@ def _detect_desktop() -> str:
 def print_startup_banner() -> None:
     """Print a startup info banner to the terminal."""
     try:
-        from src.version import App_Version, App_Build
+        from src.version import App_Build, App_Version
         version_str = str(App_Version)
         beta_build = int(App_Build)
     except Exception:
@@ -616,6 +641,7 @@ def _install_faulthandler():
     captures whatever stack is left so the bug can be diagnosed."""
     try:
         import faulthandler
+
         from src.controllers.nugget_logger import get_log_dir
         dump_path = os.path.join(get_log_dir(), "nugget_crash_backtrace.log")
         dump_file = open(dump_path, "ab", buffering=0)

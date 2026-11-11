@@ -4,7 +4,7 @@ import os
 import sys
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QTranslator, QLibraryInfo, QLocale, QSettings
+from PySide6.QtCore import QLibraryInfo, QLocale, QSettings, QTranslator
 from PySide6.QtWidgets import QApplication
 
 if TYPE_CHECKING:
@@ -36,7 +36,10 @@ class Translator:
     def set_default_locale(self, code: str):
         QLocale.setDefault(QLocale(code))
     def set_new_language(self, code: str, restart: bool = False):
-        from src.controllers.live_translation import collect_translatable_ui, apply_translatable_ui
+        from src.controllers.live_translation import (
+            apply_translatable_ui,
+            collect_translatable_ui,
+        )
         snapshot = collect_translatable_ui(self.app, self._disk_translations_path(), QLocale().name())
         if not code:
             self.settings.remove("locale_code")
@@ -51,7 +54,8 @@ class Translator:
         self.app.setLayoutDirection(QLocale().textDirection())
         apply_translatable_ui(snapshot)
         if restart:
-            os.execl(sys.executable, sys.executable, *sys.argv)
+            from src.utils.restart import restart_app
+            restart_app()
 
     def load_translations(self):
         for previous in self._installed_translators:
