@@ -358,11 +358,17 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo apt-get update
           # libdbus-1-dev: isideload's keyring backend (dbus-secret-service)
           # links the system D-Bus on Linux; without its headers and dbus-1.pc
           # the libdbus-sys build script aborts the engine build.
-          sudo apt-get install -y libssl-dev pkg-config libdbus-1-dev
+          for attempt in 1 2 3; do
+            if sudo apt-get update && \
+               sudo apt-get install -y libssl-dev pkg-config libdbus-1-dev; then
+              break
+            fi
+            echo "::warning::apt-get failed (attempt $attempt/3) - retrying in 30s"
+            sleep 30
+          done
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
