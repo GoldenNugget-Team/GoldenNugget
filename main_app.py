@@ -5,13 +5,13 @@ __lazy_modules__ = (
     "traceback",
 )
 
-import sys
-import os
-import multiprocessing
-import runpy
-import warnings
-import traceback
 import logging
+import multiprocessing
+import os
+import runpy
+import sys
+import traceback
+import warnings
 
 # Add src/qt to path so resources_rc can be found
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src", "qt"))
@@ -22,10 +22,23 @@ warnings.filterwarnings("ignore")
 # Silence noisy Qt Wayland textinput logs (zwp_text_input_v3_leave spam)
 os.environ.setdefault("QT_LOGGING_RULES", "qt.qpa.wayland.textinput=false")
 
+# Windows: force the Schannel TLS backend BEFORE any Qt import. An unrelated
+# OpenSSL on PATH (e.g. C:\msys64\ucrt64\bin) otherwise gets resolved by Qt's
+# qopenssl backend and hard-fails with "entry point not found" over a hidden
+# window — the app looks empty.
+if sys.platform == 'win32':
+    os.environ.setdefault('QT_TLS_BACKEND', 'schannel')
+
+# Force-load the correct OpenSSL early: the first HTTPS request on a machine
+# with no phone connected must not be the one that loads the TLS stack.
+if sys.platform == 'win32':
+    import ssl
+    _ = ssl.OPENSSL_VERSION
+
 from PySide6.QtCore import QCoreApplication
 
-from src.gui.logger import setup_logging, get_logger
-from src.exceptions.crash_handler import install_crash_handler, CrashHandlerApp
+from src.exceptions.crash_handler import CrashHandlerApp, install_crash_handler
+from src.gui.logger import get_logger, setup_logging
 
 # Install the global crash handler as early as possible so any uncaught
 # exception during startup is also captured instead of silently killing the app.
@@ -240,7 +253,7 @@ def main() -> int:
     if app._startup_services._required_update_dialog is None:
         QTimer.singleShot(0, widget.run_first_launch_prompts)
 
-    from src.tweaks.tweaks import tweaks, TweakID
+    from src.tweaks.tweaks import TweakID, tweaks
     for arg in sys.argv:
         if arg.endswith('.tendies'):
             tweaks[TweakID.PosterBoard].add_tendie(arg)

@@ -28,8 +28,6 @@ included only when backup encryption is enabled — keychain payloads are
 encrypted at rest and iOS rejects them in an unencrypted backup.
 """
 
-from src.utils.filecopy import clone_or_copy
-
 import asyncio
 import os
 import shutil
@@ -45,19 +43,22 @@ from typing import Optional
 
 import pymobiledevice3.exceptions as _pm3_exc
 import pymobiledevice3.service_connection as _sc
-from pymobiledevice3.lockdown import LockdownClient
 from pymobiledevice3.exceptions import NotEnoughDiskSpaceError
+from pymobiledevice3.lockdown import LockdownClient
 from pymobiledevice3.services.lockdown_service import LockdownService
-from src.devicemanagement.progress_status import BackupStatus
-
 from pymobiledevice3.services.mobilebackup2 import (
-    Mobilebackup2Service, NP_LOCAL_AUTH_PRESENTED, NP_LOCAL_AUTH_DISMISSED,
+    NP_LOCAL_AUTH_DISMISSED,
+    NP_LOCAL_AUTH_PRESENTED,
+    Mobilebackup2Service,
 )
-
 from PySide6.QtCore import QCoreApplication
 
-from src.exceptions.nugget_exception import NuggetException, BackupStorageError, BackupDiskSpaceError
-from src.restore.preference_scope import is_preference_file, is_preference_parent, is_preference_upload
+from src.devicemanagement.progress_status import BackupStatus
+from src.exceptions.nugget_exception import (
+    BackupDiskSpaceError,
+    BackupStorageError,
+    NuggetException,
+)
 from src.restore.afc_media import (  # noqa: F401  (re-exported public API)
     AFC_MEDIA_TREES,
     afc_media_dir_for,
@@ -69,12 +70,18 @@ from src.restore.inject import (  # noqa: F401  (re-exported public API)
     _validate_sqlite_db,
     inject_files_into_backup,
 )
+from src.restore.preference_scope import (
+    is_preference_file,
+    is_preference_parent,
+    is_preference_upload,
+)
 from src.restore.protective_cache import (  # noqa: F401  (re-exported public API)
     CACHE_MEDIA_REFRESH_SECS,
     CACHE_PERSIST_MIN_GB,
     CACHE_REFRESH_SECS,
     ProtectiveBackupCache,
 )
+from src.utils.filecopy import clone_or_copy
 
 
 @dataclass
@@ -146,51 +153,21 @@ def check_disk_space(path: str = None, min_free_bytes: int = None) -> None:
         )
 
 
-async def _get_device_used_storage(lockdown_client) -> Optional[int]:
-    """Return the device's used data storage in bytes, or ``None`` if unreadable.
-
-    Queries the diagnostics relay's ``All`` report. ``TotalDataCapacity`` is the
-    total size of the data partition and ``TotalDataSpace`` is its free space, so
-    the difference is how much data a full device backup would carry. A full
-    backup mirrors roughly the used capacity, so this is the disk space a backup
-    needs to be written to the computer without exhausting it.
-    """
-    try:
-        from pymobiledevice3.services.diagnostics import DiagnosticsService
-        async with DiagnosticsService(lockdown_client) as diag:
-            report = await diag.info("All")
-        if not isinstance(report, dict):
-            return None
-        capacity = report.get("TotalDataCapacity")
-        free = report.get("TotalDataSpace")
-        if capacity is None or free is None:
-            nested = report.get("DiskUsage")
-            if isinstance(nested, dict):
-                capacity = nested.get("TotalDataCapacity", capacity)
-                free = nested.get("TotalDataSpace", free)
-        if capacity is None or free is None:
-            return None
-        used = int(capacity) - int(free)
-        return used if used > 0 else None
-    except Exception:
-        return None
-
-
 async def check_disk_space_for_backup(lockdown_client=None, path: str = None,
                                       min_free_bytes: int = None) -> int:
-    """Check free disk space before a device backup, sized to the device's data.
+    """Check free disk space before a device backup against the static floor.
 
-    The required free space is derived from the amount of data actually stored
-    on the device (a full backup mirrors used capacity), never below the
-    ``MIN_FREE_DISK_GB`` floor. If the device cannot be queried, the floor is
-    used. Returns the required free space in bytes that was enforced.
+    Only the small ``MIN_FREE_DISK_GB`` floor is enforced here — demanding the
+    device's whole used capacity reflected nothing: the protective backup is
+    selective (no AppDomain sandboxes) and photos ride the AFC channel, so a
+    256GB phone with 200GB of apps demanded more space than the real write
+    (tens of GB) needed. Real exhaustion stays covered by the honest
+    free-space reporting to the device and its own verdict (DLPurgeDiskSpace
+    → ErrorCode 105), which raises with concrete numbers.
+    Returns the enforced minimum in bytes.
     """
     if min_free_bytes is None:
         min_free_bytes = _min_free_disk_bytes()
-        if lockdown_client is not None:
-            used = await _get_device_used_storage(lockdown_client)
-            if used is not None:
-                min_free_bytes = max(min_free_bytes, used)
     check_disk_space(path=path, min_free_bytes=min_free_bytes)
     return min_free_bytes
 
@@ -201,20 +178,26 @@ _sc.DEFAULT_SSL_HANDSHAKE_TIMEOUT = 60
 
 # Resolve the executor through its defining module, including Python 3.15.
 from src.utils.async_disk import ensure_thread_executor
+
 ensure_thread_executor()
 
-from src.utils.log_util import log_info, log_warn, log_error, log_debug
-from .device_link_adapter import recv_timeout_secs
+from src.utils.log_util import log_debug, log_error, log_info, log_warn
 
 # --- DeviceLink protocol constants (from pymobiledevice3.services.device_link) ---
-
 # Backup metadata files that must always be preserved (never filtered out)
 from .backup_store import (
-    _BACKUP_METADATA_FILES, WORKING_COPY_PREFIX, _copy_backup_tree,
-    make_protective_working_copy, make_cache_snapshot, _retire_backup_tree,
-    discard_protective_working_copy, regenerate_cache_from_snapshot,
-    _payload_inventory, _remove_orphan_payloads,
+    _BACKUP_METADATA_FILES,
+    WORKING_COPY_PREFIX,
+    _copy_backup_tree,
+    _payload_inventory,
+    _remove_orphan_payloads,
+    _retire_backup_tree,
+    discard_protective_working_copy,
+    make_cache_snapshot,
+    make_protective_working_copy,
+    regenerate_cache_from_snapshot,
 )
+from .device_link_adapter import recv_timeout_secs
 
 # Domains whose files should be kept in the protective backup.
 PROTECTIVE_DOMAINS = frozenset({
@@ -573,6 +556,7 @@ def _install_encrypted_manifest_prune_shim():
     upstream simply loses its Windows-only failure mode.
     """
     import tempfile
+
     from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service
 
     def prune_backup_manifest(cls, device_directory, filter_callback, password=""):
@@ -763,7 +747,9 @@ class ProtectiveBackupService(Mobilebackup2Service):
         that format provably yields the PosterBoard DB in full backups.
         """
         try:
-            from pymobiledevice3.services.installation_proxy import InstallationProxyService
+            from pymobiledevice3.services.installation_proxy import (
+                InstallationProxyService,
+            )
             from pymobiledevice3.services.springboard import SpringBoardServicesService
             bundle_id = POSTERBOARD_DB_DOMAIN.removeprefix("AppDomain-")
             async with InstallationProxyService(lockdown=self.lockdown) as ip:
@@ -796,7 +782,7 @@ class ProtectiveBackupService(Mobilebackup2Service):
 async def perform_protective_backup(
     lockdown_client: LockdownClient,
     backup_root: str,
-    progress_callback=None,
+    progress_callback=None,  # pyright: ignore[reportRedeclaration] (a nested closure uses the same name below)
     include_photos: bool = True,
     include_posterboard: bool = False,
     include_keychain: Optional[bool] = None,

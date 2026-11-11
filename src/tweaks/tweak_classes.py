@@ -1,7 +1,8 @@
-from typing import Any, Optional, Callable
-from .store import default_changes
+import plistlib
+from typing import Any, Callable, Optional
 
 from .basic_plist_locations import FileLocation
+from .store import default_changes
 
 _legacy_unsubscribe = None
 
@@ -59,7 +60,9 @@ class NullifyFileTweak(Tweak):
 
     def apply_tweak(self, other_tweaks: dict):
         if self.enabled:
-            other_tweaks[self.file_location] = b""
+            # A valid but empty plist, never zero bytes: a truncated plist is
+            # a boot-loop input on iOS 26.2+ (SpringBoard crashes at boot).
+            other_tweaks[self.file_location] = plistlib.dumps({})
     
 
 class BasicPlistTweak(Tweak):

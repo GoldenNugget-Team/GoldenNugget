@@ -13,14 +13,14 @@ import json
 import os
 import ssl
 import time
-from typing import Optional
-
 import urllib.request
+from typing import Optional
 
 from PySide6.QtCore import QCoreApplication, QStandardPaths
 
+from src.gui.logger import get_logger
+from src.tweaks.registry import SECTION_FEATURES, SPECS_BY_SECTION
 from src.version import App_Version as _APP_VERSION
-from src.tweaks.registry import SPECS_BY_SECTION, SECTION_FEATURES
 
 RULES_URL = ("https://raw.githubusercontent.com/GoldenNugget-Team/"
              "GoldenNugget/main/hotload_rules.json")
@@ -144,12 +144,16 @@ class HotLoad:
                 return False
             parsed["_fetched_at"] = int(time.time())
             path = _rules_path()
-            with open(path, "w", encoding="utf-8") as f:
+            # Atomic: a crash or full disk mid-write must not leave a truncated
+            # JSON that silently kills every safety rule on the next launch.
+            tmp_path = path.with_name(path.name + ".part")
+            with open(tmp_path, "w", encoding="utf-8") as f:
                 json.dump(parsed, f, ensure_ascii=False, indent=2)
+            os.replace(tmp_path, path)
             self._rules = parsed
             return True
         except Exception as e:
-            print(f"[HotLoad] update failed: {e}")
+            get_logger('hotload').warning("HotLoad: rules update failed: %s", e)
             return False
 
     # --- matching --------------------------------------------------------

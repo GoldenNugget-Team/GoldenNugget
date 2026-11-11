@@ -16,24 +16,25 @@ __lazy_modules__ = (
     "sqlite3",
 )
 
-from contextlib import closing
 import hashlib
 import logging
 import os
 import plistlib
 import sqlite3
 import time
+from contextlib import closing
 from contextvars import ContextVar
 from pathlib import Path
 from typing import Optional
 
-from src.utils.payload import install_payload
-from .mbfile import MBFileArchive, InvalidMBFile
-from src.exceptions.nugget_exception import NuggetException
-
 from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service
-from .preference_scope import is_preference_file as _is_preference_target
+
+from src.exceptions.nugget_exception import NuggetException
+from src.utils.payload import install_payload
 from src.utils.preference_reset import PreferenceKeyReset
+
+from .mbfile import InvalidMBFile, MBFileArchive
+from .preference_scope import is_preference_file as _is_preference_target
 
 _logger = logging.getLogger("GoldenNugget.inject")
 preference_delivery_warnings = ContextVar('preference_delivery_warnings', default=None)
@@ -56,6 +57,26 @@ def _can_skip_missing_preference_baseline(domain, path):
 
 class FeatureFlagBaselineUnavailable(ValueError):
     pass
+
+
+def _managed_baseline_is_replaceable(domain):
+    """True when an unreadable/missing managed baseline may be replaced.
+
+    Managed-preference files carry pushed policy, not user data: the tweak
+    payload IS the whole intended file for that domain, and even the reset
+    rewrites them wholesale (``plistlib.dumps({})``). That is exactly what
+    the pre-merge sparse-restore delivery did for these files, so when the
+    captured baseline cannot be parsed (issue #85: a device upgraded from an
+    iOS 26 tweaked state to iOS 27 still carries managed files the merge can
+    no longer read) degrading to whole-payload delivery beats a permanent
+    apply abort -- re-capturing the backup deterministically yields the same
+    unreadable payload, so "retry" never recovers.
+    """
+    return domain == 'ManagedPreferencesDomain'
+
+
+# A preference file is a small plist; anything bigger is a damaged manifest row.
+_MAX_PREFERENCE_PAYLOAD_BYTES = 64 * 1024 * 1024
 
 
 def _merge_preference_payload(original, patch, *, feature_flags=False):
@@ -223,15 +244,49 @@ def _prepare_preference_merges(conn, device_dir, files):
             payload = device_dir / file_id[:2] / file_id
             if not payload.is_file():
                 payload = device_dir / file_id
-            if not payload.is_file():
-                missing.append((domain, path, 'missing payload'))
+            merged = None
+            payload_error = None
+            if payload.is_file():
+                try:
+                    # Preference files are a few KB. A manifest row pointing at
+                    # something enormous is a damaged backup, not a preference:
+                    # refuse to load it whole instead of spiking memory.
+                    if payload.stat().st_size > _MAX_PREFERENCE_PAYLOAD_BYTES:
+                        raise ValueError('preference payload is implausibly large')
+                    merged = _merge_preference_payload(
+                        payload.read_bytes(), contents,
+                        feature_flags=domain == 'SystemPreferencesDomain' and path == 'FeatureFlags/Global.plist')
+                except (OSError, ValueError, TypeError, plistlib.InvalidFileException) as error:
+                    try:
+                        size = payload.stat().st_size
+                    except OSError:
+                        size = '?'
+                    payload_error = (
+                        f'invalid or unreadable preference data ({type(error).__name__}, '
+                        f'{size} bytes)')
+            else:
+                payload_error = 'missing payload'
+            if merged is not None:
+                prepared.append((domain, path, merged, mode, owner, group))
                 continue
-            try:
-                contents = _merge_preference_payload(
-                    payload.read_bytes(), contents,
-                    feature_flags=domain == 'SystemPreferencesDomain' and path == 'FeatureFlags/Global.plist')
-            except (OSError, ValueError, TypeError, plistlib.InvalidFileException) as error:
-                missing.append((domain, path, f'invalid or unreadable preference data ({type(error).__name__})'))
+            if (payload_error is not None and _managed_baseline_is_replaceable(domain)
+                    and not isinstance(contents, PreferenceKeyReset)):
+                # A managed baseline we cannot read still holds pushed policy,
+                # not user data: deliver the tweak payload as the whole file
+                # instead of aborting (issue #85). Recorded like the
+                # missing-row path so the apply summary says the file was
+                # created from the tweak's keys only.
+                created = preference_baseline_creates.get()
+                if created is not None:
+                    created.append(f'{domain}/{path}')
+                _logger.warning(
+                    'Managed baseline for %s is unusable in this backup (%s); '
+                    'the tweak payload is delivered as the whole file',
+                    f'{domain}/{path}', payload_error)
+                prepared.append((domain, path, contents, mode, owner, group))
+                continue
+            if payload_error is not None:
+                missing.append((domain, path, payload_error))
                 continue
         prepared.append((domain, path, contents, mode, owner, group))
     if missing:
