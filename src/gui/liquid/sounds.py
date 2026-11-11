@@ -2,9 +2,15 @@ import logging
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QUrl, Slot, QEvent, Qt
+from PySide6.QtCore import QEvent, QObject, Qt, QUrl, Slot
 from PySide6.QtGui import QCursor
-from PySide6.QtWidgets import QApplication, QAbstractButton, QLineEdit, QComboBox, QAbstractSlider
+from PySide6.QtWidgets import (
+    QAbstractButton,
+    QAbstractSlider,
+    QApplication,
+    QComboBox,
+    QLineEdit,
+)
 
 
 class UiSounds(QObject):
@@ -17,7 +23,7 @@ class UiSounds(QObject):
         self._hover_click_position=None
         self._native=False
         try:
-            from PySide6.QtMultimedia import QSoundEffect
+            from PySide6.QtMultimedia import QSoundEffect  # pyright: ignore[reportMissingImports] (Essentials-only installs lack it; the except handles that)
         except ImportError:
             try:
                 if sys.platform!='darwin':
@@ -32,7 +38,7 @@ class UiSounds(QObject):
             path=str(directory/(name+'.wav'))
             volume=.08 if name=='ui_hover' else .45 if name=='unfavorite' else .35
             if self._native:
-                effect=NSSound.alloc().initWithContentsOfFile_byReference_(path,False)
+                effect=NSSound.alloc().initWithContentsOfFile_byReference_(path,False)  # pyright: ignore[reportUndefinedVariable] (set on the darwin-only path above)
                 if effect is None:
                     continue
                 effect.setVolume_(volume)

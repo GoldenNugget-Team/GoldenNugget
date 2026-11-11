@@ -6,19 +6,22 @@ the apply/reset flow. Each mixin only reaches ``self`` attributes that
 NavigationMixin, ApplyMixin)``.
 """
 
-from typing import Optional
 import os
 import time
+from typing import Optional
 
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtCore import QCoreApplication
 
 from src.controllers.video_handler import set_ignore_frame_limit
 from src.devicemanagement.constants import Version
-from src.gui.dialogs.reset_dialog import ResetDialog
-from src.gui.logger import get_logger
+from src.devicemanagement.device_capabilities import device_os_name, device_text
 from src.gui.autosave import AutosaveMixin
-from src.devicemanagement.device_capabilities import device_text, device_os_name
+from src.gui.dialogs.reset_dialog import ResetDialog
+from src.gui.ios.theme_manager import ThemeManager
+from src.gui.ios.tweaks import _hidden_feature_names
+from src.gui.logger import get_logger
+from src.gui.pages.pages_list import Page
 from src.gui.theme import ColorThemeManager, theme_icon
 from src.gui.thread_workers.apply_worker import (
     ApplyAlertMessage,
@@ -28,11 +31,8 @@ from src.gui.thread_workers.apply_worker import (
     set_sudo_pwd,
 )
 from src.gui.version import App_Build, App_Version
-from src.gui.ios.theme_manager import ThemeManager
-from src.gui.ios.tweaks import _hidden_feature_names
-from src.gui.pages.pages_list import Page
 from src.tweaks.tweak_classes import set_tweak_change_callback
-from src.tweaks.tweaks import tweaks, TweakID
+from src.tweaks.tweaks import TweakID, tweaks
 
 
 class DeviceBarMixin:
@@ -308,6 +308,7 @@ class DeviceBarMixin:
         if alert is None:
             return
         import logging
+
         from src.exceptions.device_errors import is_connection_error
         if self._device_reconnect_expected() and is_connection_error(alert.exc_value):
             logging.getLogger('GoldenNugget.refresh').debug(
@@ -318,7 +319,11 @@ class DeviceBarMixin:
             return
         self._device_reconnect_until = 0
         self._last_connection_error = alert.txt
-        from pymobiledevice3.exceptions import PasswordRequiredError, PairingDialogResponsePendingError, UserDeniedPairingError
+        from pymobiledevice3.exceptions import (
+            PairingDialogResponsePendingError,
+            PasswordRequiredError,
+            UserDeniedPairingError,
+        )
         error = getattr(alert, "exc_value", None)
         if isinstance(error, PasswordRequiredError):
             self._connection_action = "unlock"
@@ -576,7 +581,9 @@ class DeviceBarMixin:
             self._posterboard_selection_workers = {}
         if udid in self._posterboard_selection_workers:
             return
-        from src.gui.thread_workers.posterboard_selection import PosterBoardSelectionWorker
+        from src.gui.thread_workers.posterboard_selection import (
+            PosterBoardSelectionWorker,
+        )
         worker = PosterBoardSelectionWorker(udid, self)
         self._posterboard_selection_workers[udid] = worker
         worker.ready.connect(self._posterboard_selection_ready)
@@ -925,7 +932,9 @@ class NavigationMixin:
 
     def show_ios_page(self, index: int):
         if index == 11:
-            from src.devicemanagement.passcode_support import current_passcode_theme_reason
+            from src.devicemanagement.passcode_support import (
+                current_passcode_theme_reason,
+            )
             if current_passcode_theme_reason(self.device_manager):
                 self.ios_home.update_passcode_support()
                 return
@@ -1172,7 +1181,7 @@ class ApplyMixin:
         dialog, ``total`` is the summed change count (0 = nothing to do).
         """
         from src.tweaks.registry import SPECS_BY_SECTION, Section
-        from src.tweaks.tweak_loader import load_plist_tweaks, load_daemons
+        from src.tweaks.tweak_loader import load_daemons, load_plist_tweaks
         load_plist_tweaks()
         load_daemons()
 
@@ -1310,7 +1319,7 @@ class ApplyMixin:
             from src.controllers.apply_preview import load_preview
             from src.controllers.hotload import HotLoad
             from src.controllers.preset_manager import PresetManager
-            from src.controllers.risk_assessment import assess, apply_factors
+            from src.controllers.risk_assessment import apply_factors, assess
             from src.controllers.tweak_conflicts import current_conflicts
             manager = self.device_manager
             version = manager.get_current_device_version() or ""
@@ -1762,7 +1771,7 @@ class ApplyMixin:
             mbox.setWindowTitle(title)
             mbox.setIcon(QtWidgets.QMessageBox.Warning)
             mbox.setText(text)
-            abort_btn = mbox.addButton(
+            mbox.addButton(
                 QCoreApplication.tr("Abort"), QtWidgets.QMessageBox.RejectRole)
             resume_btn = mbox.addButton(
                 QCoreApplication.tr("Resume"), QtWidgets.QMessageBox.AcceptRole)

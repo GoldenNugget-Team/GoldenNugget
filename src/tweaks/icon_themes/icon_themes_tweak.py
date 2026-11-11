@@ -12,19 +12,19 @@ supported version.
 """
 
 import os
-from collections import OrderedDict
 import plistlib
 import shutil
 import tempfile
 import zipfile
+from collections import OrderedDict
 from shutil import copyfile
 
 from PySide6.QtCore import QCoreApplication, QStandardPaths
 
+from src.utils.file_to_restore import FileToRestore
+
 from ..tweak_classes import Tweak
 from .icon_theme import IconTheme
-
-from src.utils.file_to_restore import FileToRestore
 
 
 def persistent_themes_dir() -> str:
@@ -71,12 +71,12 @@ class IconThemesTweak(Tweak):
         return not self._theme_index
 
     @property
-    def themes(self):
+    def themes(self):  # pyright: ignore[reportRedeclaration]
         """Ordered snapshot; assign a sequence to replace the collection."""
         return list(self._theme_index.values())
 
     @themes.setter
-    def themes(self, themes):
+    def themes(self, themes):  # pyright: ignore[reportRedeclaration]
         self._theme_index = OrderedDict((theme.bundle_id, theme) for theme in themes)
 
     def add_theme(self, theme: IconTheme):

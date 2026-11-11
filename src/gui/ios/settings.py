@@ -1,31 +1,63 @@
-from src.devicemanagement.device_capabilities import device_os_name
-from PySide6.QtCore import Qt, QCoreApplication, QTimer, QPropertyAnimation, QEasingCurve, QSize
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea,
-    QLineEdit, QListWidget, QListWidgetItem, QMessageBox, QInputDialog,
-    QFileDialog, QDialog, QProgressDialog, QGraphicsOpacityEffect, QAbstractButton, QPushButton
-)
 import sys
-from src.gui.liquid.choice_editor import GlassComboBox as QComboBox
 from pathlib import Path
 
-from src.exceptions.nugget_exception import NuggetException
-from src.gui.widgets import (
-    IOSCard, IOSSectionHeader, IOSSwitch, IOSSettingsAction, IOSSearchField, IOSSearchEmpty, IOSCollapsibleSection,
+from PySide6.QtCore import (
+    QCoreApplication,
+    QEasingCurve,
+    QPropertyAnimation,
+    QSize,
+    Qt,
+    QTimer,
 )
-from src.gui.pages.main.settings import available_languages
-from src.controllers.video_handler import set_ignore_frame_limit
-from src.controllers.preset_manager import PresetManager
+from PySide6.QtWidgets import (
+    QAbstractButton,
+    QDialog,
+    QFileDialog,
+    QGraphicsOpacityEffect,
+    QHBoxLayout,
+    QInputDialog,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QProgressDialog,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
+
 from src.controllers.hotload import HotLoad
-from src.tweaks.tweaks import tweaks, TweakID
-from src.gui.thread_workers.apply_worker import ResetPairingThread
+from src.controllers.preset_manager import PresetManager
+from src.controllers.video_handler import set_ignore_frame_limit
+from src.devicemanagement.device_capabilities import device_os_name
+from src.exceptions.nugget_exception import NuggetException
 from src.gui.dialogs.confirmation import ask_confirmation
-from src.gui.theme import ColorThemeManager, AccentPicker, t, theme_icon
 from src.gui.ios.preset_menu import (
-    load_preset_flow, save_preset_flow, delete_preset_flow,
-    export_preset_flow, partial_export_preset_flow, import_preset_flow,
-    rollback_preset_flow, preset_subtitle,
+    delete_preset_flow,
+    export_preset_flow,
+    import_preset_flow,
+    load_preset_flow,
+    partial_export_preset_flow,
+    preset_subtitle,
+    rollback_preset_flow,
+    save_preset_flow,
 )
+from src.gui.liquid.choice_editor import GlassComboBox as QComboBox
+from src.gui.pages.main.settings import available_languages
+from src.gui.theme import AccentPicker, ColorThemeManager, t, theme_icon
+from src.gui.thread_workers.apply_worker import ResetPairingThread
+from src.gui.widgets import (
+    IOSCard,
+    IOSCollapsibleSection,
+    IOSSearchEmpty,
+    IOSSearchField,
+    IOSSectionHeader,
+    IOSSettingsAction,
+    IOSSwitch,
+)
+from src.tweaks.tweaks import TweakID, tweaks
 
 
 class IOSSettingsPage(QWidget):
@@ -350,10 +382,6 @@ class IOSSettingsPage(QWidget):
             matches += visible_rows
         self.search_empty.setVisible(searching and matches == 0)
 
-    def _style_label(self, label, key):
-        label.setProperty('theme_style_key', key)
-        label.setStyleSheet(t(key))
-
 
     def _retheme(self):
         c = self._tm.colors
@@ -435,7 +463,6 @@ class IOSSettingsPage(QWidget):
                 content.rebuild()
 
     def _make_switch(self, title: str, checked: bool, on_toggled) -> IOSSwitch:
-        c = self._tm.colors
         card = IOSCard()
         row = QHBoxLayout(card)
         row.setContentsMargins(16, 12, 16, 12)
@@ -625,7 +652,6 @@ class IOSSettingsPage(QWidget):
             return QCoreApplication.translate("Nugget", "Default (system drive)")
 
     def _make_backup_location_row(self):
-        c = self._tm.colors
         card = IOSCard()
         row = QVBoxLayout(card)
         row.setContentsMargins(16, 12, 16, 12)
@@ -738,7 +764,6 @@ class IOSSettingsPage(QWidget):
         self.window._sync_settings()
 
     def _make_language_row(self):
-        c = self._tm.colors
         card = IOSCard()
         row = QHBoxLayout(card)
         row.setContentsMargins(16, 12, 16, 12)
@@ -782,7 +807,6 @@ class IOSSettingsPage(QWidget):
                     del blocker
 
     def _make_pb_setup_section(self):
-        c = self._tm.colors
         self.content_layout.addWidget(IOSSectionHeader(
             QCoreApplication.translate("Nugget", "PosterBoard Database")
         ))
@@ -827,7 +851,6 @@ class IOSSettingsPage(QWidget):
         self._refresh_saved_ids()
 
     def _make_label_row(self, title: str, value: str):
-        c = self._tm.colors
         card = IOSCard()
         row = QHBoxLayout(card)
         row.setContentsMargins(16, 12, 16, 12)
@@ -893,6 +916,7 @@ class IOSSettingsPage(QWidget):
 
     def _refresh_history(self, *_args):
         from datetime import datetime
+
         from src.controllers.apply_history import load_history
         self._history_anims.clear()
         self.history_list.clear()
@@ -1092,7 +1116,6 @@ class IOSSettingsPage(QWidget):
     # ---------- presets ----------
 
     def _make_presets_section(self):
-        c = self._tm.colors
         self.content_layout.addWidget(IOSSectionHeader(
             QCoreApplication.translate("Nugget", "Presets")
         ))
