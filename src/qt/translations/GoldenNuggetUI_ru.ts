@@ -1732,10 +1732,6 @@
             <translation>Обновить список устройств</translation>
         </message>
         <message>
-            <source>Report a Bug</source>
-            <translation>Сообщить об ошибке</translation>
-        </message>
-        <message>
             <source>Reset</source>
             <translation>Сбросить</translation>
         </message>

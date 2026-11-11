@@ -51,7 +51,7 @@ from pymobiledevice3.exceptions import NotEnoughDiskSpaceError
 
 logger = logging.getLogger("GoldenNugget.crash")
 
-ISSUES_URL = "https://github.com/awesomenull-dev/GoldenNugget/issues/new"
+ISSUES_URL = "https://github.com/GoldenNugget-Team/GoldenNugget/issues/new"
 
 
 def _app_name() -> str:

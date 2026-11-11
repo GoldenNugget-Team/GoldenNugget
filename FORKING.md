@@ -24,7 +24,7 @@ not just a personal working copy for a PR), you **must**:
 
 1. **Credit the original author and project.**
    Your README (or equivalent entry point) must clearly state that your
-   project is a fork of **GoldenNugget by [awesomenull-dev](https://github.com/awesomenull-dev/GoldenNugget)**,
+   project is a fork of **GoldenNugget by [awesomenull-dev](https://github.com/GoldenNugget-Team/GoldenNugget)**,
    with a working link back to this repository. A "Forked from" badge on
    GitHub is not sufficient on its own if your README rewrites the project
    description without mentioning the origin.
@@ -64,7 +64,7 @@ and must be removed or replaced with your own if you fork and rebrand:
   alongside clear attribution per point 1.
 - **The Star History chart / badges pointing at this repository.** If you
   add a Star History chart to your fork, point it at *your* repository, not
-  `awesomenull-dev/GoldenNugget`.
+  `GoldenNugget-Team/GoldenNugget`.
 
 ## Not okay, regardless of license technicalities
 
