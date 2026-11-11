@@ -631,6 +631,33 @@ def test_skeleton_rename():
         os.path.join(wdir, planes[0], "index.xml"), encoding="utf-8").read())
 
 
+def test_inject_contents_follows_the_colored_layer():
+    print("\nSolid fill image is injected into the layer that owns the color")
+    # Repro from GoldenNugget #90: the last backgroundColor is on "colored",
+    # while the last self-closing layer is the empty one after it.
+    repro = (
+        '<CALayer id="root" backgroundColor="1 0 0">\n'
+        '  <sublayers>\n'
+        '    <CALayer name="colored" backgroundColor="0 0 1"/>\n'
+        '    <CALayer name="empty"/>\n'
+        '  </sublayers>\n'
+        '</CALayer>\n'
+    )
+    rewritten = pc._inject_contents(repro, "solid_background.png")
+    check("colored layer receives the image",
+          '<CALayer name="colored" backgroundColor="0 0 1">'
+          '<contents type="CGImage" src="assets/solid_background.png"/>'
+          '</CALayer>' in rewritten, rewritten)
+    check("empty layer is left alone", '<CALayer name="empty"/>' in rewritten, rewritten)
+    check("root layer is not given that image",
+          'id="root" backgroundColor="1 0 0"><contents' not in rewritten)
+    single = '<CALayer backgroundColor="0 0 1"/>'
+    check("single self-closing layer still expands in place",
+          pc._inject_contents(single, "solid.png") ==
+          '<CALayer backgroundColor="0 0 1">'
+          '<contents type="CGImage" src="assets/solid.png"/></CALayer>')
+
+
 def test_helpers():
     print("\nHelpers")
     check("parse screen", pc.parse_logical_screen_class("393w-852h@3x~iphone") == (393, 852, 3))
@@ -648,6 +675,7 @@ try:
     test_flow_oversized()
     test_root_id_rewritten_without_breaking_states()
     test_color_only_background_gets_image()
+    test_inject_contents_follows_the_colored_layer()
     test_undefined_units_index_not_zoomed()
     test_legacy_families()
     test_flatten_legacy_plane()
