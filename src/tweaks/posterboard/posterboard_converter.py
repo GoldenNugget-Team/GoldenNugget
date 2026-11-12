@@ -362,6 +362,25 @@ def _rgb_from_components(value: str) -> "tuple[int, int, int] | None":
     return tuple(int(round(channel * 255)) for channel in channels)
 
 
+def _chosen_background_match(text: str):
+    """The ``backgroundColor`` ``_solid_background_color`` paints, as a match.
+
+    Attribute matches are considered first, then ``<backgroundColor value>``
+    elements, and the last parsable one wins — the same order
+    ``_solid_background_color`` has always used. Returning the match (not just
+    the RGB) lets injection land on that layer instead of a different one.
+    """
+    chosen = None
+    for pattern in (
+        r'backgroundColor="([^"]+)"',
+        r'<backgroundColor\b[^>]*\bvalue="([^"]+)"',
+    ):
+        for match in re.finditer(pattern, text):
+            if _rgb_from_components(match.group(1)):
+                chosen = match
+    return chosen
+
+
 def _solid_background_color(text: str) -> "tuple[int, int, int] | None":
     """The topmost opaque solid color in a plane's CAML, if any.
 
@@ -370,31 +389,69 @@ def _solid_background_color(text: str) -> "tuple[int, int, int] | None":
     opacity 0. Iterate all matches and keep the last one (later in document
     order = visually on top).
     """
-    last = None
-    for match in re.finditer(r'backgroundColor="([^"]+)"', text):
-        rgb = _rgb_from_components(match.group(1))
-        if rgb:
-            last = rgb
-    for match in re.finditer(r'<backgroundColor\b[^>]*\bvalue="([^"]+)"', text):
-        rgb = _rgb_from_components(match.group(1))
-        if rgb:
-            last = rgb
-    return last
+    match = _chosen_background_match(text)
+    if match is None:
+        return None
+    return _rgb_from_components(match.group(1))
 
 
-_SELF_CLOSING_LAYER_RE = re.compile(r"<CALayer\b[^>]*/>")
+_LAYER_TAG_RE = re.compile(r"<(/?)CALayer\b([^>]*?)(/?)>")
+
+
+def _contents_tag(image: str) -> str:
+    return (f'<contents type="CGImage" '
+            f'src="assets/{_xml_attr(image)}"/>')
+
+
+def _expand_self_closing(text: str, match, contents: str) -> str:
+    head = match.group(0)[:-2]  # drop the trailing "/>"
+    injected = f"{head}>{contents}</CALayer>"
+    return text[:match.start()] + injected + text[match.end():]
 
 
 def _inject_contents(text: str, image: str) -> str:
-    """Give the last empty sublayer a real CGImage, leaving the CAML intact."""
-    matches = list(_SELF_CLOSING_LAYER_RE.finditer(text))
-    if not matches:
+    """Give the layer that holds the chosen fill a real CGImage.
+
+    The color and the tag used to be chosen independently: the color was the
+    last ``backgroundColor``, while the image always went into the last
+    self-closing ``<CALayer/>``. A later empty layer then received the fill
+    image and the colored layer stayed empty. A document with one self-closing
+    layer is unchanged.
+    """
+    contents = _contents_tag(image)
+    chosen = _chosen_background_match(text)
+    if chosen is None:
+        matches = [match for match in _LAYER_TAG_RE.finditer(text)
+                   if not match.group(1) and match.group(3) == "/"]
+        if not matches:
+            return text
+        return _expand_self_closing(text, matches[-1], contents)
+
+    for match in _LAYER_TAG_RE.finditer(text):
+        if match.group(1):
+            continue
+        if match.start() <= chosen.start() < match.end():
+            if match.group(3) == "/":
+                return _expand_self_closing(text, match, contents)
+            return text[:match.end()] + contents + text[match.end():]
+
+    # A ``<backgroundColor>`` element sits inside its layer, after the open tag.
+    owner = None
+    stack = []
+    for match in _LAYER_TAG_RE.finditer(text):
+        if match.start() > chosen.start():
+            break
+        if match.group(1):
+            if stack:
+                stack.pop()
+            continue
+        if match.group(3) == "/":
+            continue
+        stack.append(match)
+        owner = match
+    if owner is None:
         return text
-    match = matches[-1]
-    head = match.group(0)[:-2]  # drop the trailing "/>"
-    injected = (f'{head}><contents type="CGImage" '
-                f'src="assets/{_xml_attr(image)}"/></CALayer>')
-    return text[:match.start()] + injected + text[match.end():]
+    return text[:owner.end()] + contents + text[owner.end():]
 
 
 def ensure_background_image(plane_dir: str, role: str,
