@@ -182,16 +182,16 @@ class PageLoadingSlot(QtWidgets.QWidget):
         QtCore.QTimer.singleShot(0, self._play_intro)
 
     def _play_intro(self):
-        """Fade the loading content in and let it settle upward.
+        """Let the loading content settle upward (no opacity effect: one that
+        sits over a 40 ms-updating spinner re-renders its source pixmap
+        mid-paint on Windows and poisons the backing store with
+        "painter not active" spam).
 
         Uses the house ``animate`` helper, so the accessibility
         ``liquid_reduce_motion`` switch plays it instantly.
         """
         from awesomeui.liquid.motion import animate
         body = self._body
-        effect = QtWidgets.QGraphicsOpacityEffect(body)
-        body.setGraphicsEffect(effect)
-        animate(self, 0.0, 1.0, effect.setOpacity, duration=240)
         y = body.y()
         body.move(QtCore.QPoint(0, y + self.SLIDE_PX))
         animate(self, y + self.SLIDE_PX, y,
