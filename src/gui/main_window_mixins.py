@@ -1802,7 +1802,13 @@ class ApplyMixin(_WindowBase):
         self._cache_restore_in_progress = False
         self._operation_result_visible = True
         self.ios_home.set_operation_busy(False)
+        self.ios_home._hide_timer.stop()
+        self.ios_home.hide_process_status()
         self.ios_apply.set_busy(False)
+        # set_busy(False) alone leaves the progress card showing its last
+        # state (100% "Finishing this stage…" + the do-not-disconnect
+        # warning); set_status("") is what hides it, same as the apply flow.
+        self.ios_apply.set_status("")
         self.ios_apply.result_card.show_result(success, error_msg or (
             self.tr('Backup restored.') if success else self.tr('Restore did not complete.')),
             False, False, self.device_manager.get_current_device_model())

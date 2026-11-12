@@ -247,24 +247,14 @@ def _full_report(info: dict, summary: str, traceback_text: str) -> str:
 def _restart_app():
     """Relaunch GoldenNugget from the crash handler so the session keeps
     working after an unexpected error. Uses the same args the process was
-    started with; falls back to a plain re-exec if anything fails.
+    started with.
 
-    Main-thread only — ``os.execv`` replaces the process and running it from a
+    Main-thread only — the restart replaces the process and running it from a
     worker thread is undefined; :func:`_handle_crash` never calls this after a
     worker-thread crash.
     """
-    try:
-        if getattr(sys, "frozen", False):
-            # PyInstaller: sys.argv[0] is already the exe path.
-            target = sys.argv if len(sys.argv) > 1 else [sys.executable]
-            os.execv(sys.executable, target)
-        else:
-            os.execv(sys.executable, [sys.executable] + sys.argv)
-    except Exception:
-        try:
-            os.execl(sys.executable, sys.executable, *sys.argv)
-        except Exception:
-            pass
+    from src.utils.restart import restart_app
+    restart_app()
 
 
 def _show_crash_dialog(summary: str, traceback_text: str, exc_type=None, exc_value=None):
