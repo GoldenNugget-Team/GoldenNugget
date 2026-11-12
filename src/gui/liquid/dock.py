@@ -38,9 +38,10 @@ from awesomeui.liquid.controls import (
     paint_dock_glass,
 )
 from awesomeui.liquid.placement import panel_rect, reveal_panel
-from .controls import LiquidBrand
 from src.gui.ios.feature_icons import FEATURE_ICONS
 from src.gui.theme import ColorThemeManager, theme_icon, theme_pixmap
+
+from .controls import LiquidBrand
 
 ENTRIES = {
     'tweaks': ('Tweaks', 'toggles', 1),
