@@ -42,7 +42,11 @@ class IOSCatalogPage(QWidget):
             self._layout.removeWidget(self.panel)
             self.panel.deleteLater()
         self._device = (version, model)
-        self.panel = CatalogDialog(self.window.ios_presets.preset_manager, version, model, hotload,
+        # The window's shared PresetManager (MainWindow.__init__), not the
+        # presets page's: reaching into ``window.ios_presets`` here builds the
+        # whole page from inside a showEvent, and a failed lazy build used to
+        # leave the attribute permanently unresolvable (AttributeError crash).
+        self.panel = CatalogDialog(self.window.preset_manager, version, model, hotload,
                                    self, embedded=True)
         self.panel.on_change = self._on_change
         self._layout.addWidget(self.panel)
@@ -50,7 +54,9 @@ class IOSCatalogPage(QWidget):
         return self.panel
 
     def _on_change(self):
-        presets = getattr(self.window, "ios_presets", None)
+        # Probe form: a plain getattr here would BUILD the presets page from
+        # inside this callback (see MainWindow.built_page).
+        presets = self.window.built_page("ios_presets")
         if presets is not None and hasattr(presets, "refresh"):
             presets.refresh()
         if self.panel is not None and self.panel.added_templates:

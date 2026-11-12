@@ -108,6 +108,50 @@ class LazyPages(unittest.TestCase):
         # Merely registering the action must not build the page.
         self.assertIsNone(window.built_page("ios_posterboard"))
 
+    def test_failed_build_keeps_the_page_retryable(self):
+        # A failed first build used to pop the reservation and never restore
+        # it, so every later access died with a bare AttributeError
+        # ("'MainWindow' object has no attribute 'ios_presets'").
+        window = self.build_window()
+        from unittest.mock import Mock
+
+        def broken():
+            raise RuntimeError("simulated construction failure")
+
+        with patch.dict(window._lazy_pages, {"ios_presets": (12, broken)}):
+            with self.assertRaisesRegex(RuntimeError, "simulated construction failure"):
+                window.ios_presets
+            self.assertIn("ios_presets", window._lazy_pages,
+                          "a failed build must not lose the reservation")
+
+        from src.gui.ios.presets import IOSPresetsPage
+        with patch.dict(window._lazy_pages, {"ios_presets": (12, lambda: IOSPresetsPage(window))}):
+            page = window.ios_presets
+        self.assertIsNotNone(window.built_page("ios_presets"))
+        self.assertIs(window.ios_pages.widget(12), page)
+        self.assertIsInstance(page, IOSPresetsPage)
+
+    def test_catalog_panel_uses_the_shared_preset_manager(self):
+        # catalog.ensure_panel must not reach into window.ios_presets: from a
+        # showEvent that built a whole other page (and crashed when the lazy
+        # reservation was missing). The window already owns a PresetManager.
+        from unittest.mock import Mock
+
+        from PySide6.QtWidgets import QWidget
+
+        from src.gui.ios import catalog as catalog_module
+
+        window = self.build_window()
+        with patch.object(catalog_module, "CatalogDialog", Mock(return_value=QWidget())) as dialog, \
+                patch.object(catalog_module, "_device_context", return_value=("", "", False)):
+            page = catalog_module.IOSCatalogPage(window)
+            page.ensure_panel()
+        dialog.assert_called_once()
+        self.assertIs(dialog.call_args.args[0], window.preset_manager)
+        self.assertIsNone(window.built_page("ios_presets"),
+                          "ensure_panel must not build the presets page")
+        self.assertIsNone(window.built_page("ios_catalog"))
+
 
 if __name__ == '__main__':
     unittest.main()

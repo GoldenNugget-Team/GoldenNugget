@@ -501,15 +501,24 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
 
     def _build_lazy_page(self, name: str):
         """Construct a reserved page in place and return it."""
-        index, factory = self._lazy_pages.pop(name)
-        stack = self.ios_pages
-        current = stack.currentIndex()
-        page = factory()
-        placeholder = stack.widget(index)
-        stack.insertWidget(index, page)
-        if placeholder is not None:
-            stack.removeWidget(placeholder)
-            placeholder.deleteLater()
+        entry = self._lazy_pages.pop(name)
+        try:
+            stack = self.ios_pages
+            current = stack.currentIndex()
+            index, factory = entry
+            page = factory()
+            placeholder = stack.widget(index)
+            stack.insertWidget(index, page)
+            if placeholder is not None:
+                stack.removeWidget(placeholder)
+                placeholder.deleteLater()
+        except BaseException:
+            # The placeholder is untouched while the factory runs, so putting
+            # the reservation back keeps the page buildable: without this a
+            # failed first build removed the name forever and every later
+            # access died with a bare AttributeError (catalog.showEvent crash).
+            self._lazy_pages[name] = entry
+            raise
         # The slot is reused, so restoring the selection is only defensive.
         if stack.currentIndex() != current:
             stack.setCurrentIndex(current)
