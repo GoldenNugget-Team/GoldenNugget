@@ -522,6 +522,15 @@ class IOSHomePage(QWidget):
         self.update_device_info()
         self.refresh_preset_widget()
 
+        # Device Data otherwise only refreshes on device events, so the
+        # battery/storage snapshot sat frozen between plug/unplug cycles.
+        # Poll gently; _refresh_storage's own 15 s cache gate and one-worker-
+        # per-device guard keep this from stacking lockdown sessions.
+        self._info_poll_timer = QTimer(self)
+        self._info_poll_timer.setInterval(60_000)
+        self._info_poll_timer.timeout.connect(self._refresh_storage)
+        self._info_poll_timer.start()
+
     def set_top_inset(self, px: int) -> None:
         """Reserve room above the first row for the window's own buttons.
 

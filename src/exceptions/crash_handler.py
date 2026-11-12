@@ -76,6 +76,25 @@ def _app_name() -> str:
     return "GoldenNugget"
 
 
+#: First-party packages that live in git submodules; when one is missing from
+#: the checkout the crash report should say so instead of a bare ModuleNotFound.
+_SUBMODULE_PACKAGES = ("awesomeui", "i18n")
+
+
+def _missing_submodule(exc_value) -> Optional[str]:
+    """Name the submodule missing from the checkout, else None."""
+    name = getattr(exc_value, "name", "") or ""
+    msg = ""
+    try:
+        msg = str(exc_value)
+    except Exception:
+        pass
+    for package in _SUBMODULE_PACKAGES:
+        if name == package or package in msg.split("'"):
+            return package
+    return None
+
+
 def _format_error(exc_type, exc_value, exc_tb) -> str:
     """Return ``(short_summary, full_traceback)`` for the given exception."""
     try:
@@ -83,6 +102,9 @@ def _format_error(exc_type, exc_value, exc_tb) -> str:
     except Exception:
         summary = f"{exc_type.__name__}"
     tb = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
+    if issubclass(exc_type, ModuleNotFoundError) and _missing_submodule(exc_value):
+        tb = ("Hint: Did you forget to init submodules?\n"
+              "(git submodule update --init)\n\n" + tb)
     return summary, tb
 
 
@@ -143,6 +165,11 @@ def _classify(exc_type, exc_value) -> dict:
     elif name == "NuggetException" or module.startswith("src."):
         severity, fault, friendly = QT_TRANSLATE_NOOP("Nugget", "Serious"), QT_TRANSLATE_NOOP("Nugget", "The app (GoldenNugget)"), \
             QT_TRANSLATE_NOOP("Nugget", "GoldenNugget hit an internal problem.")
+    # --- Missing git submodule (app components not checked out) ---
+    elif (issubclass(exc_type, ModuleNotFoundError)
+          and _missing_submodule(exc_value) is not None):
+        severity, fault, friendly = QT_TRANSLATE_NOOP("Nugget", "Serious"), QT_TRANSLATE_NOOP("Nugget", "Your installation"), \
+            QT_TRANSLATE_NOOP("Nugget", "Did you forget to init submodules? Run: git submodule update --init")
     elif issubclass(exc_type, (TypeError, ValueError, KeyError, IndexError,
                                AttributeError, ImportError, NameError, OSError)):
         severity, fault, friendly = QT_TRANSLATE_NOOP("Nugget", "Serious"), QT_TRANSLATE_NOOP("Nugget", "The app (GoldenNugget)"), \
