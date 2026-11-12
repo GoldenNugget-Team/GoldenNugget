@@ -121,7 +121,6 @@ with GoldenNugget's rules, previews it on a virtual iPhone and submits it to the
     - Change primary and secondary carrier name
     - Change primary and secondary service badge
     - Change primary and secondary signal bars
-    - Not yet verified on physical hardware, only on the iOS 27 simulator
 - Springboard Options
   - Set Lock Screen Footnote
   - Set Lock Screen Idle Auto-Lock Time
