@@ -17,6 +17,7 @@ import asyncio
 import json
 import logging
 import os
+import shutil
 import stat as _stat
 import tempfile
 import time
@@ -208,6 +209,73 @@ class ProtectiveBackupCache:
                     "media_age_secs": max(0, now - media_created)}
         return None
 
+    def previous_root(self) -> Path:
+        """Snapshot of the last good master, kept until a restore finishes."""
+        return self.base / "previous"
+
+    def _previous_device_dir(self) -> Path:
+        return self.previous_root() / self.udid
+
+    def retain_previous_master(self) -> bool:
+        """Copy the valid master aside before an in-place refresh overwrites it.
+
+        An existing snapshot is left in place. Replacing it would delete the
+        last good copy before the restore that still needs it has finished.
+        Returns True when a snapshot is on disk afterwards.
+        """
+        if not (self.device_dir / "Manifest.db").is_file():
+            return False
+        dest = self._previous_device_dir()
+        if (dest / "Manifest.db").is_file():
+            _logger.info("Keeping the existing previous protective backup; "
+                         "a restore has not finished")
+            return True
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        from src.restore.backup_store import _copy_backup_tree
+        try:
+            _copy_backup_tree(self.device_dir, dest)
+            if self.info_path.is_file():
+                shutil.copy2(self.info_path, self.previous_root() / f"{self.udid}.json")
+        except BaseException:
+            shutil.rmtree(dest, ignore_errors=True)
+            raise
+        _logger.info(f"Retained the previous protective backup at {dest}")
+        return True
+
+    def rollback_master_from_previous(self) -> bool:
+        """Put the retained master's metadata back after a failed refresh.
+
+        Payload files are not rewritten here. The snapshot hardlinks them, and
+        a backup that truncated those same inodes would have damaged the copy
+        too. Metadata is a real copy, so a failed refresh can at least restore
+        the manifest the previous backup was verified with.
+        """
+        src = self._previous_device_dir()
+        if not (src / "Manifest.db").is_file():
+            return False
+        self.device_dir.mkdir(parents=True, exist_ok=True)
+        names = ("Manifest.db", "Manifest.plist", "Status.plist", "Info.plist",
+                 "Manifest.db-wal", "Manifest.db-shm", "backup_manifest.db")
+        for name in names:
+            src_file = src / name
+            dst_file = self.device_dir / name
+            if src_file.is_file():
+                shutil.copy2(src_file, dst_file)
+            else:
+                dst_file.unlink(missing_ok=True)
+        info_src = self.previous_root() / f"{self.udid}.json"
+        if info_src.is_file():
+            self.base.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(info_src, self.info_path)
+        _logger.info(f"Restored protective backup metadata from {src}")
+        return True
+
+    def _drop_marker(self) -> None:
+        try:
+            self.info_path.unlink(missing_ok=True)
+        except OSError as error:
+            _logger.warning(f"Could not invalidate the cache marker {self.info_path}: {error}")
+
     def _set_home(self, base: Path):
         self.base = base
         self.master_root = base / "master"
@@ -288,6 +356,10 @@ class ProtectiveBackupCache:
         valid = self.has_valid_master()
         mode = "incremental" if valid else "full"
         _logger.info(f"Protective backup cache: {mode} refresh for {self.udid}")
+        # The refresh writes into the master. Keep an independent copy of the
+        # current good master first, and do not replace one that is still
+        # waiting for its restore to finish.
+        retained = self.retain_previous_master() if valid else False
         try:
             is_encrypted = await perform_protective_backup(
                 lockdown_client, str(self.master_root), progress_callback,
@@ -300,16 +372,14 @@ class ProtectiveBackupCache:
         except BaseException:
             # A refresh that dies mid-transfer leaves the master's metadata in
             # an indeterminate state: a full run has already dropped
-            # Manifest.plist and reset Status.plist to "new", and the payload
-            # tree may hold half-drained placeholders. The next apply must not
-            # diff against that (it would silently reuse a truncated mirror).
-            # Dropping only the marker keeps every payload file on disk but
-            # makes locate() report "no usable master", so the next refresh
-            # rebuilds cleanly.
-            try:
-                self.info_path.unlink(missing_ok=True)
-            except OSError as error:
-                _logger.warning(f"Could not invalidate the cache marker {self.info_path}: {error}")
+            # Manifest.plist and reset Status.plist to "new". Put the retained
+            # copy's metadata back when we have one. Otherwise drop only the
+            # marker so the next refresh rebuilds instead of diffing a truncated
+            # mirror. Payload files stay on disk either way.
+            if retained and self.rollback_master_from_previous():
+                _logger.info("Failed refresh rolled back to the retained previous backup")
+            else:
+                self._drop_marker()
             raise
 
         self.base.mkdir(parents=True, exist_ok=True)
@@ -381,4 +451,14 @@ class ProtectiveBackupCache:
         with open(self.info_path, "w", encoding="utf-8") as f:
             json.dump(info, f)
         return str(self.media_dir)
+
+
+def discard_previous_master(master_root: str) -> None:
+    """Drop the pre-refresh snapshot once the restore that replaced it has finished."""
+    if not master_root:
+        return
+    previous = Path(master_root).parent / "previous"
+    if previous.exists():
+        shutil.rmtree(previous, ignore_errors=True)
+        _logger.info(f"Removed the retained previous backup after the restore finished ({previous})")
 

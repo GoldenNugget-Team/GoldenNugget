@@ -64,7 +64,7 @@ from .protective import (
     mark_restore_ok,
     new_protective_backup_dir,
     perform_protective_backup,
-    prune_protective_backups,
+    retire_previous_backups,
     verify_backup_payloads,
 )
 from .skip_setup27 import skip_all_setup27
@@ -358,6 +358,14 @@ def _start_mobilebackup2(lc: LockdownClient) -> Mobilebackup2Service:
     return Mobilebackup2Service(lc)
 
 
+# Bound for the pre-start wait inside _restore_once: while Find My is (or was
+# believed to be) on, pre-start transient/connection/lock failures are
+# swallowed and retried every ~5 s. Without this deadline a wedged device
+# (restore never starts) is retried forever, bypassing the outer
+# async_retry(18) bound because no exception ever escapes.
+_PHASE3_WAIT_WINDOW_SEC = 15 * 60
+
+
 async def _restore_protective_backup(lc: LockdownClient, backup_root: str,
                                       udid: str, reboot: bool,
                                       progress_callback, backup_password: str = "",
@@ -377,6 +385,9 @@ async def _restore_protective_backup(lc: LockdownClient, backup_root: str,
     from src.restore.find_my_wait import ApplyCancelledError, current_find_my_wait
     wait_control = current_find_my_wait.get()
     restore_started = False
+    # Set when the first failure is swallowed; ONE window covers the whole
+    # Phase 3 restore, across every outer async_retry attempt.
+    wait_started_at = None
 
     async def _perform_restore(client):
         nonlocal restore_started
@@ -402,6 +413,7 @@ async def _restore_protective_backup(lc: LockdownClient, backup_root: str,
             wait_control.finish()
 
     async def _restore_once():
+        nonlocal wait_started_at
         blocked_by_find_my = False
         while True:
             try:
@@ -417,6 +429,20 @@ async def _restore_protective_backup(lc: LockdownClient, backup_root: str,
             except Exception as error:
                 if wait_control is None:
                     raise
+                now = time.monotonic()
+                if wait_started_at is None:
+                    wait_started_at = now
+                elif now - wait_started_at >= _PHASE3_WAIT_WINDOW_SEC:
+                    # Window spent: surface the real failure instead of
+                    # retrying forever. A plain NuggetException is not
+                    # transient, so the outer async_retry stops immediately.
+                    wait_control.finish()
+                    raise NuggetException(QCoreApplication.tr(
+                        "The restore could not start within {0} minutes of "
+                        "retries (the device stayed locked, unreachable, or "
+                        "protected). Last error: {1}: {2}").format(
+                            _PHASE3_WAIT_WINDOW_SEC // 60,
+                            type(error).__name__, error)) from error
                 if is_find_my_error(error):
                     blocked_by_find_my = True
                     progress_callback(QCoreApplication.tr(
@@ -631,6 +657,24 @@ async def _push_afc_media(lc, media_dir, progress_callback, prompt_choice,
     log_info("Phase 5: Media restored over AFC")
 
 
+def _refuse_unverified_ios27_apply() -> None:
+    """Stop before the sparse restore when there is no verified backup.
+
+    On iOS 27 that restore can reboot the device into safe-state recovery,
+    which erases user data. There is nothing to put back if the selective
+    backup did not finish and pass verification.
+    """
+    raise NuggetException(
+        QCoreApplication.tr(
+            "The protective backup was not verified, so the apply was stopped "
+            "before the device was changed."),
+        detailed_text=QCoreApplication.tr(
+            "iOS 27 can erase the device while applying tweaks. GoldenNugget did not "
+            "start that step because there is no selective backup that finished and "
+            "was checked. Nothing on the iPhone was modified."),
+    )
+
+
 async def _restore_ios27(back: backup.Backup, reboot: bool,
                           lockdown_client: LockdownClient, progress_callback,
                           backup_password: str = "",
@@ -688,6 +732,8 @@ async def _restore_ios27(back: backup.Backup, reboot: bool,
     Phase 6 (98-100%): Reboot again so the skipped setup takes effect on the
                        next boot.
     """
+    if skip_protective_backup:
+        _refuse_unverified_ios27_apply()
     options = RestoreOptions(
         backup_password=backup_password, reboot=reboot, skip_setup=skip_setup, skip_protective_backup=skip_protective_backup,
         include_keychain=include_keychain, merge_phases=merge_phases,
@@ -815,14 +861,13 @@ async def _restore_ios27(back: backup.Backup, reboot: bool,
                 include_keychain=include_keychain,
                 include_afc_media=bool(media_dir),
             )
-            # Only retire the previous run once this one is solid (see the same
-            # after-success prune in device_manager._live_backup).
-            prune_protective_backups(udid)
+            # The previous run stays until this restore finishes. See
+            # retire_previous_backups on the success path below.
         backup_complete = not skip_protective_backup
-        # skip_protective_backup is always False here in practice (restore_files
-        # routes it to the raw-sparse branch first) — keep the counters defined
-        # so the log line below cannot hit an unbound name anyway.
-        removed_rows = removed_files = 0
+        if not backup_complete:
+            _refuse_unverified_ios27_apply()
+
+        removed_rows, removed_files = 0, 0
         max_inode_hint = None
 
         if backup_complete:
@@ -1126,6 +1171,17 @@ async def _restore_ios27(back: backup.Backup, reboot: bool,
         kept_at = protective_dir or (prepared_backup_root.root
                                      if prepared_backup_root else backup_root)
         log_info(f"Protective backup kept at: {kept_at}")
+        # The restore has finished, so the previous copy is no longer the only
+        # way back. Live runs keep the newest one; a cache master drops the
+        # pre-refresh snapshot taken in ProtectiveBackupCache.refresh.
+        if protective_dir:
+            removed = retire_previous_backups(udid, restore_finished=True)
+            log_info(f"Retired {removed} older live protective backup(s) "
+                     "after the restore finished")
+        if (using_cache and prepared_backup_root is not None
+                and getattr(prepared_backup_root, "master", False)):
+            from src.restore.protective_cache import discard_previous_master
+            discard_previous_master(prepared_backup_root.root)
     log_info(f"iOS 27 restore completed successfully in {time.monotonic() - started:.1f}s")
     progress_callback(100)
 
@@ -1321,6 +1377,8 @@ async def restore_files(files: list[FileToRestore], reboot: bool = False, lockdo
                  "security-recovery wipe)")
 
     if device_ver >= _V("27.0"):
+        if skip_protective_backup and os.environ.get("GOLDENNUGGET_NO_PROTECTIVE_BACKUP") != "1":
+            _refuse_unverified_ios27_apply()
         if skip_protective_backup:
             if stage_callback:
                 stage_callback("backup", "skipped")

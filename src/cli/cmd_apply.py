@@ -40,8 +40,8 @@ def add_parser(subp):
     parser.add_argument("--no-reboot", action="store_true",
                         help="don't auto-reboot the device after applying")
     parser.add_argument("--continue-anyway", action="store_true",
-                        help="continue without a protective backup when the "
-                             "device/computer is low on disk space (data risk)")
+                        help="answer later device prompts with resume; a failed "
+                             "protective backup still stops the apply")
     parser.add_argument('--dry-run', action='store_true', help='Show selections, paths, conflicts and local safety rules without applying')
     parser.add_argument('--ios-version', default=None, help='Offline target iOS version (requires --dry-run)')
     parser.add_argument('--model', default=None, help='Offline model identifier, e.g. iPhone16,1 (requires --dry-run --ios-version)')

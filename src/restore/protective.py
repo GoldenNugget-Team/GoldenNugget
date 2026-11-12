@@ -979,10 +979,10 @@ async def is_backup_encrypted(lockdown_client: LockdownClient) -> bool:
 # Disposable working copies carry a prefix of their own so the periodic sweep
 # in restore.py can never match a real backup.
 
-# Retention for finished live backups: how many to keep per device. A new run
-# replaces the previous one — old full copies just burn the very disk space an
-# apply needs (the fresh run is what actually gets restored), and a retained
-# run is pruned in place anyway once the restore consumes it.
+# Retention for finished live backups: how many to keep per device once the
+# restore that uses the new run has finished. Until then the previous run
+# stays on disk — Phase 2 can erase the device before Phase 3 puts the new
+# backup back.
 PROTECTIVE_KEEP_RUNS = 1
 
 
@@ -1111,6 +1111,19 @@ def prune_protective_backups(udid: str, keep: int = PROTECTIVE_KEEP_RUNS) -> int
             removed += 1
             log_info(f"Pruned old protective backup: {old}")
     return removed
+
+
+def retire_previous_backups(udid: str, *, restore_finished: bool) -> int:
+    """Drop older live backups only after the restore that uses the new one has finished.
+
+    A selective backup finishing is not enough. The sparse restore can erase
+    the device before the protective restore puts this backup back, so the
+    previous good run has to stay until that restore finishes.
+    """
+    if not restore_finished:
+        log_info("Keeping older protective backups; the restore has not finished")
+        return 0
+    return prune_protective_backups(udid)
 
 
 def make_restore_view(master_root: str, udid: str, view_root: str) -> str:
