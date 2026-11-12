@@ -7,10 +7,12 @@ import weakref
 from pathlib import Path
 from urllib.parse import urlparse
 
-from PySide6.QtCore import QObject, QStandardPaths, QTimer, QUrl
+from PySide6.QtCore import QObject, QTimer, QUrl
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWidgets import QApplication
 from shiboken6 import isValid
+
+from src.utils.paths import cache_dir
 
 GITHUB_NAME = re.compile(r'[A-Za-z0-9_-]+\Z')
 TRANSLATIONS_REPOSITORY = 'GoldenNugget-Team/gNugget-i18n'
@@ -44,7 +46,9 @@ class ContributorMedia(QObject):
     def __init__(self, parent):
         super().__init__(parent)
         self.manager = QNetworkAccessManager(self)
-        self.cache = Path(QStandardPaths.writableLocation(QStandardPaths.CacheLocation)) / 'contributors'
+        # Qt's CacheLocation still answers the pre-rename folder; the app owns
+        # its paths in src.utils.paths (see tools/test_storage.py).
+        self.cache = cache_dir() / 'contributors'
         self.pending = {}
 
     def fetch(self, url, callback):

@@ -157,7 +157,7 @@ SOURCES = {
 }
 
 
-# --- shared on-disk cache ({CacheLocation}/wallpaper_cache) ---
+# --- shared on-disk cache (cache_dir()/wallpaper_cache) ---
 # Written by the wallpaper downloader dialog; reused here so the Tendies
 # page can resolve real preview images for loaded .tendies files by name.
 

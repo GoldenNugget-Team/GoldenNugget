@@ -20,9 +20,8 @@ import hashlib
 import json
 import os
 import time
-from pathlib import Path
 
-from PySide6.QtCore import QCoreApplication, QSize, QStandardPaths, QThread, Signal
+from PySide6.QtCore import QCoreApplication, QSize, QThread, Signal
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
     QDialog,
@@ -38,6 +37,7 @@ from PySide6.QtWidgets import (
 
 from src.gui.theme import ColorThemeManager, t, theme_icon
 from src.gui.widgets import IOSSearchField
+from src.utils.paths import cache_dir
 
 
 class FetchAppsThread(QThread):
@@ -93,8 +93,7 @@ class FetchAppsThread(QThread):
         from pymobiledevice3.services.springboard import SpringBoardServicesService
 
         from src.devicemanagement.session import lockdown_session
-        base = QStandardPaths.writableLocation(QStandardPaths.CacheLocation)
-        cache = Path(base) / "AppIcons" / hashlib.sha256(self.udid.encode()).hexdigest()
+        cache = cache_dir() / "AppIcons" / hashlib.sha256(self.udid.encode()).hexdigest()
         try:
             cache.mkdir(parents=True, exist_ok=True)
         except OSError:

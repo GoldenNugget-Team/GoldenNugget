@@ -14,7 +14,7 @@ import os
 import tempfile
 from collections import deque
 
-from PySide6.QtCore import QCoreApplication, QStandardPaths, Qt, QTimer, QUrl
+from PySide6.QtCore import QCoreApplication, Qt, QTimer, QUrl
 from PySide6.QtGui import QPixmap
 from PySide6.QtNetwork import (
     QNetworkAccessManager,
@@ -40,6 +40,7 @@ from src.controllers.icon_themes_api import (
 from src.gui.dialogs.confirmation import ask_confirmation
 from src.gui.theme import ColorThemeManager
 from src.tweaks.tweaks import TweakID, tweaks
+from src.utils.paths import cache_dir
 
 CARD_W = 180
 CARD_H = 250
@@ -170,7 +171,7 @@ class IconPackDownloaderDialog(QDialog):
 
         self._nam = QNetworkAccessManager(self)
         cache = QNetworkDiskCache(self._nam)
-        cache.setCacheDirectory(os.path.join(QStandardPaths.writableLocation(QStandardPaths.CacheLocation), "icon_previews"))
+        cache.setCacheDirectory(str(cache_dir() / "icon_previews"))
         cache.setMaximumCacheSize(64 * 1024 * 1024)
         self._nam.setCache(cache)
         self._catalog_reply = None

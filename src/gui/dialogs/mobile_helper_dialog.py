@@ -47,7 +47,6 @@ from pathlib import Path
 from PySide6.QtCore import (
     QCoreApplication,
     QProcess,
-    QStandardPaths,
     Qt,
     QThread,
     QUrl,
@@ -73,6 +72,7 @@ from src.devicemanagement import mobile_helper as mh
 from src.exceptions.nugget_exception import NuggetException
 from src.gui.dialogs.confirmation import ask_confirmation
 from src.gui.theme import ColorThemeManager, t
+from src.utils.paths import app_data_dir
 
 
 class _MobileHelperThread(QThread):
@@ -1026,9 +1026,7 @@ class MobileHelperDialog(QDialog):
     # --- pairing file ---
 
     def _remote_pairing_cache_path(self, udid: str) -> Path:
-        base = QStandardPaths.writableLocation(
-            QStandardPaths.StandardLocation.AppDataLocation) or tempfile.gettempdir()
-        return Path(base) / "remote-pairing" / f"{udid}.mobiledevicepairing"
+        return app_data_dir() / "remote-pairing" / f"{udid}.mobiledevicepairing"
 
     def _pair_remote(self):
         """Pair over the lockdown link and send the record to the app.

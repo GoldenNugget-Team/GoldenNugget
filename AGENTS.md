@@ -69,6 +69,11 @@ Replacements (all under `src/utils/`, all Qt-free):
   `brand_dir(root)` returns _root_ unchanged when it already names the app's
   folder (including the pre-rename `GoldenNugget` names), so a backup volume
   chosen before the rename keeps its existing tree.
+  GUI code must not use Qt `QStandardPaths` for app paths: the org/app names
+  still answer the pre-rename folder (pinned by `tools/test_storage.py`), so
+  every such write recreates the legacy tree and re-triggers the migration
+  dialog — route caches through `cache_dir()`, user data through
+  `app_data_dir()`.
   `legacy_app_data_dirs()` / `legacy_cache_dirs()` / `legacy_generic_dirs()` are
   the historical locations, used by the migration and by the recovery tools —
   not by normal reads. `tools/test_storage.py` pins all of it.

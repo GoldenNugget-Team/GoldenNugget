@@ -20,7 +20,6 @@ from PySide6.QtCore import (
     QByteArray,
     QCoreApplication,
     QSize,
-    QStandardPaths,
     Qt,
     QTimer,
     QUrl,
@@ -45,6 +44,7 @@ from awesomeui.liquid.choice_editor import GlassComboBox as QComboBox
 from src.gui.theme import ColorThemeManager
 from src.gui.widgets import IOSSearchField
 from src.tweaks.tweaks import TweakID, tweaks
+from src.utils.paths import app_data_dir
 
 CARD_W = 150
 CARD_H = 300
@@ -883,10 +883,7 @@ class WallpaperDownloaderDialog(QDialog):
             return None
 
     def _save_tendie(self, data: bytes, name: str):
-        dest_dir = os.path.join(
-            QStandardPaths.writableLocation(QStandardPaths.AppDataLocation),
-            "downloaded_wallpapers",
-        )
+        dest_dir = os.path.join(str(app_data_dir()), "downloaded_wallpapers")
         os.makedirs(dest_dir, exist_ok=True)
         safe_name = "".join(
             c for c in name if c.isalnum() or c in (" ", "-", "_")
