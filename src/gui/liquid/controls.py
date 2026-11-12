@@ -475,7 +475,7 @@ class LiquidBrand(LiquidButton):
             sheen=QPixmap(fitted)
             sheen.fill(Qt.transparent)
             overlay=QPainter(sheen)
-            overlay.drawPixmap(sheen.rect(),self.logo,QRectF(self.logo.rect()))
+            overlay.drawPixmap(QRectF(sheen.rect()),self.logo,QRectF(self.logo.rect()))
             overlay.setCompositionMode(QPainter.CompositionMode_SourceIn)
             width,height=sheen.width(),sheen.height()
             center=(-.4+1.8*self.phase)*width
