@@ -28,6 +28,7 @@ from src.controllers.xml_handler import parse_equation
 from src.exceptions.nugget_exception import NuggetException
 from src.restore import afc_media as media
 from src.restore import restore
+from src.restore.verification import PruneResult
 from src.tweaks.posterboard.template_options.picker_option import PickerOption
 from src.tweaks.posterboard.template_options.remove_option import RemoveOption
 from src.utils.file_to_restore import FileToRestore
@@ -234,7 +235,7 @@ class Repairs(unittest.TestCase):
         with patch.object(restore_cache, '_find_cache_udid', AsyncMock(return_value='device')), \
                 patch.object(restore_cache, '_resolve_source', return_value=(str(self.root), str(self.root / 'media'), 'test')), \
                 patch.object(restore_cache, 'make_protective_working_copy', return_value=str(self.root)), \
-                patch.object(restore_cache, 'clean_backup_for_restore', return_value=(0, 0)) as prune, \
+                patch.object(restore_cache, 'clean_backup_for_restore', return_value=PruneResult()) as prune, \
                 patch.object(restore_cache, 'verify_backup_payloads', return_value=[]), \
                 patch.object(restore_cache, 'create_using_usbmux', AsyncMock(return_value=ld)), \
                 patch.object(restore_cache, '_restore_with_wait', AsyncMock()), \
@@ -269,7 +270,7 @@ class Repairs(unittest.TestCase):
                 stack.enter_context(patch.object(protective, '_validate_sqlite_db', return_value=True))
                 stack.enter_context(patch.object(protective, 'make_protective_working_copy', return_value=str(self.root)))
                 stack.enter_context(patch.object(protective, 'discard_protective_working_copy'))
-                stack.enter_context(patch.object(protective, 'clean_backup_for_restore', return_value=(0, 0)))
+                stack.enter_context(patch.object(protective, 'clean_backup_for_restore', return_value=PruneResult()))
                 stack.enter_context(patch.object(protective, 'verify_backup_payloads', return_value=[]))
                 gate = stack.enter_context(patch.object(media, 'media_store_verified', return_value=False))
                 push = stack.enter_context(patch.object(media, 'restore_media_via_afc', AsyncMock(return_value={'files': 1})))
@@ -303,7 +304,7 @@ class Repairs(unittest.TestCase):
         prepared = SimpleNamespace(root=str(self.root / 'device_backup'), master=False,
                                    manifest_password='', media_src='')
         protective = AsyncMock()
-        with patch.object(restore, 'clean_backup_for_restore', return_value=(0, 0)), \
+        with patch.object(restore, 'clean_backup_for_restore', return_value=PruneResult()), \
                 patch.object(restore, 'verify_backup_payloads', return_value=[]), \
                 patch.object(restore, 'perform_restore', AsyncMock(side_effect=restore.ConnectionTerminatedError())) as sparse, \
                 patch.object(restore, '_restore_protective_backup', protective), \
@@ -320,7 +321,7 @@ class Repairs(unittest.TestCase):
         prepared = SimpleNamespace(root=str(self.root / 'device_backup'), master=False,
                                    manifest_password='', media_src='')
         payload = FileToRestore(b'x', 'Library/test', domain='HomeDomain')
-        with patch.object(restore, 'clean_backup_for_restore', return_value=(0, 0)), \
+        with patch.object(restore, 'clean_backup_for_restore', return_value=PruneResult()), \
                 patch.object(restore, 'inject_files_into_backup', return_value=(0, 0, 1)), \
                 patch.object(restore, 'perform_restore', AsyncMock()) as sparse, \
                 patch.object(restore, '_restore_protective_backup', AsyncMock()) as protective:
@@ -330,6 +331,48 @@ class Repairs(unittest.TestCase):
                             prepared_backup_root=prepared, skip_setup=False))
         sparse.assert_not_called()
         protective.assert_not_called()
+
+    def test_phase3_prestart_wait_window_is_bounded(self):
+        # A Find My error opens the swallow-retry loop in _restore_once; a
+        # device that then keeps failing before the restore starts used to be
+        # retried forever (no exception escaped the outer async_retry bound).
+        async def scenario():
+            from src.restore.find_my_wait import current_find_my_wait
+            control = SimpleNamespace(finish=Mock(), wait_for_retry=AsyncMock())
+            token = current_find_my_wait.set(control)
+            try:
+                attempts = {'n': 0}
+
+                class _FakeMB:
+                    async def restore(self, *args, **kwargs):
+                        attempts['n'] += 1
+                        if attempts['n'] == 1:
+                            raise Exception('Find My must be disabled on the device')
+                        raise OSError('connection dropped')
+
+                @asynccontextmanager
+                async def fake_mobilebackup2(client):
+                    yield _FakeMB()
+
+                @asynccontextmanager
+                async def fake_session(*args, **kwargs):
+                    yield SimpleNamespace()
+
+                with patch.object(restore, '_start_mobilebackup2', fake_mobilebackup2), \
+                        patch.object(restore, '_PHASE3_WAIT_WINDOW_SEC', 0), \
+                        patch('src.devicemanagement.session.lockdown_session', fake_session):
+                    with self.assertRaises(NuggetException) as caught:
+                        await restore._restore_protective_backup(
+                            SimpleNamespace(), str(self.root), 'device', False,
+                            lambda value: None)
+                self.assertIn('could not start within', str(caught.exception))
+                self.assertTrue(control.finish.called)
+                # one Find My failure + one post-window failure — never a loop
+                self.assertEqual(attempts['n'], 2)
+            finally:
+                current_find_my_wait.reset(token)
+
+        asyncio.run(scenario())
 
 
 if __name__ == '__main__':
