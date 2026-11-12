@@ -553,7 +553,14 @@ class PosterboardTweak(Tweak):
                     domain=f"AppDomain-{self.bundle_id}"
                 ))
             return
-        elif len(self.tendies) == 0 and len(templates) == 0 and self.videoFile == None:
+        # Only PosterBoard-carried templates are wallpaper content. Tweaks-only
+        # .batter templates restore into their own domain in templates_tweak and
+        # must never pull the wallpaper machinery in (that demands a PosterBoard
+        # database the apply does not otherwise need).
+        pb_templates = [t for t in templates
+                        if t.domain in ('com.apple.PosterBoard',
+                                        'AppDomain-com.apple.PosterBoard')]
+        if len(self.tendies) == 0 and len(pb_templates) == 0 and self.videoFile == None:
             return
         update_label(QCoreApplication.tr("Generating PosterBoard Video..."))
         self.create_live_photo_files(output_dir)
@@ -568,7 +575,7 @@ class PosterboardTweak(Tweak):
             extracted.append((tendie.extract(output_dir=output_dir),
                               self.tendie_convert_enabled(tendie)))
         # extract templates
-        for template in templates:
+        for template in pb_templates:
             if template.domain == 'com.apple.PosterBoard' or template.domain == 'AppDomain-com.apple.PosterBoard':
                 update_label(QCoreApplication.tr("Configuring template {0}...").format(template.name))
                 extracted.append((template.extract(output_dir=output_dir), True))

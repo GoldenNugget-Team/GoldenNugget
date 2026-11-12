@@ -239,13 +239,13 @@ class PBConfigManager:
         if self.database is None:
             raise NuggetException("PosterBoard database file not selected!")
 
-        # Validate the database before use. strict=False + an explicit check of
-        # the three tables written below: the fetch path already accepts
-        # db5-ish schemas without sqlite_sequence, and demanding the strict set
-        # here rejected those devices forever with an advice ("fetch a fresh
-        # database") that cannot help.
-        problem = (snapshot_problem(self.database, strict=False)
-                   or missing_write_tables(self.database))
+        # Validate the database before use. strict=False + healing: the file
+        # must be a healthy snapshot (integrity check), but a saved database
+        # that only carries some of the three tables the manager writes (an
+        # old copy from a previous release) is repaired on the staged copy —
+        # the CREATE TABLE IF NOT EXISTS set below matches create_empty_
+        # posterboard_db, so no re-fetch is demanded for a recoverable file.
+        problem = snapshot_problem(self.database, strict=False)
         if problem:
             raise NuggetException(
                 "The PosterBoard database is corrupted or invalid "
@@ -257,16 +257,40 @@ class PBConfigManager:
         # copy and open database file
         self.staged_database = str(self._workspace() / f'STAGED-{DB_FILE_NAME}')
         shutil.copyfile(self.database, self.staged_database)
-
-        # Validate the staged copy (same non-strict bar as the source above —
-        # the copy only has to match what this code writes)
-        staged_problem = (snapshot_problem(self.staged_database, strict=False)
-                          or missing_write_tables(self.staged_database))
-        if staged_problem:
+        missing = missing_write_tables(self.staged_database)
+        if missing:
+            log_warn(f"Saved PosterBoard database lacks {missing}; healing the staged copy")
+            conn = sqlite3.connect(self.staged_database)
+            try:
+                conn.execute(
+                    "CREATE TABLE IF NOT EXISTS posterAttributes ("
+                    "  posterUUID TEXT,"
+                    "  roleId TEXT,"
+                    "  attributeIdentifier TEXT,"
+                    "  attributePayload BLOB"
+                    ")")
+                conn.execute(
+                    "CREATE TABLE IF NOT EXISTS posterRoleMembership ("
+                    "  posterUUID TEXT,"
+                    "  roleId TEXT,"
+                    "  roleSortKey INTEGER"
+                    ")")
+                if "poster" not in {t.lower() for t in list_tables(self.staged_database)}:
+                    conn.execute(
+                        "CREATE TABLE IF NOT EXISTS poster ("
+                        "  posterId INTEGER PRIMARY KEY AUTOINCREMENT,"
+                        "  UUID TEXT,"
+                        "  providerId TEXT"
+                        ")")
+                conn.commit()
+            finally:
+                conn.close()
+        # the healed copy must now pass the strict snapshot check
+        if not _validate_posterboard_db(self.staged_database):
             raise NuggetException(
-                "Failed to create a valid copy of the PosterBoard database for staging "
-                f"({staged_problem}). "
-                "The source database may be corrupted. Please fetch a fresh database and try again."
+                "The PosterBoard database is corrupted or invalid "
+                "even after repairing its missing tables. "
+                "Please fetch a fresh database from your device and try again."
             )
 
         conn = sqlite3.connect(self.staged_database, timeout=10)
