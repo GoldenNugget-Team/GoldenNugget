@@ -61,8 +61,12 @@ class NullifyFileTweak(Tweak):
     def apply_tweak(self, other_tweaks: dict):
         if self.enabled:
             # A zero-byte plist crashes its owner at boot (AGENTS.md) — write a
-            # valid empty plist so the device falls back to defaults.
-            other_tweaks[self.file_location] = plistlib.dumps({})
+            # valid empty plist so the device falls back to defaults. The
+            # PreferenceNullify marker keeps the injector from merging this
+            # payload onto the device's current file: wiping the file is the
+            # whole point, the baseline is never read.
+            from src.utils.preference_reset import PreferenceNullify
+            other_tweaks[self.file_location] = PreferenceNullify(plistlib.dumps({}))
     
 
 class BasicPlistTweak(Tweak):

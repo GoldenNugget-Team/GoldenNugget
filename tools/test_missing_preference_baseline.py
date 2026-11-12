@@ -37,7 +37,7 @@ from src.restore.inject import (  # noqa: E402
     preference_baseline_skips,
 )
 from src.utils.file_to_restore import _FileMode  # noqa: E402
-from src.utils.preference_reset import PreferenceKeyReset  # noqa: E402
+from src.utils.preference_reset import PreferenceKeyReset, PreferenceNullify  # noqa: E402
 
 PASS = 0
 
@@ -280,6 +280,24 @@ def main():
         else:
             check("corrupt native baseline payload still aborts loudly", False,
                   "no exception raised")
+
+    # ---- A nullify payload (Clear ScreenTimeAgent.plist) is delivered whole:
+    #      wiping the file is the tweak's purpose, so even a corrupt baseline
+    #      in the backup must not abort the apply (and no merge is attempted).
+    with tempfile.TemporaryDirectory() as tmp:
+        dev = make_core_backup(Path(tmp), "UDID")
+        path = "Library/Preferences/com.apple.ScreenTimeAgent.plist"
+        make_row(dev, "HomeDomain", path, b"\x00torn binary plist")
+        nullify = PreferenceNullify(plistlib.dumps({}))
+        injected, unchanged, failed, created = inject(Path(tmp), "UDID", [
+            ("HomeDomain", path, nullify, mode, 501, 501)])
+        check("a nullify payload ignores an unreadable baseline entirely",
+              failed == 0 and injected == 1, f"{injected}/{unchanged}/{failed}")
+        check("a nullify payload is not recorded as created-new",
+              created == [], f"created={created}")
+        payload = read_payload(dev, "HomeDomain", path)
+        check("the nullified file landed as an empty plist",
+              payload == plistlib.dumps({}), f"contents={payload!r}")
 
     print(f"\nALL {PASS} CHECKS PASSED")
 

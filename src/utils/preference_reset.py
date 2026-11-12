@@ -9,3 +9,11 @@ class PreferenceKeyReset(bytes):
         instance = super().__new__(cls, b'')
         instance.paths = paths
         return instance
+
+
+class PreferenceNullify(bytes):
+    """Whole-file nullify payload (NullifyFileTweak): the file is delivered
+    as-is with no baseline merge — wiping the file IS the tweak's purpose, so
+    the backup's copy of the file is irrelevant and must never abort the
+    apply (an empty dict patch is intentional here, not a broken edit)."""
+
