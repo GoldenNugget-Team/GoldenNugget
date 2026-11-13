@@ -1156,7 +1156,13 @@ def managed_pref_app_plists() -> frozenset:
         if target is not None:
             out.add(target)
     return frozenset(out)
-LOCAL_ONLY_IDS: frozenset = frozenset()
+from .local_catalog import SPECS as LOCAL_SPECS
+
+_existing_ids = frozenset(spec.id for spec in SPECS)
+SPECS += tuple(spec for spec in LOCAL_SPECS if spec.id not in _existing_ids)
+
+LOCAL_ONLY_IDS: frozenset = frozenset(spec.id for spec in LOCAL_SPECS
+                                      if spec.id not in _existing_ids)
 
 SPECS_BY_SECTION: dict[Section, list[TweakSpec]] = {
     section: [s for s in SPECS if s.section == section and not s.disabled]
