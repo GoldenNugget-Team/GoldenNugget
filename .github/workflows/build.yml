@@ -31,6 +31,22 @@ permissions:
   contents: read
 
 jobs:
+  check-release-version:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    name: Tag matches App_Version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Refuse a tag whose shipped version is stale
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          app=$(sed -n 's/^App_Version = "\(.*\)"/\1/p' src/version.py)
+          file=$(sed -n "s/.*FileVersion', u'\\([^']*\\)'.*/\\1/p" version.txt)
+          if [ "$tag" != "$app" ] || [ "$tag" != "$file" ]; then
+            echo "::error::tag ${tag} != App_Version=${app} FileVersion=${file}"
+            exit 1
+          fi
+
   build-macos-qt:
     if: ${{ github.event_name == 'push' || inputs.build_for_macos }}
     name: Shared Qt 6.12 / Python 3.15 (Universal2)
