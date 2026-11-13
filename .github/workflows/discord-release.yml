@@ -17,20 +17,22 @@ jobs:
           NAME: ${{ github.event.release.name || github.event.release.tag_name }}
           URL: ${{ github.event.release.html_url }}
           BODY: ${{ github.event.release.body }}
+          ROLE: ${{ vars.DISCORD_RELEASES_ROLE_ID }}
         run: |
           [ -n "$WEBHOOK" ] || { echo "DISCORD_RELEASES_WEBHOOK is not set"; exit 1; }
           [ -n "$BODY" ] || BODY="No release notes."
           # Discord: embed description <= 4096 chars, all embeds in one message <= 6000.
           # Split the notes into 4000-char chunks, one message per chunk.
+          # Only the role in the DISCORD_RELEASES_ROLE_ID variable is pinged, once.
           n=$(jq -rn --arg b "$BODY" '($b|length + 3999) / 4000 | floor')
           for i in $(seq 0 $((n - 1))); do
-            jq -n --arg b "$BODY" --arg t "$NAME" --arg u "$URL" --argjson i "$i" --argjson n "$n" '
-              {embeds: [{
+            jq -n --arg b "$BODY" --arg t "$NAME" --arg u "$URL" --arg r "$ROLE" --argjson i "$i" --argjson n "$n" '
+              (if $i == 0 and $r != "" then {content: "<@&\($r)>"} else {} end) + {embeds: [{
                 title: (if $n > 1 then "\($t) (\($i + 1)/\($n))" else $t end)[0:256],
                 url: $u,
                 color: 15844367,
                 description: $b[$i * 4000:($i + 1) * 4000]
-              }], allowed_mentions: {parse: []}}' \
+              }], allowed_mentions: {parse: [], roles: (if $r != "" then [$r] else [] end)}}' \
             | curl -fsS -H 'Content-Type: application/json' -d @- "$WEBHOOK"
             sleep 1
           done
