@@ -42,9 +42,13 @@ Mobile Helper was simplified, and pairing moved from a lockdown record to remote
 
 Critical bug fixes, including issue #87, plus a fix for PNG icons not rendering in the compiled build.
 
+### 9.7.7
+
+iOS 27 support is no longer experimental, and the local tweak catalog removed in the 9.7.6 cleanup is back. Data-loss and safety fixes: an iOS 27 apply stops unless the backup was verified, the Find My wait is bounded, unreadable managed-preference baselines no longer abort the apply, and issues #83, #85 and #90 are fixed. Crash dialogs are now thread-safe and the post-crash restart works on Windows. See `docs/CHANGELOG_9.7.7.md`.
+
 ## Unreleased (in main)
 
-- iOS 27 backup fail-safe: an apply does not start unless the selective backup finished and was verified, and the previous backup is kept until the restore finishes. In main, awaiting release and on-device verification.
+- Nothing yet.
 
 ## Next
 
