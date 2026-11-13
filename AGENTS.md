@@ -922,27 +922,36 @@ PosterBoard,Backups}`. The recovery tools (`apply_worker.py`,
     restores that scope AFTER the sparse reset and handed the stale value
     straight back. Same reasoning as `statusBarOverrides` /
     `.GlobalPreferences.plist`.
-- **Keyed resets resolve against created-file history.** A preference file
-  an apply delivered as a NEW file (no baseline row) never enters a later
-  backup: the restore marks it as known to the host, so no incremental
-  session re-uploads it and no row ever appears — the keyed reset used to
-  skip such files as "vacuous" while the tweak keys stayed live on the
-  device. `src/restore/created_baselines.py` persists, per device, the last
-  payload delivered for each such file (`<app data>/LastApply/<udid>.created.json`,
-  written by `start_restore` after a successful restore via the
-  `created_baseline_payloads` ContextVar); the injector resolves a keyed
-  reset with no backup row against that record and removes the reset keys
-  from it. Tweak files delivered before this record existed need one
-  re-apply to enter it.
-- **The reset plan is the union of the record and the registry.**
-  `preference_reset_plan` (`src/controllers/default_reset.py`) merges the
-  applied-selection record's exact keys with the tweak registry's static
-  keys for the selected sections: a tweak applied before records existed —
-  or whose record an earlier reset consumed — still owns its keys, and the
-  section's "restore defaults" removes them. Dynamic sets stay recorded-only
-  (Daemons: a reset with no record raises "no verified reset payload"), and
-  numeric/string tweaks without a record are skipped (an unapplied validated
-  value has nothing to reset); whole preference files are never cleared.
+- **Preference sections reset by writing valid empty plists.** The reset
+  delivers `PreferenceNullify(plistlib.dumps({}))` — a minimal, valid, never
+  zero-byte empty plist — as the whole file (inject.py delivers nullify
+  payloads as-is, with no baseline merge and no baseline requirement). This
+  is why the reset no longer depends on the backup: a file the device
+  received as a NEW file (no manifest row, e.g. SwiftUI.plist) is reset the
+  same way as any other — the device parses the empty dict and falls back to
+  its defaults. The reset works repeatedly without a re-apply. One wrinkle:
+  a managed location and its native twin name the SAME file (the
+  `.GlobalPreferences` mirror), so `restore.py::merge_duplicates` keeps the
+  Nullify marker when collapsing them — a plist merge would emit a plain
+  empty dict that the injector rejects as an unverified reset.
+- **Two locations stay keyed removals, never whole-file nullified.**
+  `preference_reset_plan` keeps `PreferenceKeyReset` for
+  `FileLocation.featureflags` (FeatureFlags/Global.plist carries every
+  feature flag on the device — wiping it would undo flags GoldenNugget does
+  not own) and `FileLocation.disabledDaemons` (launchd's disabled.plist
+  holds services GoldenNugget never disabled). Keyed resets still resolve
+  against created-file history: `src/restore/created_baselines.py` persists,
+  per device, the last payload delivered as a new file
+  (`<app data>/LastApply/<udid>.created.json`, written by `start_restore`
+  after a successful restore via the `created_baseline_payloads` ContextVar);
+  the injector resolves a keyed reset with no backup row against that record.
+- **The reset plan's location set is the union of the record and the
+  registry.** `preference_reset_plan` (`src/controllers/default_reset.py`)
+  covers both the applied-selection record's locations and the tweak
+  registry's static entries for the selected sections: a tweak applied
+  before records existed — or whose record an earlier reset consumed — is
+  still reset. Dynamic sets stay recorded-only (Daemons: a reset with no
+  record raises "no verified reset payload").
 
 ## Restore Module (src/restore/)
 

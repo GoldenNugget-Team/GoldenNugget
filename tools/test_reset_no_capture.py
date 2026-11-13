@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Offline reset checks for recorded key removal and status-bar restoration.
+"""Offline reset checks for empty-plist preference resets and status-bar reset.
 
-Missing apply history never triggers whole-file preference clearing: registry
-sections fall back to the tweak registry's static keys, dynamic sets (Daemons)
-stay recorded-only, and every preference payload is an explicit key-removal
-request built over a prepared backup; status-bar reset retains its
+Preference sections reset by writing a valid empty plist (never zero bytes):
+the device falls back to its defaults and no backup baseline is needed.
+FeatureFlags/Global.plist and the launchd disabled.plist stay keyed removals —
+wiping those files whole would undo flags and disabled services GoldenNugget
+does not own; Daemons stay recorded-only. Status-bar reset retains its
 version-specific binary/archive format.
 """
 
@@ -223,8 +224,14 @@ def test_status_bar_is_always_resettable():
 
 
 def test_missing_reset_evidence_never_clears_preferences():
-    """Registry sections reset their static keys; Daemons stay recorded-only."""
-    from src.utils.preference_reset import PreferenceKeyReset
+    """Registry sections reset by writing valid empty plists; Daemons stay recorded-only."""
+    from src.utils.preference_reset import PreferenceNullify
+
+    def is_empty_plist(value):
+        # A valid, non-empty-byte empty plist: the device parses it and
+        # falls back to its defaults.
+        return (isinstance(value, PreferenceNullify)
+                and len(value) > 0 and plistlib.loads(value) == {})
 
     for version in ("26.2", "27.0", "27.2"):
         for page in (
@@ -235,8 +242,8 @@ def test_missing_reset_evidence_never_clears_preferences():
             fake, errors, _ = run_reset(version, [page])
             check(f"{version}/{page.name}: unrecorded section still resets", not errors, repr(errors[:1]))
             check("a restore is started", fake.restored is not None)
-            check("every preference payload is a keyed removal",
-                  all(isinstance(value, PreferenceKeyReset) for value in fake.written.values()))
+            check("every preference payload is a valid empty plist",
+                  fake.written and all(is_empty_plist(value) for value in fake.written.values()))
             check("no capture connection is opened", not fake.session_opened)
         # A dynamic launchd set has no registry truth: no record, no reset.
         fake, errors, _ = run_reset(version, [Page.Daemons])
@@ -247,26 +254,33 @@ def test_missing_reset_evidence_never_clears_preferences():
 
 
 def test_unrecorded_liquid_glass_covers_legacy_keys():
-    """Keys applied before records existed are reset from the registry."""
+    """Files applied before records existed are reset without any record."""
+    from src.utils.preference_reset import PreferenceNullify
+
     fake, errors, _ = run_reset("27.2", [Page.LiquidGlass])
     check("reset succeeds with no record", not errors, repr(errors))
     managed_sb = fake.written.get("/var/Managed Preferences/mobile/com.apple.springboard.plist")
-    check("SBDisallowGlassLockScreen is reset without a record",
-          managed_sb is not None and ("SBDisallowGlassLockScreen",) in managed_sb.paths)
+    check("SBDisallowGlassLockScreen's file is reset without a record",
+          managed_sb is not None and plistlib.loads(managed_sb) == {},
+          repr(managed_sb[:24]) if managed_sb else None)
     swiftui = fake.written.get("/var/mobile/Library/Preferences/com.apple.SwiftUI.plist")
-    check("SolariumEnableDockExteriorEffects is reset without a record",
-          swiftui is not None and ("SolariumEnableDockExteriorEffects",) in swiftui.paths)
+    check("the SwiftUI plist is reset without a record (no baseline needed)",
+          swiftui is not None and plistlib.loads(swiftui) == {},
+          repr(swiftui[:24]) if swiftui else None)
     # iOS 27 writes the cfprefs mirror of every managed file too.
     mirror = fake.written.get("/var/mobile/Library/Preferences/com.apple.springboard.plist")
     check("the springboard mirror follows the managed file",
-          mirror is not None and ("SBDisallowGlassLockScreen",) in mirror.paths)
+          mirror is not None and plistlib.loads(mirror) == {})
+    check("every payload is a nullify, never zero bytes",
+          all(isinstance(v, PreferenceNullify) and len(v) > 0
+              for v in fake.written.values()))
 
 
 def test_recorded_reset_targets_only_applied_keys():
     from src.controllers.default_reset import PAGE_SECTIONS
     from src.tweaks.registry import HOME_PREFIX, SPECS_BY_ID, managed_pref_target
     from src.tweaks.tweak_names import TweakID
-    from src.utils.preference_reset import PreferenceKeyReset
+    from src.utils.preference_reset import PreferenceNullify
 
     spec = SPECS_BY_ID[TweakID.NoLiquidDock]
     page = next(
@@ -275,33 +289,93 @@ def test_recorded_reset_targets_only_applied_keys():
     recorded = {spec.id.name: {"value": True}}
     for version in ("26.2", "27.0"):
         fake, errors, _ = run_reset(version, [page], recorded)
-        check("recorded keyed reset succeeds", not errors, repr(errors))
+        check("recorded reset succeeds", not errors, repr(errors))
         check(
             "verified backup is passed to restore",
             fake.prepared_root == "verified-test-backup",
         )
         request = fake.written[spec.location.value]
         check(
-            "reset uses a key-removal request", isinstance(request, PreferenceKeyReset)
+            "reset writes a valid empty plist",
+            isinstance(request, PreferenceNullify) and plistlib.loads(request) == {},
+            repr(request[:24]),
         )
-        check("the applied preference is removed", (spec.key,) in request.paths)
         mirror = HOME_PREFIX + managed_pref_target(spec.location.value)
         check(
             "managed mirror follows the iOS 27 route",
             (mirror in fake.written) == version.startswith("27"),
         )
         check(
-            "no whole-file clearing payload is generated",
-            all(
-                isinstance(value, PreferenceKeyReset) for value in fake.written.values()
-            ),
+            "the mirror is reset the same way",
+            mirror not in fake.written or plistlib.loads(fake.written[mirror]) == {},
         )
+
+
+def test_featureflags_reset_never_clears_the_whole_file():
+    """FeatureFlags/Global.plist stays keyed: other flags live in it too."""
+    import src.controllers.default_reset as dr
+    from src.tweaks.registry import Section
+    from src.tweaks.tweak_classes import BasicPlistTweak
+    from src.utils.preference_reset import PreferenceKeyReset, PreferenceNullify
+
+    class _FlagTweak(BasicPlistTweak):
+        def __init__(self):
+            super().__init__(FileLocation.featureflags, "SpringBoard")
+
+        def apply_tweak(self, other_tweaks: dict) -> dict:
+            return {FileLocation.featureflags:
+                    {"SpringBoard": {"ClockAnim": {"Enabled": True}}}}
+
+    class _FakeSpec:
+        class id:
+            name = "FakeFlagTweak"
+        section = Section.INTERNAL
+
+    fake_paths = {FileLocation.featureflags: {("SpringBoard", "ClockAnim", "Enabled")}}
+    with (
+        patch.object(dr, "SPECS", (_FakeSpec(),)),
+        patch.object(dr, "_build_spec", return_value=_FlagTweak()),
+        patch.object(dr, "_spec_reset_paths", return_value=fake_paths),
+    ):
+        plan = dr.preference_reset_plan({}, [Page.InternalOptions])
+    payload = plan.get(FileLocation.featureflags)
+    check("feature flags stay a keyed removal", isinstance(payload, PreferenceKeyReset),
+          type(payload).__name__)
+    check("it removes only the tweak's keys",
+          payload is not None and ("SpringBoard", "ClockAnim", "Enabled") in payload.paths)
+    check("the keyed branch is not a nullify",
+          payload is not None and not isinstance(payload, PreferenceNullify))
+
+
+def test_duplicate_nullify_files_stay_nullify():
+    """A managed location and its native twin name the same file: the
+    duplicate merge must keep the Nullify marker (a plain empty dict is
+    rejected by the injector as an unverified reset)."""
+    from src.restore.restore import merge_duplicates
+    from src.utils.file_to_restore import FileToRestore
+    from src.utils.preference_reset import PreferenceNullify
+
+    empty = PreferenceNullify(plistlib.dumps({}))
+    files = [
+        FileToRestore(contents=empty, restore_path='/var/mobile/Library/Preferences/.GlobalPreferences.plist',
+                      domain='HomeDomain'),
+        FileToRestore(contents=empty, restore_path='/var/mobile/Library/Preferences/.GlobalPreferences.plist',
+                      domain='HomeDomain'),
+    ]
+    merged = merge_duplicates(files)
+    check('the duplicate collapses to one file', len(merged) == 1, len(merged))
+    check('the merged payload is still a nullify',
+          isinstance(merged[0].contents, PreferenceNullify), type(merged[0].contents).__name__)
+    check('and still a valid empty plist',
+          len(merged[0].contents) > 0 and plistlib.loads(merged[0].contents) == {})
 
 
 test_capture_is_gone()
 test_missing_reset_evidence_never_clears_preferences()
 test_unrecorded_liquid_glass_covers_legacy_keys()
 test_recorded_reset_targets_only_applied_keys()
+test_featureflags_reset_never_clears_the_whole_file()
+test_duplicate_nullify_files_stay_nullify()
 test_ios27_status_bar_resets_the_archive()
 test_ios26_status_bar_still_resets_the_classic_file()
 test_status_bar_is_always_resettable()

@@ -39,7 +39,7 @@ from src.exceptions.nugget_exception import NuggetException
 from src.utils.async_disk import disk_call
 from src.utils.file_to_restore import FileToRestore, _FileMode
 from src.utils.i18n import QCoreApplication
-from src.utils.preference_reset import PreferenceKeyReset
+from src.utils.preference_reset import PreferenceKeyReset, PreferenceNullify
 
 from . import backup, perform_restore, reboot_device
 from .afc_media import (
@@ -138,6 +138,14 @@ def merge_duplicates(original_files: list[FileToRestore]) -> list[FileToRestore]
                         and isinstance(file.contents, PreferenceKeyReset)):
                     raise ValueError('Cannot combine preference writes and resets for the same file.')
                 previous.contents = PreferenceKeyReset(previous.contents.paths + file.contents.paths)
+                continue
+            if isinstance(previous.contents, PreferenceNullify) or isinstance(file.contents, PreferenceNullify):
+                # Two payloads may name the same file (a managed location and
+                # its native twin, e.g. the .GlobalPreferences mirror). Two
+                # whole-file wipes are still a whole-file wipe: keep the
+                # Nullify marker, or the plist merge below would emit a plain
+                # empty dict that the injector rejects as an unverified reset.
+                previous.contents = PreferenceNullify(plistlib.dumps({}))
                 continue
             if not restore_path.endswith('.plist'):
                 print(f'cannot merge duplicate file, ignoring {file_loc}')

@@ -1,3 +1,4 @@
+import plistlib
 from collections import defaultdict
 
 from src.tweaks.basic_plist_locations import FileLocation
@@ -9,7 +10,9 @@ from src.tweaks.tweak_classes import (
 )
 from src.tweaks.tweak_loader import _build_spec
 from src.utils.pages import Page
-from src.utils.preference_reset import PreferenceKeyReset
+from src.utils.preference_reset import PreferenceKeyReset, PreferenceNullify
+
+_EMPTY_PLIST = plistlib.dumps({})
 
 PAGE_SECTIONS = {Page.Springboard: Section.SPRINGBOARD,
                  Page.InternalOptions: Section.INTERNAL,
@@ -67,14 +70,18 @@ def _spec_reset_paths(tweak, value=True, tolerate_value_error=False):
 
 
 def preference_reset_plan(entries, pages):
-    """Keyed resets for the selected sections.
+    """Reset payloads for the selected sections.
 
-    The plan is the union of the applied-selection record (the exact keys the
-    last successful apply carried, plus dynamic sets like daemons) and the
-    tweak registry's static keys for the selected sections: a tweak applied
-    before records existed — or whose record an earlier reset consumed —
-    still owns those keys, and removing them is the section's "restore
-    defaults". Whole preference files are never cleared.
+    The set of locations is the union of the applied-selection record (the
+    exact tweaks the last successful apply carried, plus dynamic sets like
+    daemons) and the tweak registry's static entries for the selected
+    sections: a tweak applied before records existed — or whose record an
+    earlier reset consumed — is still covered. Preference files are reset by
+    writing a valid empty plist (never zero bytes): the device falls back to
+    its defaults, and no backup baseline is needed, so the reset works even
+    for a file that never entered a backup. FeatureFlags/Global.plist and the
+    launchd disabled.plist stay keyed removals — wiping those files whole
+    would also undo flags and disabled services GoldenNugget does not own.
     """
     recorded = entries if isinstance(entries, dict) else {}
     selected = {PAGE_SECTIONS[page] for page in pages if page in PAGE_SECTIONS}
@@ -102,4 +109,9 @@ def preference_reset_plan(entries, pages):
             continue
         for location, keys in _spec_reset_paths(tweak, tolerate_value_error=True).items():
             paths[location].update(keys)
-    return {location: PreferenceKeyReset(keys) for location, keys in paths.items()}
+    return {
+        location: PreferenceNullify(_EMPTY_PLIST)
+        if location not in (FileLocation.featureflags, FileLocation.disabledDaemons)
+        else PreferenceKeyReset(keys)
+        for location, keys in paths.items()
+    }
