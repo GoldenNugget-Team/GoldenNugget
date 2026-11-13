@@ -797,8 +797,13 @@ class IOSHomePage(QWidget):
 
     def set_update_available(self, available):
         self._update_available = available
-        self.update_notice.setVisible(available is not None)
-        self.outdated_lbl.setText(self.tr("Outdated version") if available else self.tr("Up to date!"))
+        self.update_notice.show()
+        if available is None:
+            self.outdated_lbl.setText(self.tr("Could not check for updates"))
+        elif available:
+            self.outdated_lbl.setText(self.tr("Outdated version"))
+        else:
+            self.outdated_lbl.setText(self.tr("Up to date!"))
         self.update_info_btn.setVisible(available is True)
         self.update_status()
 
@@ -810,7 +815,12 @@ class IOSHomePage(QWidget):
 
     def update_status(self):
         c = self._c
-        update_color = c.success if self._update_available is False else c.error
+        if self._update_available is False:
+            update_color = c.success
+        elif self._update_available is None:
+            update_color = c.warning
+        else:
+            update_color = c.error
         self.outdated_lbl.setStyleSheet(f"color: {update_color}; font-size: 13px; font-weight: 600;")
         self.update_info_btn.setStyleSheet(f"QPushButton {{ color: {c.error}; background: transparent; border: none; font-size: 17px; }} QPushButton:hover {{ background: {c.bg_tertiary}; border-radius: 6px; }}")
         try:

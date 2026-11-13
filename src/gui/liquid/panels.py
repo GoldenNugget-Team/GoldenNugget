@@ -782,9 +782,14 @@ class RestoreDrawer(GlassPanel):
             self.setGeometry(sheet_rect(self.window,self.window.ios_home.apply_btn,self.panel_size()))
 
     def activate(self):
-        if (self.window.apply_in_progress or getattr(self.window,'_cache_restore_in_progress',False)
-                or getattr(self.window,'_operation_result_visible',False)):
+        if self.window.apply_in_progress or getattr(self.window,'_cache_restore_in_progress',False):
             self.open_progress()
+            return
+        if getattr(self.window,'_operation_result_visible',False):
+            # A finished apply/reset leaves its result card up. Pressing Apply
+            # Changes again starts a new review instead of reopening that result.
+            self.window.dismiss_operation_result()
+            self.open()
         elif self.isVisible():
             self.confirm()
         else:

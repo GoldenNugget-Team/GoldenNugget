@@ -33,12 +33,15 @@ class StartupServices(QObject):
         try:
             from src.controllers import web_request_handler
             from src.gui.version import App_Build, App_Version
+            # True / False / None (check failed). None must stay None — bool(None)
+            # would show "Up to date!".
             result = web_request_handler.is_update_available(App_Version, App_Build)
-            available = bool(result) if web_request_handler.last_fetched_version is not None else None
             if not self.closing.is_set():
-                self.update_ready.emit(available)
+                self.update_ready.emit(result)
         except Exception as exc:
             self.log.debug("Update check failed: %s", exc)
+            if not self.closing.is_set():
+                self.update_ready.emit(None)
 
     def _fetch_rules(self):
         try:
