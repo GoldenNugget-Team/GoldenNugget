@@ -36,6 +36,7 @@ Offline regression suite: ``tools/test_window_chrome.py``.
 """
 
 import math
+import time
 
 from PySide6.QtCore import (
     QCoreApplication,
@@ -386,13 +387,32 @@ class _TitleStrip(QWidget):
         self._backdrop = None
         self._dirty = True
         self._painting = False
+        self._consequence = 0.0
         self.setFixedHeight(DRAG_STRIP_HEIGHT)
         self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
+        # The paintEvent covers every pixel (backdrop + tint + divider).
+        # Without WA_OpaquePaintEvent Qt repaints the page beneath the strip
+        # on every strip update — and those beneath-repaints re-arm the strip,
+        # so hovering any animated widget repainted the whole top at 2x vsync
+        # forever.
+        self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent, True)
 
     def invalidate(self):
-        if self._painting:
-            return  # the backdrop grab itself repaints the page behind
+        if self._painting or time.monotonic() < self._consequence:
+            # _painting: the backdrop grab itself repaints the page behind.
+            # _consequence: this strip paints with alpha over the page, so the
+            # repaint pass re-renders the central widget beneath it — those
+            # content paints must not re-arm the backdrop, or the strip and
+            # the shell invalidate each other forever (hover storms repainted
+            # + re-grabbed the strip 130x/s, lagging the whole program). The
+            # beneath-repaints can land in a LATER event-loop pass than the
+            # strip's own paintEvent, so the mute is a short decay window
+            # (one frame) instead of a flag cleared at the end of paintEvent.
+            # A genuine content change that lands inside the window paints
+            # again right afterwards, so staleness is bounded to one frame.
+            return
         self._dirty = True
+        self._consequence = time.monotonic() + 0.03
         self.update()
 
     def refresh_geometry(self, width):
@@ -435,6 +455,7 @@ class _TitleStrip(QWidget):
             self._rebuild_backdrop()
         finally:
             self._painting = False
+            self._consequence = time.monotonic() + 0.03
         painter = QPainter(self)
         if self._backdrop is not None:
             painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
@@ -597,6 +618,15 @@ class WindowChrome(QObject):
 
     # ---- window events ---------------------------------------------------
 
+    def _chrome_surface(self, watched) -> bool:
+        """True for widgets this chrome owns (never part of the backdrop grab)."""
+        if watched is self._window or watched is self._strip \
+                or watched is self.title or watched is self.version:
+            return True
+        controls = self.controls
+        return watched is controls or \
+            (isinstance(controls, QWidget) and controls.isAncestorOf(watched))
+
     def eventFilter(self, watched, event):
         if watched is self._window:
             etype = event.type()
@@ -608,9 +638,21 @@ class WindowChrome(QObject):
                            QEvent.Type.WindowStateChange):
                 self._relayout()
             return False
-        if not isinstance(watched, QWidget) or _top_level(watched) is not self._window:
+        if not isinstance(watched, QWidget):
             return False
         etype = event.type()
+        # Gate on the event type BEFORE the _top_level() parent-chain walk:
+        # the app-level filter sees every event of every object (~15k/s), and
+        # only these five types are handled. This alone was ~10% of a
+        # hover-storm profile.
+        if etype not in (QEvent.Type.Paint, QEvent.Type.MouseButtonPress,
+                         QEvent.Type.MouseMove, QEvent.Type.MouseButtonRelease,
+                         QEvent.Type.MouseButtonDblClick,
+                         QEvent.Type.Show, QEvent.Type.Hide,
+                         QEvent.Type.ShowToParent, QEvent.Type.HideToParent):
+            return False
+        if _top_level(watched) is not self._window:
+            return False
         # A child widget gets ShowToParent/HideToParent, not Show/Hide — the
         # header is hidden and shown by the page switch, so both kinds count.
         if watched is self._header and etype in (
@@ -618,11 +660,21 @@ class WindowChrome(QObject):
                 QEvent.Type.Hide, QEvent.Type.HideToParent):
             self._sync_title()
             return False
-        if etype == QEvent.Type.Paint and watched is not self._strip:
+        if etype == QEvent.Type.Paint and not self._chrome_surface(watched):
             # Whatever repaints inside the strip makes the blurred backdrop
             # stale (a page redraw, a drawer sliding under it, a popup) — one
             # extra strip-sized grab per frame at most, coalesced by update().
-            rect = watched.rect().translated(
+            # Chrome-owned widgets are excluded: they never appear in the
+            # backdrop (the grab takes the central widget alone), so their
+            # paints cannot make it stale. The controls container overlaps the
+            # strip and Qt repaints it on every strip update — counting those
+            # re-armed the strip forever (hovering the home action buttons
+            # repainted + re-grabbed the strip 130x/s, lagging the program).
+            # The event's rect is the DIRTY region: testing the widget's full
+            # rect instead re-armed the strip for every repaint anywhere in
+            # the shell (its rect always starts at y=0), e.g. under the
+            # bottom hover overlay.
+            rect = event.rect().translated(
                 watched.mapTo(self._window, watched.rect().topLeft()))
             if rect.y() < DRAG_STRIP_HEIGHT:
                 self._strip.invalidate()

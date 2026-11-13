@@ -457,9 +457,9 @@ class DeviceBarMixin(_WindowBase):
         dialog.setIcon(QtWidgets.QMessageBox.Warning)
         dialog.setWindowTitle(self.tr("Warning"))
         dialog.setText(device_text(self.tr(
-            "Warning: You are running an iOS beta build (%1).\n\n"
+            "Warning: You are running an iOS beta build ({0}).\n\n"
             "This has been known to cause problems and potentially lead to bootloops.\n\n"
-            "Use at your own risk!").arg(f"{ver} ({build})"),
+            "Use at your own risk!").format(f"{ver} ({build})"),
             self.device_manager.get_current_device_model()))
         dialog.setCheckBox(QtWidgets.QCheckBox(self.tr("Don't show this warning again"), dialog))
         dialog.exec()

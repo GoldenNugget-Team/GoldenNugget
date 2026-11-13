@@ -43,6 +43,11 @@ preference_baseline_skips = ContextVar('preference_baseline_skips', default=None
 # new file (see _prepare_preference_merges). Recorded so the apply summary can
 # say the file was created from the tweak's keys only.
 preference_baseline_creates = ContextVar('preference_baseline_creates', default=None)
+# Payload bytes delivered for files created as-new (same paths as
+# preference_baseline_creates). start_restore persists them per device
+# (src/restore/created_baselines.py) so a later keyed reset can resolve a
+# file no backup session will ever upload.
+created_baseline_payloads = ContextVar('created_baseline_payloads', default=None)
 _OPTIONAL_MISSING_BASELINE_PATHS = frozenset({
     ('HomeDomain', 'Library/Preferences/com.apple.SwiftUI.plist'),
     ('HomeDomain', 'Library/Preferences/com.apple.AvatarUI.Staryu.plist'),
@@ -171,9 +176,10 @@ def _native_patch_covers(managed, native):
                for key, value in managed_values.items())
 
 
-def _prepare_preference_merges(conn, device_dir, files):
+def _prepare_preference_merges(conn, device_dir, files, created_history=None):
     prepared = []
     missing = []
+    recorded = created_baseline_payloads.get()
     native_mirrors = {path: contents for domain, path, contents, *_ in files
                       if domain == 'HomeDomain'}
     omitted_managed = []
@@ -211,6 +217,31 @@ def _prepare_preference_merges(conn, device_dir, files):
                         'to expose this file. No empty baseline was substituted; this does not prove '
                         'the file is absent from the phone or that iOS accepts these overrides.')
                 if isinstance(contents, PreferenceKeyReset):
+                    # A file the backup has no row for can still exist on the
+                    # device: an earlier apply delivered it as a new file and
+                    # the restore marked it as known to the host, so no later
+                    # backup session re-uploads it (a row never appears). The
+                    # reset resolves against the payload GoldenNugget itself
+                    # delivered last; without that record the file is
+                    # unreachable and the reset stays vacuous.
+                    baseline = (created_history or {}).get(f'{domain}/{path}')
+                    if baseline is not None:
+                        try:
+                            merged = _merge_preference_payload(baseline, contents)
+                        except (ValueError, TypeError, plistlib.InvalidFileException):
+                            merged = None
+                        if merged is not None:
+                            created = preference_baseline_creates.get()
+                            if created is not None:
+                                created.append(f'{domain}/{path}')
+                            if recorded is not None:
+                                recorded[f'{domain}/{path}'] = bytes(merged)
+                            _logger.info(
+                                'Preference reset for %s has no backup row; '
+                                'resolved against the payload GoldenNugget '
+                                'delivered as a new file', f'{domain}/{path}')
+                            prepared.append((domain, path, merged, mode, owner, group))
+                            continue
                     # A reset removes keys the tweaks previously set. A file
                     # the backup has no row for does not exist on the device,
                     # so there is nothing to remove — the reset is vacuous.
@@ -241,6 +272,8 @@ def _prepare_preference_merges(conn, device_dir, files):
                 created = preference_baseline_creates.get()
                 if created is not None:
                     created.append(f'{domain}/{path}')
+                if recorded is not None and isinstance(contents, bytes):
+                    recorded[f'{domain}/{path}'] = bytes(contents)
                 _logger.warning(
                     'No baseline row for %s in the backup; the file does not exist '
                     'on the device, so the tweak payload is delivered as a new file',
@@ -286,6 +319,8 @@ def _prepare_preference_merges(conn, device_dir, files):
                 created = preference_baseline_creates.get()
                 if created is not None:
                     created.append(f'{domain}/{path}')
+                if recorded is not None and isinstance(contents, bytes):
+                    recorded[f'{domain}/{path}'] = bytes(contents)
                 _logger.warning(
                     'Managed baseline for %s is unusable in this backup (%s); '
                     'the tweak payload is delivered as the whole file',
@@ -628,7 +663,8 @@ def _max_inode_in_manifest(conn) -> int:
 
 
 def inject_files_into_backup(backup_dir: "str | Path", udid: str, files: list,
-                             manifest_password: str = "", *, max_inode_hint=None):
+                             manifest_password: str = "", *, max_inode_hint=None,
+                             created_history: dict = None):
     """Add many files to a pruned backup in a single Manifest.db transaction.
 
     The iOS 27 "safe state recovery" wipe clears HomeDomain files that were
@@ -649,7 +685,10 @@ def inject_files_into_backup(backup_dir: "str | Path", udid: str, files: list,
     ``files`` is a list of ``(domain, relative_path, contents, mode, owner,
     group)`` tuples; contents may be bytes or a Path and is streamed in bounded
     buffers. ``max_inode_hint`` is accepted only from the immediately preceding
-    prune of this same manifest, before any other writer can change it. The iOS 27 restore agent requires a well-formed
+    prune of this same manifest, before any other writer can change it.
+    ``created_history`` overrides the per-device record of payloads GoldenNugget
+    delivered as new files (src/restore/created_baselines.py); keyed resets of
+    such files resolve against it when the backup has no row. The iOS 27 restore agent requires a well-formed
     regular-file blob with a real, *unique* inode (it deduplicates by inode —
     a clone sharing the donor's inode gets restored with the donor's content,
     and a fresh blob without an inode is skipped outright). The mode is
@@ -695,7 +734,11 @@ def inject_files_into_backup(backup_dir: "str | Path", udid: str, files: list,
     try:
         reset_targets = {(domain, path) for domain, path, contents, *_ in files
                          if isinstance(contents, PreferenceKeyReset)}
-        files = _prepare_preference_merges(conn, device_dir, files)
+        if created_history is None:
+            from src.restore.created_baselines import load as load_created_baselines
+            created_history = load_created_baselines(udid)
+        files = _prepare_preference_merges(conn, device_dir, files,
+                                           created_history=created_history)
         # Batch-level state, computed once instead of per file:
         #   next_inode   - in-memory inode counter (one manifest scan total)
         #   donor_cache  - per-domain donor blob (the device's own row format)

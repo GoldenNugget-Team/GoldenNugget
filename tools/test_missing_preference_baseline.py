@@ -32,6 +32,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.restore.inject import (  # noqa: E402
     FeatureFlagBaselineUnavailable,
+    created_baseline_payloads,
     inject_files_into_backup,
     preference_baseline_creates,
     preference_baseline_skips,
@@ -111,13 +112,13 @@ def read_blob(dev: Path, domain: str, path: str):
     return row[0] if row else None
 
 
-def inject(dev_root: Path, udid: str, items):
+def inject(dev_root: Path, udid: str, items, created_history=None):
     created, skipped = [], []
     create_token = preference_baseline_creates.set(created)
     skip_token = preference_baseline_skips.set(skipped)
     try:
         injected, unchanged, failed = inject_files_into_backup(
-            str(dev_root), udid, items)
+            str(dev_root), udid, items, created_history=created_history)
     finally:
         preference_baseline_creates.reset(create_token)
         preference_baseline_skips.reset(skip_token)
@@ -188,6 +189,59 @@ def main():
         check("no row was written for the skipped reset",
               read_blob(dev, "HomeDomain",
                         "Library/Preferences/com.apple.springboard.plist") is None)
+
+    # ---- A keyed reset of a file WE delivered as a new file resolves against
+    #      the recorded payload: no backup session ever uploads such a file
+    #      (the restore marks it as known to the host), so the backup row the
+    #      reset normally merges against never appears -------------------------
+    with tempfile.TemporaryDirectory() as tmp:
+        dev = make_core_backup(Path(tmp), "UDID")
+        history = {"HomeDomain/Library/Preferences/com.apple.SwiftUI.plist":
+                   plistlib.dumps({"SolariumEnableDockExteriorEffects": True})}
+        recorded = {}
+        record_token = created_baseline_payloads.set(recorded)
+        try:
+            injected, unchanged, failed, created = inject(
+                Path(tmp), "UDID",
+                [("HomeDomain", "Library/Preferences/com.apple.SwiftUI.plist",
+                  PreferenceKeyReset([("SolariumEnableDockExteriorEffects",)]),
+                  mode, 501, 501)],
+                created_history=history)
+        finally:
+            created_baseline_payloads.reset(record_token)
+        check("reset of a self-created file is delivered, not skipped",
+              (injected, failed) == (1, 0), f"{injected}/{unchanged}/{failed}")
+        check("the delivered file is recorded as created-new",
+              created == ["HomeDomain/Library/Preferences/com.apple.SwiftUI.plist"],
+              f"created={created}")
+        contents = plistlib.loads(read_payload(
+            dev, "HomeDomain", "Library/Preferences/com.apple.SwiftUI.plist"))
+        check("the tweak key was removed from the recorded payload",
+              contents == {}, f"contents={contents}")
+        check("the post-reset payload is recorded for the next reset",
+              plistlib.loads(recorded.get(
+                  "HomeDomain/Library/Preferences/com.apple.SwiftUI.plist", b""))
+              == {}, f"recorded={recorded}")
+
+    # ---- A partial reset keeps the file's other keys ------------------------
+    with tempfile.TemporaryDirectory() as tmp:
+        dev = make_core_backup(Path(tmp), "UDID")
+        history = {"HomeDomain/Library/Preferences/com.apple.SwiftUI.plist":
+                   plistlib.dumps({"SolariumEnableDockExteriorEffects": True,
+                                   "SolariumEnableHomeScreenExteriorEffects": True})}
+        injected, unchanged, failed, created = inject(
+            Path(tmp), "UDID",
+            [("HomeDomain", "Library/Preferences/com.apple.SwiftUI.plist",
+              PreferenceKeyReset([("SolariumEnableDockExteriorEffects",)]),
+              mode, 501, 501)],
+            created_history=history)
+        check("partial reset of a self-created file lands",
+              (injected, failed) == (1, 0), f"{injected}/{unchanged}/{failed}")
+        contents = plistlib.loads(read_payload(
+            dev, "HomeDomain", "Library/Preferences/com.apple.SwiftUI.plist"))
+        check("only the reset key is removed",
+              contents == {"SolariumEnableHomeScreenExteriorEffects": True},
+              f"contents={contents}")
 
     # ---- An existing baseline still merges (the original safe path) ---------
     with tempfile.TemporaryDirectory() as tmp:

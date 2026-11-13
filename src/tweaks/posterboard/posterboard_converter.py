@@ -365,19 +365,23 @@ def _rgb_from_components(value: str) -> "tuple[int, int, int] | None":
 def _chosen_background_match(text: str):
     """The ``backgroundColor`` ``_solid_background_color`` paints, as a match.
 
-    Attribute matches are considered first, then ``<backgroundColor value>``
-    elements, and the last parsable one wins — the same order
-    ``_solid_background_color`` has always used. Returning the match (not just
-    the RGB) lets injection land on that layer instead of a different one.
+    A sublayer's ``backgroundColor`` attribute — the visible fill — wins over a
+    ``<backgroundColor>`` element, which the source often leaves at opacity 0 on
+    the root. Letting the element pattern run last made the invisible root
+    placeholder win and put the fill image on the root layer, which renders
+    blank on device. Within each form the last parsable match wins (later in
+    document order = visually on top). Returning the match (not just the RGB)
+    lets injection land on that layer instead of a different one.
     """
     chosen = None
-    for pattern in (
-        r'backgroundColor="([^"]+)"',
-        r'<backgroundColor\b[^>]*\bvalue="([^"]+)"',
-    ):
-        for match in re.finditer(pattern, text):
-            if _rgb_from_components(match.group(1)):
-                chosen = match
+    for match in re.finditer(r'backgroundColor="([^"]+)"', text):
+        if _rgb_from_components(match.group(1)):
+            chosen = match
+    if chosen is not None:
+        return chosen
+    for match in re.finditer(r'<backgroundColor\b[^>]*\bvalue="([^"]+)"', text):
+        if _rgb_from_components(match.group(1)):
+            chosen = match
     return chosen
 
 
@@ -386,7 +390,7 @@ def _solid_background_color(text: str) -> "tuple[int, int, int] | None":
 
     A sublayer's ``backgroundColor`` attribute (the visible fill) wins over the
     root's ``<backgroundColor>`` element, which the source often leaves at
-    opacity 0. Iterate all matches and keep the last one (later in document
+    opacity 0. Within each form the last match wins (later in document
     order = visually on top).
     """
     match = _chosen_background_match(text)

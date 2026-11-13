@@ -334,11 +334,27 @@ def test_color_only_background_gets_image():
     check("background still published", 'id="Background"' in tag, tag)
     check("background gained a CGImage",
           'src="assets/solid_background.png"' in text, text)
+    check("image is on the Background sublayer, not the root",
+          '<backgroundColor opacity="0" value="0.2319 0.3166 0.5"/>\n'
+          '    <sublayers>\n'
+          '      <CALayer allowsEdgeAntialiasing="1" allowsGroupOpacity="1" '
+          'backgroundColor="0.02684 0.1512 0.2793" bounds="0 0 390 844" '
+          'contentsFormat="RGBA8" cornerCurve="circular" name="Background" '
+          'position="195 422"><contents type="CGImage" '
+          'src="assets/solid_background.png"/></CALayer>' in text, text)
+    check("root is not given the fill image",
+          'name="Root Layer" position="195 422" speed="1"><contents' not in text)
+    from PIL import Image
     image = os.path.join(bg, "assets", "solid_background.png")
     check("rendered image exists", os.path.isfile(image), image)
-    from PIL import Image
     check("image is screen-sized", Image.open(image).size == (390, 844),
           str(Image.open(image).size))
+    # The visible sublayer fill (0.02684 0.1512 0.2793), not the root's
+    # opacity-0 placeholder (0.2319 0.3166 0.5) that renders blank-on-device
+    # when it hijacks the choice.
+    check("image uses the visible fill color",
+          Image.open(image).getpixel((0, 0)) == (7, 39, 71),
+          str(Image.open(image).getpixel((0, 0))))
     check("states preserved", "<states>" in text, text)
 
 

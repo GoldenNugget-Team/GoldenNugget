@@ -531,6 +531,7 @@ class DeviceManager:
                 self._report_operation_stage("tweaks")
             update_label(QCoreApplication.tr("Preparing to restore...") + self.do_not_unplug)
             from src.restore.inject import (
+                created_baseline_payloads,
                 preference_baseline_creates,
                 preference_baseline_skips,
                 preference_delivery_warnings,
@@ -538,9 +539,11 @@ class DeviceManager:
             delivery_warnings = []
             baseline_skips = []
             baseline_creates = []
+            created_payloads = {}
             warning_token = preference_delivery_warnings.set(delivery_warnings)
             skip_token = preference_baseline_skips.set(baseline_skips)
             create_token = preference_baseline_creates.set(baseline_creates)
+            payloads_token = created_baseline_payloads.set(created_payloads)
             try:
                 await restore_files(
                     files=files_to_restore, reboot=self.pref_manager.auto_reboot,
@@ -556,7 +559,16 @@ class DeviceManager:
                     organization_name=organization_name,
                     stage_callback=self._report_operation_stage,
                 )
+                if created_payloads:
+                    # The device never re-uploads files we delivered as new
+                    # files, so persist their payloads for later keyed resets.
+                    from src.restore.created_baselines import record as record_created
+                    try:
+                        record_created(self.get_current_device_udid(), created_payloads)
+                    except Exception:
+                        pass  # history loss only reverts resets to the old skip
             finally:
+                created_baseline_payloads.reset(payloads_token)
                 preference_delivery_warnings.reset(warning_token)
                 preference_baseline_skips.reset(skip_token)
                 preference_baseline_creates.reset(create_token)

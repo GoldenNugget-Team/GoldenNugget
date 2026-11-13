@@ -922,6 +922,27 @@ PosterBoard,Backups}`. The recovery tools (`apply_worker.py`,
     restores that scope AFTER the sparse reset and handed the stale value
     straight back. Same reasoning as `statusBarOverrides` /
     `.GlobalPreferences.plist`.
+- **Keyed resets resolve against created-file history.** A preference file
+  an apply delivered as a NEW file (no baseline row) never enters a later
+  backup: the restore marks it as known to the host, so no incremental
+  session re-uploads it and no row ever appears — the keyed reset used to
+  skip such files as "vacuous" while the tweak keys stayed live on the
+  device. `src/restore/created_baselines.py` persists, per device, the last
+  payload delivered for each such file (`<app data>/LastApply/<udid>.created.json`,
+  written by `start_restore` after a successful restore via the
+  `created_baseline_payloads` ContextVar); the injector resolves a keyed
+  reset with no backup row against that record and removes the reset keys
+  from it. Tweak files delivered before this record existed need one
+  re-apply to enter it.
+- **The reset plan is the union of the record and the registry.**
+  `preference_reset_plan` (`src/controllers/default_reset.py`) merges the
+  applied-selection record's exact keys with the tweak registry's static
+  keys for the selected sections: a tweak applied before records existed —
+  or whose record an earlier reset consumed — still owns its keys, and the
+  section's "restore defaults" removes them. Dynamic sets stay recorded-only
+  (Daemons: a reset with no record raises "no verified reset payload"), and
+  numeric/string tweaks without a record are skipped (an unapplied validated
+  value has nothing to reset); whole preference files are never cleared.
 
 ## Restore Module (src/restore/)
 

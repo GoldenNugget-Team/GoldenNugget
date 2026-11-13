@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Offline reset checks for recorded key removal and status-bar restoration.
 
-Missing apply history must never trigger whole-file preference clearing. A
-recorded reset uses explicit key-removal requests and a prepared backup;
-status-bar reset retains its version-specific binary/archive format.
+Missing apply history never triggers whole-file preference clearing: registry
+sections fall back to the tweak registry's static keys, dynamic sets (Daemons)
+stay recorded-only, and every preference payload is an explicit key-removal
+request built over a prepared backup; status-bar reset retains its
+version-specific binary/archive format.
 """
 
 import asyncio
@@ -221,18 +223,43 @@ def test_status_bar_is_always_resettable():
 
 
 def test_missing_reset_evidence_never_clears_preferences():
+    """Registry sections reset their static keys; Daemons stay recorded-only."""
+    from src.utils.preference_reset import PreferenceKeyReset
+
     for version in ("26.2", "27.0", "27.2"):
         for page in (
             Page.Springboard,
             Page.InternalOptions,
             Page.LiquidGlass,
-            Page.Daemons,
         ):
             fake, errors, _ = run_reset(version, [page])
-            check(f"{version}/{page.name}: missing evidence is reported", bool(errors))
-            check("no restore is started", fake.restored is None)
-            check("no preference file is cleared", fake.written == {})
+            check(f"{version}/{page.name}: unrecorded section still resets", not errors, repr(errors[:1]))
+            check("a restore is started", fake.restored is not None)
+            check("every preference payload is a keyed removal",
+                  all(isinstance(value, PreferenceKeyReset) for value in fake.written.values()))
             check("no capture connection is opened", not fake.session_opened)
+        # A dynamic launchd set has no registry truth: no record, no reset.
+        fake, errors, _ = run_reset(version, [Page.Daemons])
+        check(f"{version}/Daemons: missing evidence is reported", bool(errors))
+        check("no restore is started", fake.restored is None)
+        check("no preference file is cleared", fake.written == {})
+        check("no capture connection is opened", not fake.session_opened)
+
+
+def test_unrecorded_liquid_glass_covers_legacy_keys():
+    """Keys applied before records existed are reset from the registry."""
+    fake, errors, _ = run_reset("27.2", [Page.LiquidGlass])
+    check("reset succeeds with no record", not errors, repr(errors))
+    managed_sb = fake.written.get("/var/Managed Preferences/mobile/com.apple.springboard.plist")
+    check("SBDisallowGlassLockScreen is reset without a record",
+          managed_sb is not None and ("SBDisallowGlassLockScreen",) in managed_sb.paths)
+    swiftui = fake.written.get("/var/mobile/Library/Preferences/com.apple.SwiftUI.plist")
+    check("SolariumEnableDockExteriorEffects is reset without a record",
+          swiftui is not None and ("SolariumEnableDockExteriorEffects",) in swiftui.paths)
+    # iOS 27 writes the cfprefs mirror of every managed file too.
+    mirror = fake.written.get("/var/mobile/Library/Preferences/com.apple.springboard.plist")
+    check("the springboard mirror follows the managed file",
+          mirror is not None and ("SBDisallowGlassLockScreen",) in mirror.paths)
 
 
 def test_recorded_reset_targets_only_applied_keys():
@@ -257,7 +284,7 @@ def test_recorded_reset_targets_only_applied_keys():
         check(
             "reset uses a key-removal request", isinstance(request, PreferenceKeyReset)
         )
-        check("only the applied preference is removed", request.paths == ((spec.key,),))
+        check("the applied preference is removed", (spec.key,) in request.paths)
         mirror = HOME_PREFIX + managed_pref_target(spec.location.value)
         check(
             "managed mirror follows the iOS 27 route",
@@ -273,6 +300,7 @@ def test_recorded_reset_targets_only_applied_keys():
 
 test_capture_is_gone()
 test_missing_reset_evidence_never_clears_preferences()
+test_unrecorded_liquid_glass_covers_legacy_keys()
 test_recorded_reset_targets_only_applied_keys()
 test_ios27_status_bar_resets_the_archive()
 test_ios26_status_bar_still_resets_the_classic_file()
