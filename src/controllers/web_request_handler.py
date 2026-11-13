@@ -11,19 +11,28 @@ Nugget_Repo = "GoldenNugget-Team/GoldenNugget/releases/latest"
 
 last_fetched_version: str = None
 last_fetched_release: dict = {}
+# True when the last fetch failed (network, rate limit, timeout, bad JSON).
+# A 404 (no releases) leaves this False so callers can keep treating it as
+# "no update".
+_update_check_failed: bool = False
 
-def is_update_available(version: str, build: int) -> bool:
+def is_update_available(version: str, build: int):
+    """True when a newer release exists, False when current, None when the check failed.
+
+    A GitHub 404 (no releases published) is False, same as "already current".
+    """
     # check github for if version < tag (or == tag but build > 0)
     latest_version = get_latest_version()
-    if latest_version != None:
-        if build > 0 and latest_version == version: # on beta version when there is a public release
-            return True
-        elif Version(latest_version) > Version(version):
-            return True
+    if latest_version is None:
+        return None if _update_check_failed else False
+    if build > 0 and latest_version == version: # on beta version when there is a public release
+        return True
+    if Version(latest_version) > Version(version):
+        return True
     return False
 
 def get_latest_version() -> str:
-    global last_fetched_version, last_fetched_release
+    global last_fetched_version, last_fetched_release, _update_check_failed
     # get the cached version
     if last_fetched_version != None:
         return last_fetched_version
@@ -36,6 +45,7 @@ def get_latest_version() -> str:
 
         data = response.json()  # Parse the JSON response
         if not isinstance(data, dict):
+            _update_check_failed = True
             return None
         last_fetched_release = data
 
@@ -43,15 +53,22 @@ def get_latest_version() -> str:
         tag_name = data.get("tag_name")
         if tag_name:
             last_fetched_version = tag_name.replace("v", "")  # Remove 'v' from tag_name
+            _update_check_failed = False
             return last_fetched_version
+        # 200 with no tag is "no release to compare", not a failed check.
+        _update_check_failed = False
     except HTTPError as e:
         if e.response is not None and e.response.status_code == 404:
             # no releases published yet — not a real error
+            _update_check_failed = False
             return None
+        _update_check_failed = True
         print(f"Error fetching data: {e}")
     except RequestException as e:
+        _update_check_failed = True
         print(f"Error fetching data: {e}")
     except JSONDecodeError as e:
+        _update_check_failed = True
         print(f"Error parsing JSON: {e}")
     return None
 def update_download_url():
