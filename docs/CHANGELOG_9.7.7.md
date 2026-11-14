@@ -8,6 +8,8 @@
 
 ## Fixes
 
+- Apply Changes starts a new review after a finished apply
+- Failed update checks now show an error instead of “Up to date!”
 - Live phase-5 media push passes `include_historical=False`, dead restore
   phase helpers are gone, and hotload rules are written atomically
   (`.part` + replace) so a failed write cannot lose them.
